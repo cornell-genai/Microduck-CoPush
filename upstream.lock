@@ -1,0 +1,4 @@
+# Upstream commits CoPush was last tested against. Read by scripts/setup.sh.
+# name           url                                                   branch    commit
+microduck        https://github.com/pollen-robotics/microduck.git      main      997808c1d71056d31bd6f05fc5fde848c849d2bc
+microduck_rl     https://github.com/pollen-robotics/microduck_rl.git   develop   bae39f5900b318f7e87fc485c30a31213cfa14eb

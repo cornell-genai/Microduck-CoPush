@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/runs/
+data/plots/
+*.mp4
+*.onnx
+.DS_Store
