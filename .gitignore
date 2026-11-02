@@ -7,3 +7,5 @@ data/plots/
 *.mp4
 *.onnx
 .DS_Store
+data/policies/
+*.pt

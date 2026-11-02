@@ -1,0 +1,1659 @@
+{
+ "args": {
+  "robot": "backlash",
+  "trials": 10,
+  "duration": 10.0,
+  "speed": 0.2,
+  "seed": 0,
+  "mass_range": [
+   0.05,
+   0.3
+  ],
+  "yaw_range_deg": 45.0,
+  "quick": false,
+  "json": "docs/results/data/b0_eval_backlash.json"
+ },
+ "results": [
+  {
+   "policy": "forward",
+   "scene": "scene_copush_b0_forward.xml",
+   "direction": "forward",
+   "vx": 0.2,
+   "summary": {
+    "n": 10,
+    "box_travel": 0.6461520485180569,
+    "box_travel_std": 0.10170829243506475,
+    "box_disp": 0.7613651336518364,
+    "robot_travel": 0.7989006711467088,
+    "fall_rate": 0.0,
+    "lost_rate": 0.0,
+    "heading_mean": 49.30246388296253,
+    "heading_abs": 49.30246388296253,
+    "contact_share": {
+     "hips": 0.9119440062139518,
+     "feet": 0.08805599378604811
+    }
+   },
+   "trials": [
+    {
+     "robot_travel": 0.7531065692707525,
+     "robot_dxy": [
+      0.7531065692707525,
+      0.308818908961393
+     ],
+     "heading_deg": 55.86583619982474,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 16.91457594888508,
+      "feet": 1.6639094423890615
+     },
+     "box_mass": 0.20924042183036357,
+     "box_yaw_deg": -20.719195761251672,
+     "box_travel": 0.5954177101634015,
+     "box_lateral": 0.37194724757727465,
+     "box_dxy": [
+      0.5954177101634015,
+      0.37194724757727465
+     ],
+     "box_yaw_change_deg": 76.7622472646556
+    },
+    {
+     "robot_travel": 0.8104576486461751,
+     "robot_dxy": [
+      0.8104576486461751,
+      0.30661408432234966
+     ],
+     "heading_deg": 46.98214714447254,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 15.618740156731127,
+      "feet": 1.4019075114176514
+     },
+     "box_mass": 0.17795540617506417,
+     "box_yaw_deg": 40.54173266933417,
+     "box_travel": 0.6592262730127825,
+     "box_lateral": 0.3665334052658452,
+     "box_dxy": [
+      0.6592262730127825,
+      0.3665334052658452
+     ],
+     "box_yaw_change_deg": 6.649886425798184
+    },
+    {
+     "robot_travel": 0.9346364980745367,
+     "robot_dxy": [
+      0.9346364980745367,
+      0.4890677464382786
+     ],
+     "heading_deg": 64.01956494849509,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 12.140836329283024,
+      "feet": 0.5023533548916054
+     },
+     "box_mass": 0.1154030335623291,
+     "box_yaw_deg": -18.135797092728907,
+     "box_travel": 0.7682688715980461,
+     "box_lateral": 0.557846547296518,
+     "box_dxy": [
+      0.7682688715980461,
+      0.557846547296518
+     ],
+     "box_yaw_change_deg": 82.09768712757604
+    },
+    {
+     "robot_travel": 1.0041906958838085,
+     "robot_dxy": [
+      1.0041906958838085,
+      0.6092012324914887
+     ],
+     "heading_deg": 48.927312158734885,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 8.296217813906367,
+      "feet": 0.16815256552379285
+     },
+     "box_mass": 0.07141229178590609,
+     "box_yaw_deg": -23.68705440635103,
+     "box_travel": 0.8576988842855855,
+     "box_lateral": 0.6647550574113656,
+     "box_dxy": [
+      0.8576988842855855,
+      0.6647550574113656
+     ],
+     "box_yaw_change_deg": 72.721673255864
+    },
+    {
+     "robot_travel": 0.6554988708255515,
+     "robot_dxy": [
+      0.6554988708255515,
+      0.16119246882972177
+     ],
+     "heading_deg": 28.23630485522509,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 20.041482954342303,
+      "feet": 2.869669806875309
+     },
+     "box_mass": 0.2857640263930919,
+     "box_yaw_deg": 1.0194797532925461,
+     "box_travel": 0.5188885091431668,
+     "box_lateral": 0.20395938496559332,
+     "box_dxy": [
+      0.5188885091431668,
+      0.20395938496559332
+     ],
+     "box_yaw_change_deg": 27.09935610316818
+    },
+    {
+     "robot_travel": 0.7137891159633368,
+     "robot_dxy": [
+      0.7137891159633368,
+      0.2383917589605165
+     ],
+     "heading_deg": 50.71441742404095,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 18.6086459885272,
+      "feet": 2.1803447816116934
+     },
+     "box_mass": 0.25125073093634503,
+     "box_yaw_deg": 27.714671076284436,
+     "box_travel": 0.5608307052402977,
+     "box_lateral": 0.3002807076894456,
+     "box_dxy": [
+      0.5608307052402977,
+      0.3002807076894456
+     ],
+     "box_yaw_change_deg": 24.674898977951912
+    },
+    {
+     "robot_travel": 0.7848585353761627,
+     "robot_dxy": [
+      0.7848585353761627,
+      0.33082417938899544
+     ],
+     "heading_deg": 55.96969399167513,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 15.687181706542619,
+      "feet": 1.4114741603969159
+     },
+     "box_mass": 0.1845410878679858,
+     "box_yaw_deg": -14.105621716799549,
+     "box_travel": 0.62511530357298,
+     "box_lateral": 0.39736771063583004,
+     "box_dxy": [
+      0.62511530357298,
+      0.39736771063583004
+     ],
+     "box_yaw_change_deg": 71.03831386543833
+    },
+    {
+     "robot_travel": 0.7597440157921336,
+     "robot_dxy": [
+      0.7597440157921336,
+      0.3029641986320522
+     ],
+     "heading_deg": 50.12953782599993,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 16.821612892642527,
+      "feet": 1.602017417907359
+     },
+     "box_mass": 0.20627386665116676,
+     "box_yaw_deg": 35.7492420872618,
+     "box_travel": 0.6068575225094404,
+     "box_lateral": 0.3623530982228629,
+     "box_dxy": [
+      0.6068575225094404,
+      0.3623530982228629
+     ],
+     "box_yaw_change_deg": 14.552247150042758
+    },
+    {
+     "robot_travel": 0.8831616577332846,
+     "robot_dxy": [
+      0.8831616577332846,
+      0.4479993907872085
+     ],
+     "heading_deg": 59.11488841977915,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 13.164812511955533,
+      "feet": 0.7393096294959036
+     },
+     "box_mass": 0.13174306915139017,
+     "box_yaw_deg": 43.85491590041329,
+     "box_travel": 0.7220938332178208,
+     "box_lateral": 0.5138005587210037,
+     "box_dxy": [
+      0.7220938332178208,
+      0.5138005587210037
+     ],
+     "box_yaw_change_deg": 15.302332369938634
+    },
+    {
+     "robot_travel": 0.6895631039013458,
+     "robot_dxy": [
+      0.6895631039013458,
+      0.18566123210097005
+     ],
+     "heading_deg": 33.06493586137777,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "hips": 19.54525447306456,
+      "feet": 2.6050430816415693
+     },
+     "box_mass": 0.26756230099252115,
+     "box_yaw_deg": -19.186451182120013,
+     "box_travel": 0.547122872437048,
+     "box_lateral": 0.2345824460099884,
+     "box_dxy": [
+      0.547122872437048,
+      0.2345824460099884
+     ],
+     "box_yaw_change_deg": 52.69100192989907
+    }
+   ]
+  },
+  {
+   "policy": "velstand v6",
+   "scene": "scene_copush_b0_forward.xml",
+   "direction": "forward",
+   "vx": 0.2,
+   "summary": {
+    "n": 10,
+    "box_travel": 0.08612085127032634,
+    "box_travel_std": 0.064497557480491,
+    "box_disp": 0.08951858265516707,
+    "robot_travel": 0.22929802184665352,
+    "fall_rate": 0.0,
+    "lost_rate": 0.0,
+    "heading_mean": -17.061812857571372,
+    "heading_abs": 17.061812857571372,
+    "contact_share": {
+     "feet": 0.8163087681743765,
+     "hips": 0.18369123182562352
+    }
+   },
+   "trials": [
+    {
+     "robot_travel": 0.1845185339251424,
+     "robot_dxy": [
+      0.1845185339251424,
+      0.07792937072803388
+     ],
+     "heading_deg": -15.645532953266573,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.064221961035973,
+      "hips": 0.787883717933985
+     },
+     "box_mass": 0.20924042183036357,
+     "box_yaw_deg": -20.719195761251672,
+     "box_travel": 0.04819535317818344,
+     "box_lateral": -0.00824020542123497,
+     "box_dxy": [
+      0.04819535317818344,
+      -0.00824020542123497
+     ],
+     "box_yaw_change_deg": 10.326229547326228
+    },
+    {
+     "robot_travel": 0.22389801400445822,
+     "robot_dxy": [
+      0.22389801400445822,
+      0.07934240304501373
+     ],
+     "heading_deg": -18.56988416477781,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.043906119875696,
+      "hips": 0.8703426713900637
+     },
+     "box_mass": 0.17795540617506417,
+     "box_yaw_deg": 40.54173266933417,
+     "box_travel": 0.07687430099009351,
+     "box_lateral": -0.018948192557394,
+     "box_dxy": [
+      0.07687430099009351,
+      -0.018948192557394
+     ],
+     "box_yaw_change_deg": -55.73805175776715
+    },
+    {
+     "robot_travel": 0.30558788542807397,
+     "robot_dxy": [
+      0.30558788542807397,
+      0.03826829615523611
+     ],
+     "heading_deg": -30.112065561774767,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 2.9817409802560446,
+      "hips": 0.604370451439182
+     },
+     "box_mass": 0.1154030335623291,
+     "box_yaw_deg": -18.135797092728907,
+     "box_travel": 0.14511356733976372,
+     "box_lateral": -0.04970644903903036,
+     "box_dxy": [
+      0.14511356733976372,
+      -0.04970644903903036
+     ],
+     "box_yaw_change_deg": -10.867858761544342
+    },
+    {
+     "robot_travel": 0.3872222233655156,
+     "robot_dxy": [
+      0.3872222233655156,
+      -0.006857121308274487
+     ],
+     "heading_deg": -28.56932385475906,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 2.400432277422421,
+      "hips": 0.0924738551002905
+     },
+     "box_mass": 0.07141229178590609,
+     "box_yaw_deg": -23.68705440635103,
+     "box_travel": 0.24217616416308474,
+     "box_lateral": -0.06936386498973085,
+     "box_dxy": [
+      0.24217616416308474,
+      -0.06936386498973085
+     ],
+     "box_yaw_change_deg": -5.539862012541691
+    },
+    {
+     "robot_travel": 0.15894678136360918,
+     "robot_dxy": [
+      0.15894678136360918,
+      0.10674948064465212
+     ],
+     "heading_deg": -5.343417621996651,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.361922455485242,
+      "hips": 1.2784575910049223
+     },
+     "box_mass": 0.2857640263930919,
+     "box_yaw_deg": 1.0194797532925461,
+     "box_travel": 0.026162669293373103,
+     "box_lateral": -0.0059236235308820434,
+     "box_dxy": [
+      0.026162669293373103,
+      -0.0059236235308820434
+     ],
+     "box_yaw_change_deg": -6.54719988263786
+    },
+    {
+     "robot_travel": 0.1751121444269244,
+     "robot_dxy": [
+      0.1751121444269244,
+      0.09973618441093006
+     ],
+     "heading_deg": -7.635841824472214,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.328881980555044,
+      "hips": 1.1596812556092044
+     },
+     "box_mass": 0.25125073093634503,
+     "box_yaw_deg": 27.714671076284436,
+     "box_travel": 0.038066524958281944,
+     "box_lateral": -0.010468123578305634,
+     "box_dxy": [
+      0.038066524958281944,
+      -0.010468123578305634
+     ],
+     "box_yaw_change_deg": -35.24512269603559
+    },
+    {
+     "robot_travel": 0.21473351729373402,
+     "robot_dxy": [
+      0.21473351729373402,
+      0.07627407814824193
+     ],
+     "heading_deg": -18.27175618678014,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.131112234701617,
+      "hips": 0.8711013845992743
+     },
+     "box_mass": 0.1845410878679858,
+     "box_yaw_deg": -14.105621716799549,
+     "box_travel": 0.07134444664189848,
+     "box_lateral": -0.018360150992236274,
+     "box_dxy": [
+      0.07134444664189848,
+      -0.018360150992236274
+     ],
+     "box_yaw_change_deg": 0.7847316157478365
+    },
+    {
+     "robot_travel": 0.19541482190010873,
+     "robot_dxy": [
+      0.19541482190010873,
+      0.08848603222340486
+     ],
+     "heading_deg": -14.148508662799111,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.171893808005464,
+      "hips": 1.1076563911369535
+     },
+     "box_mass": 0.20627386665116676,
+     "box_yaw_deg": 35.7492420872618,
+     "box_travel": 0.05429384473070442,
+     "box_lateral": -0.014490568492231563,
+     "box_dxy": [
+      0.05429384473070442,
+      -0.014490568492231563
+     ],
+     "box_yaw_change_deg": -46.81147960958629
+    },
+    {
+     "robot_travel": 0.2860839747801706,
+     "robot_dxy": [
+      0.2860839747801706,
+      0.051909971964959965
+     ],
+     "heading_deg": -26.91313033942614,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 3.284076222643485,
+      "hips": 0.6366249623306468
+     },
+     "box_mass": 0.13174306915139017,
+     "box_yaw_deg": 43.85491590041329,
+     "box_travel": 0.12958417818594536,
+     "box_lateral": -0.04016957458963514,
+     "box_dxy": [
+      0.12958417818594536,
+      -0.04016957458963514
+     ],
+     "box_yaw_change_deg": -70.02715962929607
+    },
+    {
+     "robot_travel": 0.16146232197879823,
+     "robot_dxy": [
+      0.16146232197879823,
+      0.09390042537857822
+     ],
+     "heading_deg": -5.408667405661217,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.290811444627641,
+      "hips": 1.155697078999782
+     },
+     "box_mass": 0.26756230099252115,
+     "box_yaw_deg": -19.186451182120013,
+     "box_travel": 0.029397463221934816,
+     "box_lateral": -0.005861879010373389,
+     "box_dxy": [
+      0.029397463221934816,
+      -0.005861879010373389
+     ],
+     "box_yaw_change_deg": 13.204250861809818
+    }
+   ]
+  },
+  {
+   "policy": "velstand v8",
+   "scene": "scene_copush_b0_forward.xml",
+   "direction": "forward",
+   "vx": 0.2,
+   "summary": {
+    "n": 10,
+    "box_travel": 0.12534591924633237,
+    "box_travel_std": 0.07905262977319383,
+    "box_disp": 0.12568402086393873,
+    "robot_travel": 0.24341958362359345,
+    "fall_rate": 0.0,
+    "lost_rate": 0.0,
+    "heading_mean": 1.0536048921220718,
+    "heading_abs": 4.171130903104041,
+    "contact_share": {
+     "feet": 1.0
+    }
+   },
+   "trials": [
+    {
+     "robot_travel": 0.20044146927147036,
+     "robot_dxy": [
+      0.20044146927147036,
+      -0.011746152492427832
+     ],
+     "heading_deg": 3.565909612512939,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 3.8792773356699555
+     },
+     "box_mass": 0.20924042183036357,
+     "box_yaw_deg": -20.719195761251672,
+     "box_travel": 0.08131925895467951,
+     "box_lateral": -0.003937569603082115,
+     "box_dxy": [
+      0.08131925895467951,
+      -0.003937569603082115
+     ],
+     "box_yaw_change_deg": 20.882576344095796
+    },
+    {
+     "robot_travel": 0.23822594074061781,
+     "robot_dxy": [
+      0.23822594074061781,
+      -0.018459222708513464
+     ],
+     "heading_deg": 4.660896196754197,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 3.5304254482976294
+     },
+     "box_mass": 0.17795540617506417,
+     "box_yaw_deg": 40.54173266933417,
+     "box_travel": 0.12030057363011937,
+     "box_lateral": -0.0007297963844924221,
+     "box_dxy": [
+      0.12030057363011937,
+      -0.0007297963844924221
+     ],
+     "box_yaw_change_deg": -38.54676843397003
+    },
+    {
+     "robot_travel": 0.32750828398174436,
+     "robot_dxy": [
+      0.32750828398174436,
+      -0.034347439849279765
+     ],
+     "heading_deg": 5.841202366111754,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 2.6695878510452724
+     },
+     "box_mass": 0.1154030335623291,
+     "box_yaw_deg": -18.135797092728907,
+     "box_travel": 0.20962463215367994,
+     "box_lateral": -0.008999122293033629,
+     "box_dxy": [
+      0.20962463215367994,
+      -0.008999122293033629
+     ],
+     "box_yaw_change_deg": 19.072872846811634
+    },
+    {
+     "robot_travel": 0.4098491320174541,
+     "robot_dxy": [
+      0.4098491320174541,
+      -0.05227445503999078
+     ],
+     "heading_deg": -12.77373815167815,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 2.0258592565062474
+     },
+     "box_mass": 0.07141229178590609,
+     "box_yaw_deg": -23.68705440635103,
+     "box_travel": 0.29858164531433895,
+     "box_lateral": -0.03664888838228105,
+     "box_dxy": [
+      0.29858164531433895,
+      -0.03664888838228105
+     ],
+     "box_yaw_change_deg": 10.011275530571192
+    },
+    {
+     "robot_travel": 0.15663226098739397,
+     "robot_dxy": [
+      0.15663226098739397,
+      -0.011706614590883678
+     ],
+     "heading_deg": -1.3942375747975522,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.265229738803296
+     },
+     "box_mass": 0.2857640263930919,
+     "box_yaw_deg": 1.0194797532925461,
+     "box_travel": 0.038235571006290964,
+     "box_lateral": -0.0023170530949683083,
+     "box_dxy": [
+      0.038235571006290964,
+      -0.0023170530949683083
+     ],
+     "box_yaw_change_deg": -0.8406707129199849
+    },
+    {
+     "robot_travel": 0.1698563237924343,
+     "robot_dxy": [
+      0.1698563237924343,
+      -0.0024174333734279696
+     ],
+     "heading_deg": 2.436580356258219,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.115852147405018
+     },
+     "box_mass": 0.25125073093634503,
+     "box_yaw_deg": 27.714671076284436,
+     "box_travel": 0.05307844647898324,
+     "box_lateral": -0.002275724641914015,
+     "box_dxy": [
+      0.05307844647898324,
+      -0.002275724641914015
+     ],
+     "box_yaw_change_deg": -29.601064108983437
+    },
+    {
+     "robot_travel": 0.24017044424724135,
+     "robot_dxy": [
+      0.24017044424724135,
+      -0.020304703738448046
+     ],
+     "heading_deg": 6.208982757498348,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 3.5351072493952036
+     },
+     "box_mass": 0.1845410878679858,
+     "box_yaw_deg": -14.105621716799549,
+     "box_travel": 0.1209092218582844,
+     "box_lateral": -0.0025754630128117227,
+     "box_dxy": [
+      0.1209092218582844,
+      -0.0025754630128117227
+     ],
+     "box_yaw_change_deg": 16.04055327352454
+    },
+    {
+     "robot_travel": 0.21318239067016734,
+     "robot_dxy": [
+      0.21318239067016734,
+      -0.002964876932745268
+     ],
+     "heading_deg": -1.4196543284341463,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 3.7640821776328295
+     },
+     "box_mass": 0.20627386665116676,
+     "box_yaw_deg": 35.7492420872618,
+     "box_travel": 0.09283424400790824,
+     "box_lateral": -0.006761477089040426,
+     "box_dxy": [
+      0.09283424400790824,
+      -0.006761477089040426
+     ],
+     "box_yaw_change_deg": -39.16363756102894
+    },
+    {
+     "robot_travel": 0.30972232829490226,
+     "robot_dxy": [
+      0.30972232829490226,
+      -0.050684581743106145
+     ],
+     "heading_deg": 3.0837913301513105,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 2.8621892542163554
+     },
+     "box_mass": 0.13174306915139017,
+     "box_yaw_deg": 43.85491590041329,
+     "box_travel": 0.1880444968248201,
+     "box_lateral": -0.008249861121581435,
+     "box_dxy": [
+      0.1880444968248201,
+      -0.008249861121581435
+     ],
+     "box_yaw_change_deg": -40.78371459008601
+    },
+    {
+     "robot_travel": 0.16860726223250866,
+     "robot_dxy": [
+      0.16860726223250866,
+      0.003793672730752688
+     ],
+     "heading_deg": 0.32631635684380084,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "feet": 4.3918964137984045
+     },
+     "box_mass": 0.26756230099252115,
+     "box_yaw_deg": -19.186451182120013,
+     "box_travel": 0.05053110223421903,
+     "box_lateral": -0.005293775319906874,
+     "box_dxy": [
+      0.05053110223421903,
+      -0.005293775319906874
+     ],
+     "box_yaw_change_deg": 18.39850358303184
+    }
+   ]
+  },
+  {
+   "policy": "backward",
+   "scene": "scene_copush_b0_backward.xml",
+   "direction": "backward",
+   "vx": -0.2,
+   "summary": {
+    "n": 10,
+    "box_travel": -0.13278902839118847,
+    "box_travel_std": 0.0411131802976659,
+    "box_disp": 0.24992265160411833,
+    "robot_travel": 0.18599910014321225,
+    "fall_rate": 0.0,
+    "lost_rate": 0.0,
+    "heading_mean": -29.100883833601664,
+    "heading_abs": 154.2828617582257,
+    "contact_share": {
+     "trunk": 0.660262117530202,
+     "thighs": 0.3136250221676602,
+     "feet": 0.02585528660632017,
+     "hips": 0.00025757369581766725
+    }
+   },
+   "trials": [
+    {
+     "robot_travel": 0.18005541410472334,
+     "robot_dxy": [
+      -0.18005541410472334,
+      -0.13702488372005456
+     ],
+     "heading_deg": -135.27625633190485,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 8.688239860098342,
+      "feet": 0.41918033556319817,
+      "thighs": 3.031776855492332
+     },
+     "box_mass": 0.20924042183036357,
+     "box_yaw_deg": -20.719195761251672,
+     "box_travel": -0.12670646469354202,
+     "box_lateral": 0.14016858932096532,
+     "box_dxy": [
+      0.12670646469354202,
+      -0.14016858932096532
+     ],
+     "box_yaw_change_deg": 43.61589338836189
+    },
+    {
+     "robot_travel": 0.22089247233862264,
+     "robot_dxy": [
+      -0.22089247233862264,
+      -0.3858889672869885
+     ],
+     "heading_deg": 158.36797642857817,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 7.53620528588194,
+      "feet": 0.13918406857776852,
+      "thighs": 4.897677264238965,
+      "hips": 0.03139254994883798
+     },
+     "box_mass": 0.17795540617506417,
+     "box_yaw_deg": 40.54173266933417,
+     "box_travel": -0.14598541650551936,
+     "box_lateral": 0.30427805769749,
+     "box_dxy": [
+      0.14598541650551936,
+      -0.30427805769749
+     ],
+     "box_yaw_change_deg": 69.49534757244311
+    },
+    {
+     "robot_travel": 0.1598383548804953,
+     "robot_dxy": [
+      -0.1598383548804953,
+      -0.3678940703681443
+     ],
+     "heading_deg": -177.22561997582253,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 5.264512958679997,
+      "feet": 0.1421228869386561,
+      "thighs": 3.942180289757681
+     },
+     "box_mass": 0.1154030335623291,
+     "box_yaw_deg": -18.135797092728907,
+     "box_travel": -0.1579270494733499,
+     "box_lateral": 0.22669196527357605,
+     "box_dxy": [
+      0.1579270494733499,
+      -0.22669196527357605
+     ],
+     "box_yaw_change_deg": 172.38890370993022
+    },
+    {
+     "robot_travel": 0.16867961543556434,
+     "robot_dxy": [
+      -0.16867961543556434,
+      -0.3389614692720353
+     ],
+     "heading_deg": -150.95891548324212,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 3.3024709122642912,
+      "feet": 0.36367277596805264,
+      "thighs": 1.9440910413343016
+     },
+     "box_mass": 0.07141229178590609,
+     "box_yaw_deg": -23.68705440635103,
+     "box_travel": -0.050636314818363226,
+     "box_lateral": 0.1591532106467596,
+     "box_dxy": [
+      0.050636314818363226,
+      -0.1591532106467596
+     ],
+     "box_yaw_change_deg": -140.16609162298357
+    },
+    {
+     "robot_travel": 0.181655653698903,
+     "robot_dxy": [
+      -0.181655653698903,
+      -0.03470935925173355
+     ],
+     "heading_deg": -160.5837351677828,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 11.170306130821057,
+      "feet": 0.6022292896482067,
+      "thighs": 3.481405044558853
+     },
+     "box_mass": 0.2857640263930919,
+     "box_yaw_deg": 1.0194797532925461,
+     "box_travel": -0.12148421692874589,
+     "box_lateral": 0.08241606908204079,
+     "box_dxy": [
+      0.12148421692874589,
+      -0.08241606908204079
+     ],
+     "box_yaw_change_deg": 5.332941058634314
+    },
+    {
+     "robot_travel": 0.15369585280869813,
+     "robot_dxy": [
+      -0.15369585280869813,
+      -0.11622249957857593
+     ],
+     "heading_deg": -147.21998432942078,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 9.866929045854755,
+      "feet": 0.3947695058954779,
+      "thighs": 3.6630701597089614
+     },
+     "box_mass": 0.25125073093634503,
+     "box_yaw_deg": 27.714671076284436,
+     "box_travel": -0.15181104002400547,
+     "box_lateral": 0.11664344072580256,
+     "box_dxy": [
+      0.15181104002400547,
+      -0.11664344072580256
+     ],
+     "box_yaw_change_deg": -6.0791208947472155
+    },
+    {
+     "robot_travel": 0.253778502523443,
+     "robot_dxy": [
+      -0.253778502523443,
+      -0.3734902049992027
+     ],
+     "heading_deg": 156.99088022170605,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 8.61024326774217,
+      "feet": 0.10197541075951601,
+      "thighs": 6.002654478921843
+     },
+     "box_mass": 0.1845410878679858,
+     "box_yaw_deg": -14.105621716799549,
+     "box_travel": -0.11741871347419047,
+     "box_lateral": 0.3099304669602531,
+     "box_dxy": [
+      0.11741871347419047,
+      -0.3099304669602531
+     ],
+     "box_yaw_change_deg": 137.85658802957948
+    },
+    {
+     "robot_travel": 0.1406043590828057,
+     "robot_dxy": [
+      -0.1406043590828057,
+      -0.2527360883910102
+     ],
+     "heading_deg": 143.0037316249512,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 10.23766004972629,
+      "feet": 0.09710922972333537,
+      "thighs": 2.7990348714772253
+     },
+     "box_mass": 0.20627386665116676,
+     "box_yaw_deg": 35.7492420872618,
+     "box_travel": -0.21549617817950414,
+     "box_lateral": 0.3564680336278946,
+     "box_dxy": [
+      0.21549617817950414,
+      -0.3564680336278946
+     ],
+     "box_yaw_change_deg": 13.232482083882305
+    },
+    {
+     "robot_travel": 0.17758627684967712,
+     "robot_dxy": [
+      -0.17758627684967712,
+      -0.3946984036029582
+     ],
+     "heading_deg": 167.54730134788474,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 5.8405597994831995,
+      "feet": 0.14020036411463205,
+      "thighs": 4.483136810544952
+     },
+     "box_mass": 0.13174306915139017,
+     "box_yaw_deg": 43.85491590041329,
+     "box_travel": -0.14693424733914992,
+     "box_lateral": 0.26757832444148055,
+     "box_dxy": [
+      0.14693424733914992,
+      -0.26757832444148055
+     ],
+     "box_yaw_change_deg": 105.43887965401092
+    },
+    {
+     "robot_travel": 0.22320449970918985,
+     "robot_dxy": [
+      -0.22320449970918985,
+      -0.051386095452188495
+     ],
+     "heading_deg": -145.65421667096368,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 9.954255600243968,
+      "thighs": 3.978942997144764,
+      "feet": 0.7507450523699005
+     },
+     "box_mass": 0.26756230099252115,
+     "box_yaw_deg": -19.186451182120013,
+     "box_travel": -0.0934906424755143,
+     "box_lateral": 0.1015208810832561,
+     "box_dxy": [
+      0.0934906424755143,
+      -0.1015208810832561
+     ],
+     "box_yaw_change_deg": 35.449653675941036
+    }
+   ]
+  },
+  {
+   "policy": "velstand v6",
+   "scene": "scene_copush_b0_backward.xml",
+   "direction": "backward",
+   "vx": -0.2,
+   "summary": {
+    "n": 10,
+    "box_travel": 0.03060818633738525,
+    "box_travel_std": 0.017468569125933316,
+    "box_disp": 0.03315402278136498,
+    "robot_travel": 0.13686866849860718,
+    "fall_rate": 0.0,
+    "lost_rate": 0.0,
+    "heading_mean": 18.003098657766152,
+    "heading_abs": 19.6175298983999,
+    "contact_share": {
+     "trunk": 0.7572709110947757,
+     "feet": 0.2427290889052244
+    }
+   },
+   "trials": [
+    {
+     "robot_travel": 0.12532284169489216,
+     "robot_dxy": [
+      -0.12532284169489216,
+      -0.11353274921477746
+     ],
+     "heading_deg": 21.056818811255024,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.5460431361346814,
+      "feet": 0.44202492663268683
+     },
+     "box_mass": 0.20924042183036357,
+     "box_yaw_deg": -20.719195761251672,
+     "box_travel": 0.020817416882317585,
+     "box_lateral": -0.009346409897265432,
+     "box_dxy": [
+      -0.020817416882317585,
+      0.009346409897265432
+     ],
+     "box_yaw_change_deg": 18.84004872788514
+    },
+    {
+     "robot_travel": 0.13791405976701054,
+     "robot_dxy": [
+      -0.13791405976701054,
+      -0.10344865035295678
+     ],
+     "heading_deg": 19.781884936884044,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.673105108913868,
+      "feet": 0.7354982759620485
+     },
+     "box_mass": 0.17795540617506417,
+     "box_yaw_deg": 40.54173266933417,
+     "box_travel": 0.03050350007015737,
+     "box_lateral": -0.0136472999288334,
+     "box_dxy": [
+      -0.03050350007015737,
+      0.0136472999288334
+     ],
+     "box_yaw_change_deg": -43.81335041384282
+    },
+    {
+     "robot_travel": 0.16384978500185257,
+     "robot_dxy": [
+      -0.16384978500185257,
+      -0.11815033653247217
+     ],
+     "heading_deg": 15.806588540204011,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.4288480595914796,
+      "feet": 0.394855702984566
+     },
+     "box_mass": 0.1154030335623291,
+     "box_yaw_deg": -18.135797092728907,
+     "box_travel": 0.05014290066845406,
+     "box_lateral": -0.02483794178903295,
+     "box_dxy": [
+      -0.05014290066845406,
+      0.02483794178903295
+     ],
+     "box_yaw_change_deg": 11.936387416340317
+    },
+    {
+     "robot_travel": 0.17612861389539974,
+     "robot_dxy": [
+      -0.17612861389539974,
+      -0.013492694566065517
+     ],
+     "heading_deg": -8.072156203168753,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.7772284412332244
+     },
+     "box_mass": 0.07141229178590609,
+     "box_yaw_deg": -23.68705440635103,
+     "box_travel": 0.07105336316707539,
+     "box_lateral": -0.021448365049125232,
+     "box_dxy": [
+      -0.07105336316707539,
+      0.021448365049125232
+     ],
+     "box_yaw_change_deg": 17.540669560754182
+    },
+    {
+     "robot_travel": 0.11858869553439867,
+     "robot_dxy": [
+      -0.11858869553439867,
+      -0.11180768357469185
+     ],
+     "heading_deg": 20.901172142257536,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.9763826692052398,
+      "feet": 0.8244010500714541
+     },
+     "box_mass": 0.2857640263930919,
+     "box_yaw_deg": 1.0194797532925461,
+     "box_travel": 0.012667940695173158,
+     "box_lateral": -0.003856484813687298,
+     "box_dxy": [
+      -0.012667940695173158,
+      0.003856484813687298
+     ],
+     "box_yaw_change_deg": -3.2833642484288195
+    },
+    {
+     "robot_travel": 0.12533809630366824,
+     "robot_dxy": [
+      -0.12533809630366824,
+      -0.10976218671628497
+     ],
+     "heading_deg": 21.098949133473074,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 2.042853984399531,
+      "feet": 0.7855600268762183
+     },
+     "box_mass": 0.25125073093634503,
+     "box_yaw_deg": 27.714671076284436,
+     "box_travel": 0.019135747060399555,
+     "box_lateral": -0.006568093702577715,
+     "box_dxy": [
+      -0.019135747060399555,
+      0.006568093702577715
+     ],
+     "box_yaw_change_deg": -30.32877682395889
+    },
+    {
+     "robot_travel": 0.1341651806412476,
+     "robot_dxy": [
+      -0.1341651806412476,
+      -0.09639172734217337
+     ],
+     "heading_deg": 20.671493747166732,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.7499613901550248,
+      "feet": 0.6248634045000968
+     },
+     "box_mass": 0.1845410878679858,
+     "box_yaw_deg": -14.105621716799549,
+     "box_travel": 0.028342142617247545,
+     "box_lateral": -0.011605816828402076,
+     "box_dxy": [
+      -0.028342142617247545,
+      0.011605816828402076
+     ],
+     "box_yaw_change_deg": 11.433847974100566
+    },
+    {
+     "robot_travel": 0.12281994421657884,
+     "robot_dxy": [
+      -0.12281994421657884,
+      -0.11258626849402477
+     ],
+     "heading_deg": 23.82002871140991,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.558296440958686,
+      "feet": 0.5551383091596833
+     },
+     "box_mass": 0.20627386665116676,
+     "box_yaw_deg": 35.7492420872618,
+     "box_travel": 0.02057977129826785,
+     "box_lateral": -0.009267974310017288,
+     "box_dxy": [
+      -0.02057977129826785,
+      0.009267974310017288
+     ],
+     "box_yaw_change_deg": -37.684752053322235
+    },
+    {
+     "robot_travel": 0.14648036906373396,
+     "robot_dxy": [
+      -0.14648036906373396,
+      -0.09603349808721108
+     ],
+     "heading_deg": 20.355387376637402,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.4545212727025747,
+      "feet": 0.41283386955160606
+     },
+     "box_mass": 0.13174306915139017,
+     "box_yaw_deg": 43.85491590041329,
+     "box_travel": 0.03953363034069504,
+     "box_lateral": -0.02007523037952513,
+     "box_dxy": [
+      -0.03953363034069504,
+      0.02007523037952513
+     ],
+     "box_yaw_change_deg": -47.31733588445606
+    },
+    {
+     "robot_travel": 0.1180790988672894,
+     "robot_dxy": [
+      -0.1180790988672894,
+      -0.12343666969035716
+     ],
+     "heading_deg": 24.610819381542548,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.741345623056504,
+      "feet": 0.6573781061482721
+     },
+     "box_mass": 0.26756230099252115,
+     "box_yaw_deg": -19.186451182120013,
+     "box_travel": 0.013305450574065014,
+     "box_lateral": -0.004718266997241923,
+     "box_dxy": [
+      -0.013305450574065014,
+      0.004718266997241923
+     ],
+     "box_yaw_change_deg": 17.398803437106746
+    }
+   ]
+  },
+  {
+   "policy": "velstand v8",
+   "scene": "scene_copush_b0_backward.xml",
+   "direction": "backward",
+   "vx": -0.2,
+   "summary": {
+    "n": 10,
+    "box_travel": 0.023964789847649697,
+    "box_travel_std": 0.01670239376193209,
+    "box_disp": 0.02561573132345233,
+    "robot_travel": 0.13844908111727708,
+    "fall_rate": 0.0,
+    "lost_rate": 0.0,
+    "heading_mean": 21.547310801949923,
+    "heading_abs": 21.547310801949923,
+    "contact_share": {
+     "trunk": 0.7339038623963096,
+     "feet": 0.26553142056498896,
+     "thighs": 0.0005647170387014119
+    }
+   },
+   "trials": [
+    {
+     "robot_travel": 0.123895824362761,
+     "robot_dxy": [
+      -0.123895824362761,
+      -0.14137001894138326
+     ],
+     "heading_deg": 23.672200962109088,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.4539536274120424,
+      "feet": 0.5693471395336183
+     },
+     "box_mass": 0.20924042183036357,
+     "box_yaw_deg": -20.719195761251672,
+     "box_travel": 0.016184069657994238,
+     "box_lateral": -0.005348874507167986,
+     "box_dxy": [
+      -0.016184069657994238,
+      0.005348874507167986
+     ],
+     "box_yaw_change_deg": 17.267067768754544
+    },
+    {
+     "robot_travel": 0.13177265354423778,
+     "robot_dxy": [
+      -0.13177265354423778,
+      -0.14681422959737048
+     ],
+     "heading_deg": 23.933986690024007,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.5451940576222118,
+      "feet": 0.4829167345479788
+     },
+     "box_mass": 0.17795540617506417,
+     "box_yaw_deg": 40.54173266933417,
+     "box_travel": 0.02118847210410954,
+     "box_lateral": -0.005963389775106822,
+     "box_dxy": [
+      -0.02118847210410954,
+      0.005963389775106822
+     ],
+     "box_yaw_change_deg": -45.167896700928594
+    },
+    {
+     "robot_travel": 0.1572887892355237,
+     "robot_dxy": [
+      -0.1572887892355237,
+      -0.14335922866033046
+     ],
+     "heading_deg": 19.776393517435768,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.2902647385355113,
+      "feet": 0.4161301797895209
+     },
+     "box_mass": 0.1154030335623291,
+     "box_yaw_deg": -18.135797092728907,
+     "box_travel": 0.03711083840851495,
+     "box_lateral": -0.01566655736798514,
+     "box_dxy": [
+      -0.03711083840851495,
+      0.01566655736798514
+     ],
+     "box_yaw_change_deg": 11.112667858278845
+    },
+    {
+     "robot_travel": 0.20356852002829748,
+     "robot_dxy": [
+      -0.20356852002829748,
+      -0.13280842127394374
+     ],
+     "heading_deg": 9.759144987044209,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.202720759369029,
+      "feet": 0.3544342101600285
+     },
+     "box_mass": 0.07141229178590609,
+     "box_yaw_deg": -23.68705440635103,
+     "box_travel": 0.06748776965697667,
+     "box_lateral": -0.030298643761756658,
+     "box_dxy": [
+      -0.06748776965697667,
+      0.030298643761756658
+     ],
+     "box_yaw_change_deg": 10.684129322304754
+    },
+    {
+     "robot_travel": 0.11450344778065977,
+     "robot_dxy": [
+      -0.11450344778065977,
+      -0.1445320670468099
+     ],
+     "heading_deg": 28.247494298119282,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.6136538871865236,
+      "feet": 0.6073359375393111
+     },
+     "box_mass": 0.2857640263930919,
+     "box_yaw_deg": 1.0194797532925461,
+     "box_travel": 0.00927343180449322,
+     "box_lateral": -0.0029173267576565187,
+     "box_dxy": [
+      -0.00927343180449322,
+      0.0029173267576565187
+     ],
+     "box_yaw_change_deg": -3.2136923698393733
+    },
+    {
+     "robot_travel": 0.1282980598653762,
+     "robot_dxy": [
+      -0.1282980598653762,
+      -0.16079064926167932
+     ],
+     "heading_deg": 19.04580564846341,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.6052094326248694,
+      "feet": 0.7273144193154834,
+      "thighs": 0.011295974073043129
+     },
+     "box_mass": 0.25125073093634503,
+     "box_yaw_deg": 27.714671076284436,
+     "box_travel": 0.012070413351472686,
+     "box_lateral": -0.0030002595017244106,
+     "box_dxy": [
+      -0.012070413351472686,
+      0.0030002595017244106
+     ],
+     "box_yaw_change_deg": -30.591176370358696
+    },
+    {
+     "robot_travel": 0.13267684083559927,
+     "robot_dxy": [
+      -0.13267684083559927,
+      -0.14254669671093087
+     ],
+     "heading_deg": 24.099198121373693,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.5250823854014652,
+      "feet": 0.5496617196683729
+     },
+     "box_mass": 0.1845410878679858,
+     "box_yaw_deg": -14.105621716799549,
+     "box_travel": 0.020702076845859757,
+     "box_lateral": -0.006610441843705103,
+     "box_dxy": [
+      -0.020702076845859757,
+      0.006610441843705103
+     ],
+     "box_yaw_change_deg": 9.470438708438706
+    },
+    {
+     "robot_travel": 0.12468168855922727,
+     "robot_dxy": [
+      -0.12468168855922727,
+      -0.13602676193314234
+     ],
+     "heading_deg": 24.138397402054196,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.4396778447775456,
+      "feet": 0.48059992702237025
+     },
+     "box_mass": 0.20627386665116676,
+     "box_yaw_deg": 35.7492420872618,
+     "box_travel": 0.014372801883441033,
+     "box_lateral": -0.004656408473578738,
+     "box_dxy": [
+      -0.014372801883441033,
+      0.004656408473578738
+     ],
+     "box_yaw_change_deg": -38.78293008297325
+    },
+    {
+     "robot_travel": 0.14571963954825898,
+     "robot_dxy": [
+      -0.14571963954825898,
+      -0.14840839232917769
+     ],
+     "heading_deg": 21.313806491893654,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.3452566698147024,
+      "feet": 0.43035684761612075
+     },
+     "box_mass": 0.13174306915139017,
+     "box_yaw_deg": 43.85491590041329,
+     "box_travel": 0.029907081077134717,
+     "box_lateral": -0.011561250813013029,
+     "box_dxy": [
+      -0.029907081077134717,
+      0.011561250813013029
+     ],
+     "box_yaw_change_deg": -49.42451175655053
+    },
+    {
+     "robot_travel": 0.12208534741282946,
+     "robot_dxy": [
+      -0.12208534741282946,
+      -0.1556845303502385
+     ],
+     "heading_deg": 21.486679900981915,
+     "fell": false,
+     "fall_t": null,
+     "lost": false,
+     "stopped_t": null,
+     "contact_impulse": {
+      "trunk": 1.6591864736374777,
+      "feet": 0.6932992775523871
+     },
+     "box_mass": 0.26756230099252115,
+     "box_yaw_deg": -19.186451182120013,
+     "box_travel": 0.011350943686500164,
+     "box_lateral": -0.0031430333278592774,
+     "box_dxy": [
+      -0.011350943686500164,
+      0.0031430333278592774
+     ],
+     "box_yaw_change_deg": 16.61716781964925
+    }
+   ]
+  }
+ ]
+}
