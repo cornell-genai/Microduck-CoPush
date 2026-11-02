@@ -12,7 +12,7 @@ Each duck is two endpoints:
     frame; upright is [0, 0, -1]).
 
 The box (when the scene has one) is read with `{"op":"objects"}`, which only exists when the body
-server was launched with `copush/_bodyext` on PYTHONPATH (`scripts/sim_up.sh` does that). Without
+server was launched with `copush/_bodyext` on PYTHONPATH (`scripts/sim.sh up` does that). Without
 it, `state["box"]` is None and `SimClient.box_supported` is False.
 
 Ground truth comes from the simulator, not from robotd's odometry — the point of a twin is to check
@@ -40,7 +40,7 @@ JOINTS = 15
 
 START_HINT = (
     "Start two ducks first, e.g.\n"
-    "    scripts/sim_up.sh            # headless, 2 ducks\n"
+    "    scripts/sim.sh up            # headless, 2 ducks\n"
     "or  DUCK_SIM_DUCKS=2 DUCK_SIM_VIEWER=0 $MICRODUCK/scripts/duck-sim"
 )
 

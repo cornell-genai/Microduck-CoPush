@@ -5,7 +5,7 @@ the duck on each port: its joints, its trunk, its IMU. A free-joint box in the s
 port and no op, so its pose cannot be read from outside the process. We must not edit tracked
 upstream files, and `scripts/duck-sim` hard-codes `python -m mjlab_microduck.sim.body_server`.
 
-So this file is put on PYTHONPATH (only by `scripts/sim_up.sh --box ...`, never globally). Python
+So this file is put on PYTHONPATH (only by `scripts/sim.sh up`, never globally). Python
 imports `sitecustomize` at start-up; this one does nothing unless the process is the body server.
 In the body server it wraps `socketserver.BaseServer.__init__` so that the request-handler class
 gets one extra op. Every existing op is passed through untouched.
