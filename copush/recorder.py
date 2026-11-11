@@ -6,12 +6,16 @@ Columns: t, duck, x, y, yaw, trunk_z, gravity_z, cmd_vx, cmd_vy, cmd_vyaw, phase
 `t` is simulator time in seconds since the episode started. `phase` is a free-form label set by
 the controller (empty if it has none). Box columns repeat on both ducks' rows of a tick, so either
 row can be read on its own.
+
+`extra_columns` appends more columns (scripts/copush_sim.py: policy, contact, reward, box-to-target
+...). `record(..., extra=...)` fills them: a value under a column name goes on both rows; a value
+under a duck name ({"duck_a": {col: v}}) only on that duck's row. Missing ones stay empty.
 """
 from __future__ import annotations
 
 import csv
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence
 
 from copush.state import DUCKS
 
@@ -21,17 +25,20 @@ BOX_COLUMNS = ["box_x", "box_y", "box_z", "box_yaw"]
 
 
 class CsvRecorder:
-    def __init__(self, path: Path, with_box: bool):
+    def __init__(self, path: Path, with_box: bool, extra_columns: Sequence[str] = ()):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.with_box = with_box
-        self.columns = BASE_COLUMNS + (BOX_COLUMNS if with_box else [])
+        self.extra_columns = list(extra_columns)
+        self.columns = BASE_COLUMNS + (BOX_COLUMNS if with_box else []) + self.extra_columns
         self._file = self.path.open("w", newline="")
         self._writer = csv.DictWriter(self._file, fieldnames=self.columns)
         self._writer.writeheader()
 
-    def record(self, t: float, state: dict, actions: dict, phase: str = "") -> None:
+    def record(self, t: float, state: dict, actions: dict, phase: str = "",
+               extra: Optional[dict] = None) -> None:
         box: Optional[dict] = state.get("box")
+        extra = extra or {}
         for duck in DUCKS:
             d = state[duck]
             cmd = actions[duck]
@@ -58,6 +65,9 @@ class CsvRecorder:
                         "box_z": f"{box['z']:.5f}",
                         "box_yaw": f"{box['yaw']:.5f}",
                     })
+            for col in self.extra_columns:
+                v = extra.get(duck, {}).get(col, extra.get(col, ""))
+                row[col] = f"{v:.5f}" if isinstance(v, float) else v
             self._writer.writerow(row)
 
     def close(self) -> None:
