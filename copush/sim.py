@@ -133,7 +133,11 @@ class CoPushSim:
         self.d = d = mujoco.MjData(m)
 
         from bam.mujoco import MujocoController
-        sessions = load_sessions({n: policy_path(cfg, n) for n in cfg["policies"]})
+        paths = {n: policy_path(cfg, n) for n in cfg["policies"]}
+        missing = [p for p in paths.values() if not os.path.exists(p)]
+        if missing:
+            raise FileNotFoundError("policy file(s) missing, run scripts/fetch_policies.sh:\n  " + "\n  ".join(missing))
+        sessions = load_sessions(paths)
         self.bam: Dict[str, object] = {}
         self.pol: Dict[str, DuckPolicy] = {}
         self._free: Dict[str, Tuple[int, int]] = {}
@@ -238,7 +242,7 @@ class CoPushSim:
                         continue
                     mujoco.mj_contactForce(m, d, int(ci), self._f6)
                     duck, grp = owner
-                    step_imp[duck][grp] = step_imp[duck].get(grp, 0.0) + abs(self._f6[0]) * SIM_DT
+                    step_imp[duck][grp] = step_imp[duck].get(grp, 0.0) + float(abs(self._f6[0])) * SIM_DT
         self.t = round(self.t + CONTROL_DT, 10)
         for duck in DUCKS:
             self.contact_step[duck] = step_imp[duck]
