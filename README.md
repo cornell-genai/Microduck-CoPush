@@ -36,6 +36,17 @@ local changes; `COPUSH_NO_PIN=1` to skip pinning), runs `uv sync` in microduck_r
 the daemons, and installs our scene into microduck_rl as an untracked `scene_copush_box.xml`.
 Policies are fetched by duck-sim on the first launch.
 
+## Two-duck sim (B0 harness path, faster than real time)
+
+Two backlash ducks + box + target on the B0 harness (BAM actuators, ONNX policies), without
+duck-sim/robotd. Quick guide: [docs/SIM_GUIDE.md](docs/SIM_GUIDE.md), one page:
+[docs/CHEATSHEET.md](docs/CHEATSHEET.md).
+
+```sh
+scripts/copush.sh --viewer                                        # drive both ducks from the terminal
+scripts/copush.sh --headless --duration 15 --script push_forward  # -> runs/<timestamp>/
+```
+
 ## Commands
 
 All simulator commands go through `scripts/sim.sh`, a thin wrapper over `microduck/scripts/duck-sim`
