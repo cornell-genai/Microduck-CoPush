@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import copy
 import os
+import re
 from typing import Optional
 
 import yaml
@@ -98,6 +99,30 @@ def add_config_args(parser: argparse.ArgumentParser) -> None:
     g.add_argument("--target-size", type=_pair, metavar="L,W", help="target length,width (m)")
     g.add_argument("--policy-a", choices=POLICY_NAMES, help="duck A's policy at reset")
     g.add_argument("--policy-b", choices=POLICY_NAMES, help="duck B's policy at reset")
+
+
+_VALUE_FLAGS = ("--duck-a", "--duck-b", "--box", "--target", "--target-size")
+
+
+def join_negative_values(argv):
+    """['--duck-b', '-0.05,-0.1,15'] -> ['--duck-b=-0.05,-0.1,15'].
+
+    argparse takes a value starting with '-' for an option unless it is a plain number, so
+    `--duck-b -0.05,-0.1` would fail without this. Call it on argv before parse_args.
+    """
+    out, it = [], iter(list(argv))
+    for a in it:
+        if a in _VALUE_FLAGS:
+            nxt = next(it, None)
+            if nxt is not None and re.match(r"-\.?\d", nxt):
+                out.append(f"{a}={nxt}")
+                continue
+            out.append(a)
+            if nxt is not None:
+                out.append(nxt)
+        else:
+            out.append(a)
+    return out
 
 
 def overrides_from_args(args: argparse.Namespace) -> dict:

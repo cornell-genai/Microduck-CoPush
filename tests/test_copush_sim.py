@@ -36,22 +36,23 @@ def idle_sim():
 
 def test_yaml_and_flags_take_effect(tmp_path):
     import argparse
-    from copush.config import add_config_args, config_from_args
+    from copush.config import add_config_args, config_from_args, join_negative_values
 
     cfg_file = tmp_path / "c.yaml"
     cfg_file.write_text(yaml.safe_dump({"duck_a": {"x": 0.05, "y": 0.25, "yaw": 30},
                                         "box": {"mass": 0.2}, "target": {"x": 1.5}}))
     p = argparse.ArgumentParser()
     add_config_args(p)
-    args = p.parse_args(["--config", str(cfg_file), "--duck-b", "0,-0.3,-20", "--box", "0.5,0.1,45",
-                         "--target-size", "0.5,0.3", "--policy-b", "shoepush"])
+    args = p.parse_args(join_negative_values(
+        ["--config", str(cfg_file), "--duck-b", "-0.02,-0.3,-20", "--box", "0.5,0.1,45",
+         "--target-size", "0.5,0.3", "--policy-b", "shoepush"]))
     cfg = config_from_args(args)
     st = CoPushSim(cfg).get_state()
 
     a, b, box = st["duck_a"], st["duck_b"], st["box"]
     assert a["position"] == pytest.approx((0.05, 0.25), abs=1e-6)            # from YAML
     assert math.degrees(a["yaw"]) == pytest.approx(30, abs=1e-6)
-    assert b["position"] == pytest.approx((0.0, -0.3), abs=1e-6)             # from flags
+    assert b["position"] == pytest.approx((-0.02, -0.3), abs=1e-6)           # from flags
     assert math.degrees(b["yaw"]) == pytest.approx(-20, abs=1e-6)
     assert box["position"] == pytest.approx((0.5, 0.1), abs=1e-6)
     assert math.degrees(box["yaw"]) == pytest.approx(45, abs=1e-6)

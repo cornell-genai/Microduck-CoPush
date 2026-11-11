@@ -32,7 +32,7 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from copush.config import add_config_args, config_from_args  # noqa: E402
+from copush.config import add_config_args, config_from_args, join_negative_values  # noqa: E402
 from copush.controllers import HeadingHoldPush  # noqa: E402
 from copush.rewards import REWARDS, RewardMonitor  # noqa: E402
 from copush.rundir import RunDir  # noqa: E402
@@ -187,7 +187,7 @@ def main(argv=None) -> int:
     p.add_argument("--reward", choices=sorted(REWARDS), default="progress")
     p.add_argument("--quiet", action="store_true", help="no status lines (headless)")
     add_config_args(p)
-    args = p.parse_args(argv)
+    args = p.parse_args(join_negative_values(sys.argv[1:] if argv is None else argv))
     duration = args.duration if args.duration is not None else (None if args.viewer else 15.0)
 
     cfg = config_from_args(args)
