@@ -1,0 +1,42 @@
+# Two-duck CoPush sim (copush/sim.py, scripts/copush.sh).
+# World frame: x forward (duck A's spawn heading at yaw 0), y left, metres; yaw in DEGREES.
+# Flags override anything here, e.g.
+#   scripts/copush.sh --duck-a 0,0.1,0 --box 0.4,0,90 --target 1.2,0,90 --box-mass 0.2
+
+duck_a:
+  x: 0.0
+  y: 0.10
+  yaw: 0
+  policy: velstand          # velstand | shoepush (the policy at reset)
+duck_b:
+  x: 0.0
+  y: -0.10
+  yaw: 0
+  policy: velstand
+
+box:                        # 28 x 10 x 9 cm, free joint (the Shoe Push box)
+  x: 0.35
+  y: 0.0
+  yaw: 90                   # 90 = long 28 cm face toward ducks that face +x
+  mass: 0.15                # kg
+
+target:                     # flat, visual only (no collision)
+  x: 1.20
+  y: 0.0
+  yaw: 90
+  size: [0.40, 0.20]        # length x width (m) along the target's own x / y, like the box's 28 x 10
+
+policies:                   # paths relative to the repo root (scripts/fetch_policies.sh)
+  velstand: data/policies/velstand_v8/velstand.onnx
+  shoepush: data/policies/robert/shoe_push/forward/policy.onnx
+
+keyboard:                   # terminal keys in --viewer mode
+  vx_step: 0.05             # m/s per W/S (I/K) press
+  vyaw_step: 0.3            # rad/s per A/D (J/L) press
+  vx_max: 0.3
+  vx_min: -0.3
+  vyaw_max: 1.5
+
+actuator:                   # BAM XL330 model, as the B0 harness
+  vin: 7.4                  # battery voltage (V)
+  vin_drop_gain: 0.1        # load-dependent sag
