@@ -10,3 +10,5 @@ data/plots/
 data/policies/
 *.pt
 runs/
+notes/
+!docs/media/*.mp4
