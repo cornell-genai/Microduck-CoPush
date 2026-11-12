@@ -230,3 +230,72 @@ target, and it's logged as its own term (`contact`).
     "improved" or "new_behavior" video was triggered, which fits a flat curve.
   - TensorBoard logs: `runs/ppo-A-close-20261112-012145/tb/`.
 - Run B (`steer`, 300k): not run, because the steer gate failed.
+
+## v1.1 / v1.2, overnight round: 7 PPO runs (2026-11-12)
+
+**What:** A queue of seven 400k-step PPO runs (`configs/overnight.yaml`, results in
+`runs/overnight-20261112/`). Reference: reward v1.1, seed 1, layout `overnight` (in-contact start,
+target 0.60 m ahead and 0.30 m to the right, chosen from the reachability sweep), trained on the
+fixed start. Each other run changes one thing: stand-still action, contact penalty (v1.2),
+cooperation bonus (`gated_balanced`, λ 5), a 4-level curriculum, seed 2, seed 3.
+
+**Why:** To see whether any of the four changes helps once the task needs steering, measured
+against the spread of three seeds of the reference.
+
+**Results:** All 7 finished (401,408 steps, 26–36 min each); no crashes, early stops or time caps.
+"Fixed" is the final deterministic episode with the fixed start; "randomized" is the final policy on
+5 episodes with the box randomized (eval seeds 10000–10004). Task-only = return minus the `coop` and
+`contact` terms, so runs with different rewards can be compared.
+
+| run | fixed, task-only | randomized success | randomized task-only mean | push share A / B | every eval a success from |
+|---|---|---|---|---|---|
+| 01 reference (seed 1) | +15.59 | 4/5 | +10.50 | 51 / 49% | 210k |
+| 06 seed 2 | +15.09 | 3/5 | +5.97 | 53 / 47% | 290k |
+| 07 seed 3 | +15.23 | 4/5 | +10.17 | 49 / 51% | 310k |
+| 02 stand-still | +15.26 | 4/5 | +11.60 | **100 / 0%** | 240k |
+| 03 contact penalty | +15.23 (raw +15.23) | 4/5 | +9.61 | 51 / 49% | 180k |
+| 04 coop bonus | +15.58 (raw +18.02) | 4/5 | +10.57 (raw +12.79) | 52 / 48% | 120k |
+| 05 curriculum | +15.51 | 4/5 | +10.20 | 50 / 50% | 100k |
+| `pivot_push` (script) | +12.83 | 4/5 | +9.23 | 97 / 3% (fixed start) | – |
+
+- **Seed range (the "luck" range):** fixed +15.09 to +15.59, randomized success 3/5 to 4/5,
+  randomized mean +5.97 to +10.50, all-success from 210k to 310k steps.
+- **No change is outside the seed range on the final numbers.** All four changes land at
+  +15.2–15.6 fixed and 4/5 randomized. The coop bonus's +18.02 is +2.44 of bonus on top of the same
+  task return.
+- **Coop bonus and curriculum stabilized sooner** (every eval a success from 120k and 100k, against
+  210–310k for the seeds). This is one seed each, so it's a hint, not a result. The curriculum
+  reached its last level at 40k (levels 0–2 passed on the first try), so most of its run was
+  ordinary training on the final layout.
+- **Stand-still turned the task into a solo push.** Duck B never touched the box in the final
+  policy (contact time 0, `contact_share` in 5/5 randomized episodes and in 22 of the evals from 200k
+  on). The return is unchanged, because nothing in v1.1 pays for two ducks.
+- **The contact penalty did nothing visible.** Its term was −0.02 on average, and the ducks stay on
+  the box anyway.
+- **The coop bonus pays even when the policy fails.** It paid +1.0 to +2.0 on timeout episodes
+  (+1.60 for the untrained policy at 10k), so it rewards balanced contact, not progress. The final
+  policy didn't exploit it, but it's a possible exploit.
+- **PPO vs the script:** PPO beats `pivot_push` on the fixed start (+15.1–15.6 vs +12.83; 32–40 steps
+  vs 54) and splits the push about 50/50, where the script is a one-duck push.
+  With the box randomized they tie: 4/5 each (seed 2 3/5), and the means are within noise.
+- **Every run fails at least 1 of the 5 randomized episodes, by timing out.** The policies were
+  trained on the fixed start only. With 5 episodes, one episode is 20 points of success rate, so
+  this protocol can't separate the changes.
+- No falls and no lost boxes in any final randomized eval. The monitor flags in SUMMARY.md are
+  mostly from early training. After 200k only `contact_share` comes up often (stand-still 25,
+  contact penalty 12, 0–3 for the others).
+
+**Videos** (in `runs/overnight-20261112/runs/`):
+- [02 stand-still final](../runs/overnight-20261112/runs/02_stand_still/videos/step_401408_final.mp4):
+  duck A pushes alone, duck B never touches the box.
+- [06 seed 2 final](../runs/overnight-20261112/runs/06_seed2/videos/step_401408_final.mp4):
+  duck B barely moves (mean vx command 0.015 m/s) but has 55% of the contact, so it's a pivot point.
+- [04 coop bonus final](../runs/overnight-20261112/runs/04_coop_bonus/videos/step_401408_final.mp4):
+  the cleanest two-duck push (32 steps, 51 / 49%, 0.4° final yaw).
+- [pivot_push baseline](../runs/overnight-20261112/baseline_videos/videos/step_0_baseline_overnight_pivot_push.mp4)
+  for comparison · [SUMMARY.md](../runs/overnight-20261112/SUMMARY.md) ·
+  [DECISIONS.md](../runs/overnight-20261112/DECISIONS.md)
+
+**Next:** Train the reference with the box randomized (`env.randomize: true`) and evaluate on 20 or
+more randomized episodes. The fixed-start eval is at its ceiling for every run, and the randomized
+eval is where all of them fail.

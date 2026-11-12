@@ -242,3 +242,40 @@ def test_steer_layout_puts_the_target_beyond_a_straight_push():
     _, info = e.reset(seed=0)
     t = info["target"]
     assert e.start_mode == "in_contact" and abs(t["y"] - e.cfg["box"]["y"]) > t["size"][0] / 2
+
+
+def test_stand_still_action_is_off_by_default_and_holds_on_velstand_when_on():
+    stand, go = baseline("stand", None), baseline("push_forward", None)
+    off = CoPushEnv()
+    off.reset(seed=0)
+    off.step(stand(None))
+    assert off.stand_still["enabled"] is False
+    assert off.state["duck_a"]["policy"] == "shoepush" and not any(off.hold.values())
+    on = CoPushEnv(cfg_with(env={"stand_still": {"enabled": True, "vx_threshold": 0.02}}))
+    on.reset(seed=0)
+    on.step(stand(None))
+    assert all(on.hold.values())
+    assert on.state["duck_a"]["policy"] == "velstand" and on.state["duck_b"]["policy"] == "velstand"
+    on.step(cmd_to_action(0.2, 0.0, 0.0, 0.0))                 # only duck A walks again
+    assert on.hold == {"duck_a": False, "duck_b": True}
+    for _ in range(5):
+        on.step(go(None))
+    assert not any(on.hold.values()) and on.state["duck_a"]["policy"] == "shoepush"
+
+
+def test_pivot_push_pivots_with_one_duck_held_then_succeeds():
+    from copush.env import PivotThenPush
+    c = load_config()
+    c["layouts"]["close"]["target"] = {"x": 0.75, "y": -0.15, "yaw": 90}       # 0.15 m to the right
+    e = CoPushEnv(c, split="eval")
+    act = baseline("pivot_push", e)
+    assert isinstance(act, PivotThenPush)
+    obs, _ = e.reset(seed=10000)
+    obs, *_ = e.step(act(obs))
+    assert act.mode == "pivot" and e.hold == {"duck_a": False, "duck_b": True}  # right duck stops: box turns right
+    assert e.state["duck_b"]["policy"] == "velstand"
+    while True:
+        obs, _, term, trunc, info = e.step(act(obs))
+        if term or trunc:
+            break
+    assert info["reason"] == "success" and act.phase == "push"

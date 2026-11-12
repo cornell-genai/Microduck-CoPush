@@ -18,8 +18,13 @@ The project plan is in [docs/COPUSH_PLAN.md](docs/COPUSH_PLAN.md).
 - **Close target (0.40 m straight ahead):** solved. Every controller that pushes forward
   succeeds. PPO run A reached +13.14 return with 100% success, slightly better than the scripts,
   because it learned to push faster.
-- **Target 0.30 m to the side (`steer` layout):** not reachable yet. It needs a 37° turn, and Shoe
-  Push only turns about 5° every 2 s while pushing.
+- **Target 0.30 m to the side, 0.60 m ahead (`overnight` layout):** early RL success. PPO gets the
+  box in 60 to 80% of the time across 3 seeds when the box starts in a random spot, which ties the
+  `pivot_push` script (preliminary, 5 episodes). From the fixed start it trained on, it beats the
+  script: 32 vs 54 steps, with both ducks pushing. The closer `steer` layout (0.40 m ahead) is still
+  out of reach.
+- Timeline with clips, including the buggy runs: [docs/TIMELINE.md](docs/TIMELINE.md). 5-minute
+  demo: [docs/DEMO.md](docs/DEMO.md).
 - What we changed in the reward and why: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
 
 ## See it
@@ -73,6 +78,7 @@ short videos with an `index.md`, and for PPO the TensorBoard logs and `model.zip
 |---|---|
 | [docs/SIM_GUIDE.md](docs/SIM_GUIDE.md) · [docs/CHEATSHEET.md](docs/CHEATSHEET.md) | running the two-duck sim |
 | [docs/REWARD_LOG.md](docs/REWARD_LOG.md) | each reward version: what changed, why, results, videos |
+| [docs/TIMELINE.md](docs/TIMELINE.md) · [docs/DEMO.md](docs/DEMO.md) | timeline with clips · 5-minute demo outline |
 | [docs/results/b0_single_duck_push.md](docs/results/b0_single_duck_push.md) | one duck + Shoe Push baseline (steering gain, drift) |
 | [docs/WEEK1_STATUS.md](docs/WEEK1_STATUS.md) | Week 1: two ducks in duck-sim / robotd |
 | [docs/COPUSH_PLAN.md](docs/COPUSH_PLAN.md) | the semester plan |

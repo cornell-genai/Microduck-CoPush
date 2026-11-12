@@ -37,7 +37,9 @@ once a duck has been down fall_min_down_s without a break (v1: immediately).
 
 set_hold(duck, True) keeps a duck on velstand even while it touches the box (scripted baselines use
 it to stand still: Shoe Push keeps nudging the box at zero command); the action space has no such
-switch. Every policy switch opens a SWITCH_WINDOW_S window in `switch_log`: lowest trunk z, worst
+switch unless env.stand_still.enabled (OFF by default): then a duck whose commanded forward speed
+is below env.stand_still.vx_threshold is held on velstand at zero speed (no turning) for that
+step, and released as soon as its command is above it again. Every policy switch opens a SWITCH_WINDOW_S window in `switch_log`: lowest trunk z, worst
 tilt, whether a fall was counted, how far the box moved.
 
 Logging (log_dir set): env_steps.csv, one row per env step with every reward term, per-duck
@@ -125,6 +127,7 @@ class CoPushEnv(gym.Env):
         self.state = None
         self.frame_hook = None          # callable(state, return_so_far) after every control step (videos)
         self.hold = {d: False for d in DUCKS}
+        self.stand_still = self.ecfg["stand_still"]
         self.switch_log = []            # one dict per policy switch, across episodes
         self._open_switches = []
         self._last_pol = {}
@@ -256,6 +259,13 @@ class CoPushEnv(gym.Env):
     def step(self, action):
         st0 = self.state
         cmds = action_to_cmd(action)
+        if self.stand_still["enabled"]:                  # commanded vx below the threshold = stand on velstand
+            for d, L in (("duck_a", "A"), ("duck_b", "B")):
+                still = cmds[L][0] < self.stand_still["vx_threshold"]
+                if still:
+                    cmds[L] = (0.0, 0.0, 0.0)
+                if still != self.hold[d]:
+                    self.set_hold(d, still)
         push = {d: 0.0 for d in DUCKS}
         force = {d: 0.0 for d in DUCKS}
         ctime = {d: 0.0 for d in DUCKS}
@@ -489,15 +499,102 @@ class PushSteer:
         return cmd_to_action(*cmd)
 
 
+class PivotThenPush(PushSteer):
+    """Scripted baseline: pivot the box toward the target with one duck, then both push (PushSteer).
+
+    pivot    (the box's push direction is more than ALIGN_TOL off the box->target bearing) the
+             duck on the inside of the turn is held on velstand at zero speed (env.set_hold) and
+             the other pushes alone at pivot_vx: the box swings around its stopped end and the
+             pushing duck turns with it.
+    regroup  the pivot leaves the stopped duck behind. It is released and walks back to the box on
+             velstand, steering to the box's push direction, while the pusher waits at vx 0 (until
+             it touches the box, at most REGROUP_MAX_S).
+    push     PushSteer along the line from the box's position now to the target: heading hold,
+             square the box up inside the target, stand still when inside and square.
+
+    Each phase runs once per episode. With the target straight ahead there is no pivot, so this
+    is push_steer there. The box arrives turned by about the pivot angle; PushSteer's squaring
+    has to take that out, which limits how far sideways this reaches (see the reachability sweep,
+    scripts/rl/reachability.py).
+    """
+
+    ALIGN_TOL = math.radians(8.0)   # stopping the pivot earlier (a lead of 4-16 deg) scored worse
+    PIVOT_MAX_S, REGROUP_MAX_S = 8.0, 4.0
+    WALK_VX = 0.3              # velstand needs ~0.25 m/s commanded to start walking
+
+    def __init__(self, env: CoPushEnv, vx: float = 0.2, pivot_vx: float = 0.2):
+        super().__init__(env, vx=vx)
+        self.pivot_vx = pivot_vx
+        self.phase = "pivot"
+
+    def _reset(self):
+        super()._reset()
+        self.phase, self.t0 = "pivot", self.env.state["t"]
+        self.pusher = self.stopper = None
+
+    def _geom(self, st):
+        """bearing box->target, the box's push direction n (the long-face normal nearest the
+        bearing), err = bearing - n (> 0: the box must turn counter-clockwise)."""
+        bx, by = st["box"]["position"]
+        gx, gy = st["goal"]["position"]
+        bearing = math.atan2(gy - by, gx - bx)
+        err = wrap_angle(bearing - (st["box"]["yaw"] + math.pi / 2))
+        err = (err + math.pi / 2) % math.pi - math.pi / 2
+        return bearing, bearing - err, err
+
+    def _start_push(self, st, bearing):
+        from copush.controllers import HeadingHoldPush
+        self.phase, self.line = "push", bearing
+        origin = tuple(st["box"]["position"])
+        self.ctl = {d: HeadingHoldPush(vx=self.vx, duck=d, line_yaw=bearing, line_origin=origin) for d in DUCKS}
+
+    def __call__(self, obs):
+        env = self.env
+        if self.episode != env.episode:
+            self._reset()
+        st = env.state
+        t = st["t"] - self.t0
+        bearing, n, err = self._geom(st)
+        if self.phase == "pivot":
+            if st["inside"] or abs(err) <= self.ALIGN_TOL or t >= self.PIVOT_MAX_S:
+                self.phase, self.t0, t = ("regroup" if self.pusher else "push"), st["t"], 0.0
+            else:
+                self.mode = "pivot"
+                if self.pusher is None:
+                    bx, by = st["box"]["position"]
+                    c, s_ = math.cos(n), math.sin(n)
+                    left = max(DUCKS, key=lambda d: -s_ * (st[d]["position"][0] - bx) + c * (st[d]["position"][1] - by))
+                    right = "duck_b" if left == "duck_a" else "duck_a"
+                    self.pusher, self.stopper = (right, left) if err > 0 else (left, right)   # right end forward = turn left
+                env.set_hold(self.stopper, True)
+                cmd = {self.pusher: (self.pivot_vx, 0.0), self.stopper: (0.0, 0.0)}
+                return cmd_to_action(*cmd["duck_a"], *cmd["duck_b"])
+        if self.phase == "regroup":
+            d = self.stopper
+            if env.hold[d]:
+                env.set_hold(d, False)
+            if st["contact"][d]["in_contact"] or st["inside"] or t >= self.REGROUP_MAX_S:
+                self._start_push(st, bearing)
+            else:
+                self.mode = "regroup"
+                h = wrap_angle(n - st[d]["yaw"])
+                cmd = {self.pusher: (0.0, 0.0), d: (self.WALK_VX, max(-VYAW_MAX, min(VYAW_MAX, 3.0 * h)))}
+                return cmd_to_action(*cmd["duck_a"], *cmd["duck_b"])
+        return super().__call__(obs)
+
+
 def baseline(name: str, env: CoPushEnv, seed: int = 0):
     """random: uniform actions (own seeded RNG) · zero: action 0 = vx 0.15, no turning ·
     stand: vx 0 · push_forward: vx 0.2, no turning (scripts/copush_sim.py --script push_forward) ·
-    push_steer: PushSteer (heading hold toward the target, stop inside)."""
+    push_steer: PushSteer (heading hold toward the target, stop inside) ·
+    pivot_push: PivotThenPush (one duck stops so the box pivots toward the target, then PushSteer)."""
     if name == "random":
         rng = np.random.default_rng(seed)
         return lambda obs: rng.uniform(-1.0, 1.0, size=4).astype(np.float32)
     if name == "push_steer":
         return PushSteer(env)
+    if name == "pivot_push":
+        return PivotThenPush(env)
     fixed = {"zero": np.zeros(4, dtype=np.float32),
              "stand": cmd_to_action(0.0, 0.0, 0.0, 0.0),
              "push_forward": cmd_to_action(0.2, 0.0, 0.2, 0.0)}
