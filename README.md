@@ -55,6 +55,10 @@ scripts/rl.sh -m tensorboard.main --logdir runs                   # training cur
 scripts/rl.sh -m pytest                                           # all tests
 ```
 
+Run the tests with `scripts/rl.sh -m pytest`. A plain `uv run pytest` skips the simulation tests,
+because that environment has no MuJoCo, so it can look like everything passed when the sim tests
+never ran.
+
 Every run writes `runs/<run_id>/`, which is git-ignored. It holds the config, CSV logs, events,
 short videos with an `index.md`, and for PPO the TensorBoard logs and `model.zip`. Settings live in
 [configs/copush.yaml](configs/copush.yaml):
@@ -170,11 +174,14 @@ COPUSH_PLACE=";0,0.20,0" scripts/sim.sh up   # spawn duck B at (0, 0.20) instead
 Do not use `scripts/sim.sh drive` for duck B: upstream `drive` always commands and reads duck A
 (see docs/WEEK1_STATUS.md). Use `copush.sim_client` instead.
 
-**Tests (no simulator needed):**
+**Tests:**
 
 ```sh
-uv run pytest
+scripts/rl.sh -m pytest
 ```
+
+A plain `uv run pytest` skips the simulation tests, because that environment has no MuJoCo, so it
+can look like everything passed when the sim tests never ran.
 
 ## The shared interface
 
