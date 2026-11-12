@@ -31,9 +31,30 @@ def run_episodes(env: CoPushEnv, make_act: Callable[[int], Callable], n: int, se
     return out
 
 
-def episodes(cfg: dict, name: str, n: int, seed0: int = 0, split: str = "train") -> List[dict]:
+def episodes(cfg: dict, name: str, n: int, seed0: int = 0, split: str = "train", switch_log=None) -> List[dict]:
+    """switch_log: optional list; the env's policy-switch windows are appended to it."""
     env = CoPushEnv(cfg, split=split)
-    return run_episodes(env, lambda s: baseline(name, env, seed=s), n, seed0)
+    out = run_episodes(env, lambda s: baseline(name, env, seed=s), n, seed0)
+    if switch_log is not None:
+        env.reset(seed=seed0)                        # closes windows still open at the last step
+        switch_log += [dict(w, controller=name) for w in env.switch_log]
+    return out
+
+
+def switch_summary(log: List[dict]) -> dict:
+    """Counts and worst cases over CoPushEnv.switch_log windows."""
+    by = {}
+    for w in log:
+        k = f"{w['from']}->{w['to']}"
+        b = by.setdefault(k, {"n": 0, "stumbles": 0, "falls": 0, "worst_tilt": 0.0, "lowest_z": 1.0,
+                              "box_moved_max": 0.0})
+        b["n"] += 1
+        b["stumbles"] += int(w["stumble"])
+        b["falls"] += int(w["fell"])
+        b["worst_tilt"] = max(b["worst_tilt"], w["max_tilt"])
+        b["lowest_z"] = min(b["lowest_z"], w["min_z"])
+        b["box_moved_max"] = max(b["box_moved_max"], w["box_moved"])
+    return by
 
 
 def summarize(stats: List[dict]) -> dict:

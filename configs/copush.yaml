@@ -67,6 +67,9 @@ layouts:                    # env.layout picks one
   close:                    # starts pushing; target 0.40 m straight ahead of the box
     start_mode: in_contact  # in_contact | approach
     target: {x: 0.75, y: 0.0, yaw: 90}
+  steer:                    # like close, but the target is 0.30 m to the right (against Shoe Push's
+    start_mode: in_contact  #   left drift): beyond the target's own +-0.20 m, so a straight push misses
+    target: {x: 0.75, y: -0.30, yaw: 90}
   hard:                     # the original scene: walk up from 0.35 m, target 0.85 m away
     start_mode: approach
     target: {x: 1.20, y: 0.0, yaw: 90}

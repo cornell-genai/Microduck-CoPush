@@ -41,6 +41,7 @@ DEFAULTS = {
             "curriculum": {"enabled": False, "distances": [0.40, 0.60, 0.85], "offsets": [0.0, 0.10, 0.20],
                            "success_threshold": 0.8, "eval_episodes": 5}},
     "layouts": {"close": {"start_mode": "in_contact", "target": {"x": 0.75, "y": 0.0, "yaw": 90}},
+                "steer": {"start_mode": "in_contact", "target": {"x": 0.75, "y": -0.30, "yaw": 90}},
                 "hard": {"start_mode": "approach", "target": {"x": 1.20, "y": 0.0, "yaw": 90}}},
     "reward": {"version": "v1.1", "w_pos": 10.0, "w_yaw": 3.0, "success_bonus": 10.0, "success_yaw_deg": 15.0,
                "success_hold_s": 1.0, "time_penalty": 0.01, "fall_mode": "terminate",
