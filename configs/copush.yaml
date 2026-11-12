@@ -40,3 +40,88 @@ keyboard:                   # terminal keys in --viewer mode
 actuator:                   # BAM XL330 model, as the B0 harness
   vin: 7.4                  # battery voltage (V)
   vin_drop_gain: 0.1        # load-dependent sag
+
+env:                        # RL environment (copush/env.py)
+  layout: close             # a name from `layouts` below: start mode + target for RL
+  settle_s: 0.3             # in_contact start: stand still on velstand this long, then Shoe Push
+  contact_setback: 0.095    # in_contact start: trunk centre this far behind the box centre
+  contact_spacing: 0.20     # in_contact start: distance between the two ducks
+  step_s: 0.2               # one env step = 10 control steps
+  max_steps: 100            # 20 s episodes
+  lose_contact_s: 0.5       # Shoe Push -> velstand after this long without box contact
+  randomize: false          # true: sample the box per episode from `random` (train seeds only)
+  random:
+    box_x: [0.30, 0.36]     # keeps the box < 0.40 m from a duck at the start (else "lost")
+    box_y: [-0.04, 0.04]
+    box_yaw: [75, 105]      # deg
+    box_mass: [0.10, 0.25]  # kg
+  heldout_seeds: [10000, 10099]   # inclusive; evaluation only, refused in split="train"
+  curriculum:               # OFF: target moves further / sideways as eval success grows
+    enabled: false
+    distances: [0.40, 0.60, 0.85]   # box start -> target along the push line, per level (m)
+    offsets: [0.0, 0.10, 0.20]      # sideways target offset per level (m)
+    success_threshold: 0.8          # eval success rate that unlocks the next level
+    eval_episodes: 5
+
+layouts:                    # env.layout picks one
+  close:                    # starts pushing; target 0.40 m straight ahead of the box
+    start_mode: in_contact  # in_contact | approach
+    target: {x: 0.75, y: 0.0, yaw: 90}
+  steer:                    # like close, but the target is 0.30 m to the right (against Shoe Push's
+    start_mode: in_contact  #   left drift): beyond the target's own +-0.20 m, so a straight push misses
+    target: {x: 0.75, y: -0.30, yaw: 90}
+  hard:                     # the original scene: walk up from 0.35 m, target 0.85 m away
+    start_mode: approach
+    target: {x: 1.20, y: 0.0, yaw: 90}
+
+reward:                     # copush.rewards.TaskReward: the values below are v1;
+  version: v1.1             # reward_versions[version] is applied on top of them
+  w_pos: 10.0               # x metres of box progress toward the target
+  w_yaw: 3.0                # x radians of yaw-error progress (error modulo 180 deg)
+  success_bonus: 10.0
+  success_yaw_deg: 15.0     # success: centre inside the target, yaw error <= this,
+  success_hold_s: 1.0       #   both ducks up, held this long -> bonus and episode ends
+  time_penalty: 0.01        # per env step
+  fall_mode: terminate      # terminate (v1): -fall_penalty, episode ends
+                            # continuous (v2): episode goes on, -fall_rate per second any duck is down
+  fall_penalty: 10.0
+  fall_min_down_s: 0.0      # a fall counts once a duck has been down this long without a break
+  fall_rate: 1.0
+  box_fail_penalty: 5.0     # box tipped or lost: episode ends
+  box_tilt_deg: 30.0
+  box_lost_dist: 0.40       # box centre this far from BOTH trunks
+  cooperation_mode: none    # none (v1) | gated_balanced (v2):
+                            #   + coop_lambda * max(0, progress) * min(F_A, F_B) / max(F_A, F_B)
+  coop_lambda: 5.0
+  contact_penalty: 0.0      # per duck per step, when off the box > contact_off_s (not while inside)
+  contact_off_s: 0.3
+
+reward_versions:            # docs/REWARD_LOG.md says why each one exists
+  v1: {}
+  v1.1: {fall_min_down_s: 0.2, w_yaw: 1.0, box_fail_penalty: 10.0, time_penalty: 0.03}
+  v1.2: {fall_min_down_s: 0.2, w_yaw: 1.0, box_fail_penalty: 10.0, time_penalty: 0.03,
+         contact_penalty: 0.02}
+
+video:                      # copush.video: episode videos (runs/<run_id>/videos/)
+  width: 480
+  height: 270
+  fps: 25
+  speedup: 2                # 20 s episode -> 10 s video
+
+rl:                         # copush.rl_callbacks.VideoEvalCallback (PPO, later)
+  eval_every: 10000         # training steps between evaluation episodes
+  eval_seed: 10000          # a held-out seed (env.heldout_seeds)
+  improve_margin: 2.0       # save an "improved" video when eval return beats the best by this
+
+ppo:                        # scripts/rl/train.py (stable-baselines3 PPO)
+  n_envs: 8
+  total_steps: 300000
+  n_steps: 256              # per env per update (8 x 256 = 2048)
+  batch_size: 256
+  n_epochs: 10
+  learning_rate: 0.0003
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.01
+  seed: 0

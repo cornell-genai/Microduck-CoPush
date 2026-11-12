@@ -152,6 +152,14 @@ class CoPushSim:
         jb = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, "box_free")
         self._box = (int(m.jnt_qposadr[jb]), int(m.jnt_dofadr[jb]))
         self.box_geom = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "box_geom")
+        self.box_body = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "box")
+        # BAM's update() writes per-step friction/damping into the MODEL (dof_frictionloss,
+        # dof_damping), which mj_resetData does not touch; reset() restores these compiled values,
+        # or every episode after the first would start from the last one's frictions
+        self._dof_frictionloss0 = m.dof_frictionloss.copy()
+        self._dof_damping0 = m.dof_damping.copy()
+        self._box_mass0 = float(m.body_mass[self.box_body])
+        self._box_inertia0 = m.body_inertia[self.box_body].copy()
         self.target_geom = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "target")
 
         # geom -> (duck, body-part group), for robot geoms only (b0lib.BODY_GROUPS on unprefixed names)
@@ -171,6 +179,8 @@ class CoPushSim:
         """Put both ducks, the box and the policies back to the config's start state."""
         m, d, cfg = self.m, self.d, self.cfg
         mujoco.mj_resetData(m, d)
+        m.dof_frictionloss[:] = self._dof_frictionloss0
+        m.dof_damping[:] = self._dof_damping0
         for duck in DUCKS:
             qa, _ = self._free[duck]
             c = cfg[duck]
@@ -190,8 +200,25 @@ class CoPushSim:
         self.fallen = {k: False for k in DUCKS}
         self.contact_step = {k: {} for k in DUCKS}        # impulse by part, last control step
         self.contact_total = {k: {} for k in DUCKS}       # impulse by part, since reset
+        self.push_step = {k: 0.0 for k in DUCKS}          # N toward the target, last control step
+        self.force_step = {k: 0.0 for k in DUCKS}         # N contact force magnitude, last control step
         self.events.append((0.0, "reset", "scene reset"))
         return self.get_state()
+
+    def mark_start(self) -> dict:
+        """Start the episode clock here (after a settle phase): t = 0, contact totals and the
+        sticky fall flags cleared. Physics state is untouched."""
+        self.t = 0.0
+        self.contact_total = {k: {} for k in DUCKS}
+        self.fallen = {k: self._is_fallen(k) for k in DUCKS}
+        self.events = []
+        return self.get_state()
+
+    def set_box_mass(self, mass: float) -> None:
+        """Change the box mass (inertia scaled with it). Takes effect immediately; call reset() after."""
+        self.cfg["box"]["mass"] = float(mass)
+        self.m.body_mass[self.box_body] = mass
+        self.m.body_inertia[self.box_body] = self._box_inertia0 * (mass / self._box_mass0)
 
     def set_policy(self, duck: str, name: str) -> None:
         k = duck_key(duck)
@@ -228,10 +255,17 @@ class CoPushSim:
         for duck in DUCKS:
             self.pol[duck].step()
         step_imp = {k: {} for k in DUCKS}
+        push = {k: 0.0 for k in DUCKS}
+        fmag = {k: 0.0 for k in DUCKS}
+        qb, _ = self._box
+        tg = self.cfg["target"]
+        u = np.array([tg["x"] - d.qpos[qb], tg["y"] - d.qpos[qb + 1], 0.0])
+        u /= max(np.linalg.norm(u), 1e-9)            # box -> target, at the start of this control step
         for _ in range(DECIMATION):
             for duck in DUCKS:
                 self.bam[duck].update()
             mujoco.mj_step(m, d)
+            fvec = {k: np.zeros(3) for k in DUCKS}
             if d.ncon:
                 geoms = d.contact.geom[:d.ncon]
                 for ci in np.nonzero((geoms == self.box_geom).any(axis=1))[0]:
@@ -243,8 +277,17 @@ class CoPushSim:
                     mujoco.mj_contactForce(m, d, int(ci), self._f6)
                     duck, grp = owner
                     step_imp[duck][grp] = step_imp[duck].get(grp, 0.0) + float(abs(self._f6[0])) * SIM_DT
+                    # contact frame rows: normal (geom1 -> geom2), then tangents; f6[:3] is the force
+                    # geom1 exerts on geom2 in that frame, so flip it when the box is geom1
+                    f_on_box = d.contact.frame[ci].reshape(3, 3).T @ self._f6[:3]
+                    fvec[duck] += f_on_box if g2 == self.box_geom else -f_on_box
+            for duck in DUCKS:
+                # clipped per substep, then averaged over the substeps
+                push[duck] += max(0.0, float(fvec[duck] @ u)) / DECIMATION
+                fmag[duck] += float(np.linalg.norm(fvec[duck])) / DECIMATION
         self.t = round(self.t + CONTROL_DT, 10)
         for duck in DUCKS:
+            self.push_step[duck], self.force_step[duck] = push[duck], fmag[duck]
             self.contact_step[duck] = step_imp[duck]
             tot = self.contact_total[duck]
             for grp, v in step_imp[duck].items():
@@ -270,7 +313,11 @@ class CoPushSim:
             within the target rectangle)
         contact[duck]: impulse / by_part over the last control step (N*s), total / total_by_part
             since reset; in_contact = any impulse in the last control step
-        fallen[duck]: tilt > 60 deg or trunk z < 0.07 at any point since reset (sticky)
+        fallen[duck]: tilt > 60 deg or trunk z < 0.07 at any point since reset (sticky); the
+            duck's own `down` is the same test right now (it can go back to False)
+        box also has yaw_rate (rad/s) and tilt_deg; contact[duck] also has push_force (N, the duck's
+            contact force on the box along box->target, negatives clipped to 0 per physics substep,
+            averaged over the control step) and force (mean |contact force| on the box, N)
         """
         d = self.d
         st: dict = {"t": self.t}
@@ -287,14 +334,18 @@ class CoPushSim:
                 "gravity": tuple(float(g) for g in grav),
                 "tilt_deg": math.degrees(math.acos(max(-1.0, min(1.0, 1 - 2 * (q[1] ** 2 + q[2] ** 2))))),
                 "fallen": self.fallen[duck],
+                "down": self._is_fallen(duck),
                 "policy": pol.policy,
                 "cmd": pol.cmd,
             }
         qb, vb = self._box
         box_xy = (float(d.qpos[qb]), float(d.qpos[qb + 1]))
         box_yaw = _B0.yaw_of(d.qpos[qb + 3:qb + 7])
+        bq = d.qpos[qb + 3:qb + 7]
         st["box"] = {"position": box_xy, "yaw": box_yaw,
-                     "velocity": (float(d.qvel[vb]), float(d.qvel[vb + 1])), "z": float(d.qpos[qb + 2])}
+                     "velocity": (float(d.qvel[vb]), float(d.qvel[vb + 1])), "z": float(d.qpos[qb + 2]),
+                     "yaw_rate": float(d.qvel[vb + 5]),
+                     "tilt_deg": math.degrees(math.acos(max(-1.0, min(1.0, 1 - 2 * (bq[1] ** 2 + bq[2] ** 2)))))}
         t = self.cfg["target"]
         goal_xy, goal_yaw = (float(t["x"]), float(t["y"])), math.radians(t["yaw"])
         st["goal"] = {"position": goal_xy, "yaw": goal_yaw, "size": tuple(t["size"])}
@@ -308,6 +359,8 @@ class CoPushSim:
             duck: {"impulse": sum(self.contact_step[duck].values(), 0.0),
                    "by_part": dict(self.contact_step[duck]),
                    "in_contact": bool(self.contact_step[duck]),
+                   "push_force": self.push_step[duck],
+                   "force": self.force_step[duck],
                    "total": sum(self.contact_total[duck].values(), 0.0),
                    "total_by_part": dict(self.contact_total[duck])}
             for duck in DUCKS}

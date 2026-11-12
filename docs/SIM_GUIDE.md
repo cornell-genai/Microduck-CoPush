@@ -90,6 +90,15 @@ Every run creates `runs/<timestamp>/` (gitignored):
 - `notes.md`: an automatic outcome summary plus questions for you to answer
 - `video.mp4`: only with `--record`
 
+## Tests
+
+```sh
+scripts/rl.sh -m pytest
+```
+
+A plain `uv run pytest` skips the simulation tests, because that environment has no MuJoCo, so it
+can look like everything passed when the sim tests never ran.
+
 ## Common problems
 
 | Symptom | Fix |
@@ -99,4 +108,4 @@ Every run creates `runs/<timestamp>/` (gitignored):
 | Keys do nothing / `stdin is not a TTY` | Type in the terminal that launched the sim, not the viewer window, and don't pipe its input. |
 | `policy file(s) missing` | `sh scripts/fetch_policies.sh` |
 | A duck falls soon after switching to shoepush | Shoe Push needs the box in front of it (it fell in 5 of 6 box-less tries). Switch back with 1 / 2 and walk up on velstand. |
-| `No module named pytest` | microduck_rl's venv has no pytest: `uv run --project ../microduck_rl --with pytest python -m pytest` |
+| `No module named pytest`, or tests "pass" with many skipped | Run them with `scripts/rl.sh -m pytest` (adds pytest, gymnasium and stable-baselines3 on top of microduck_rl's environment). |
