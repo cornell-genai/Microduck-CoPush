@@ -1,0 +1,54 @@
+# Overnight PPO queue (scripts/rl/overnight.py, launched by scripts/rl/overnight.sh).
+#
+#   nohup scripts/rl/overnight.sh --config configs/overnight.yaml >> runs/overnight-20261112/queue.log 2>&1 &
+#
+# `reference` is a set of overrides on configs/copush.yaml; each run adds its own `overrides`
+# on top and differs from the reference by ONE thing. See runs/overnight-20261112/DECISIONS.md
+# for where the layout, the curriculum levels and steps_per_run come from.
+out: runs/overnight-20261112
+deadline: "2026-11-12 09:00"  # local time; each run gets an equal share of the time left and stops
+deadline_reserve_s: 900       #   training when its share is used up (the reserve is kept free)
+steps_per_run: 400000         # measured ~129 steps/s incl. eval and video -> ~52 min per run (DECISIONS.md)
+checkpoint_every: 100000      # steps; a restarted queue resumes the interrupted run from the last one
+eval_episodes: 5              # final policy, box randomized, eval seeds (success / falls / box lost)
+max_videos: 12                # per run, including the final one
+max_attempts: 2               # a run that crashed this many times is skipped on restart
+early_stop:
+  flat_steps: 300000          # stop a run when the eval returns over this many steps ...
+  flat_range: 0.25            # ... span less than this (completely flat; returns are ~-15 .. +13)
+
+reference:                    # reward v1.1, the layout from the reachability sweep, seed 1
+  env: {layout: overnight}
+  layouts:
+    overnight:                # in-contact start, target 0.60 m ahead of the box and 0.30 m to the right
+      start_mode: in_contact
+      target: {x: 0.95, y: -0.30, yaw: 90}
+  reward: {version: v1.1}
+  ppo: {seed: 1}
+
+runs:
+  - name: 01_reference
+    change: none (reference)
+  - name: 02_stand_still
+    change: stand-still action
+    overrides: {env: {stand_still: {enabled: true}}}
+  - name: 03_contact_penalty
+    change: contact penalty (reward v1.2)
+    overrides: {reward: {version: v1.2}}
+  - name: 04_coop_bonus
+    change: cooperation bonus (gated_balanced)
+    overrides: {reward: {cooperation_mode: gated_balanced}}
+  - name: 05_curriculum
+    change: curriculum (4 levels)
+    overrides:
+      env:
+        curriculum:           # close -> two levels from the sweep -> the layout; offsets < 0 = right
+          enabled: true
+          distances: [0.40, 0.40, 0.60, 0.60]
+          offsets: [0.0, -0.10, -0.20, -0.30]
+  - name: 06_seed2
+    change: seed 2
+    overrides: {ppo: {seed: 2}}
+  - name: 07_seed3
+    change: seed 3
+    overrides: {ppo: {seed: 3}}
