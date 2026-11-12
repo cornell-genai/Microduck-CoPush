@@ -209,3 +209,36 @@ def test_episode_video_and_index(tmp_path):
     assert mp4.exists() and 0 < mp4.stat().st_size < 3_000_000
     index = (tmp_path / "videos" / "index.md").read_text()
     assert "step_0_baseline_zero.mp4" in index and "timeout (5 steps)" in index and stats["steps"] == 5
+
+
+def test_push_steer_squares_up_and_holds_on_velstand():
+    c = load_config()
+    c["layouts"]["close"]["target"].update({"y": 0.15})            # last round's failing case
+    e = CoPushEnv(c, split="eval")
+    act = baseline("push_steer", e)
+    ret, infos = run(e, act, seed=10000)
+    assert infos[-1]["reason"] == "success" and act.mode == "hold"
+    assert e.state["duck_a"]["policy"] == "velstand" and e.state["duck_b"]["policy"] == "velstand"
+
+
+def test_hold_keeps_velstand_on_contact_and_switches_are_logged(env):
+    obs, _ = env.reset(seed=0)
+    env.step(baseline("push_forward", env)(obs))                   # touching the box on Shoe Push
+    env.set_hold("duck_a", True)
+    env.step(baseline("stand", env)(obs))
+    assert env.state["duck_a"]["policy"] == "velstand" and env.state["contact"]["duck_a"]["impulse"] >= 0
+    env.set_hold("duck_a", False)
+    for _ in range(6):
+        env.step(baseline("push_forward", env)(obs))
+    assert env.state["duck_a"]["policy"] == "shoepush"             # back on contact
+    env.reset(seed=0)                                              # closes open windows
+    kinds = [(w["from"], w["to"]) for w in env.switch_log if w["duck"] == "duck_a"]
+    assert ("shoepush", "velstand") in kinds and ("velstand", "shoepush") in kinds
+    assert all({"min_z", "max_tilt", "fell", "box_moved", "stumble"} <= set(w) for w in env.switch_log)
+
+
+def test_steer_layout_puts_the_target_beyond_a_straight_push():
+    e = CoPushEnv(cfg_with(env={"layout": "steer"}))
+    _, info = e.reset(seed=0)
+    t = info["target"]
+    assert e.start_mode == "in_contact" and abs(t["y"] - e.cfg["box"]["y"]) > t["size"][0] / 2

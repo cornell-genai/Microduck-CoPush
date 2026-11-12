@@ -35,6 +35,11 @@ the target with set_curriculum_level(k), driven by copush.rl_callbacks.Curriculu
 Reward: TaskReward(effective_reward(cfg)), i.e. reward.version from reward_versions. A fall counts
 once a duck has been down fall_min_down_s without a break (v1: immediately).
 
+set_hold(duck, True) keeps a duck on velstand even while it touches the box (scripted baselines use
+it to stand still: Shoe Push keeps nudging the box at zero command); the action space has no such
+switch. Every policy switch opens a SWITCH_WINDOW_S window in `switch_log`: lowest trunk z, worst
+tilt, whether a fall was counted, how far the box moved.
+
 Logging (log_dir set): env_steps.csv, one row per env step with every reward term, per-duck
 contact time / push force / contact force, the balance b and the termination reason; events.log
 with RewardMonitor flags, policy switches and falls.
@@ -57,6 +62,8 @@ from copush.sim import CONTROL_DT, DUCKS, CoPushSim
 from copush.state import wrap_angle
 
 VX_MAX, VYAW_MAX = 0.3, 1.5
+SWITCH_WINDOW_S = 1.0
+STUMBLE_TILT_DEG, STUMBLE_Z = 26.0, 0.095     # copush.metrics upright thresholds (gravity_z -0.90)
 OBS_NAMES = (["box_x", "box_y", "box_sin2e", "box_cos2e", "box_vx", "box_vy", "box_yaw_rate"]
              + [f"{d}_{n}" for d in ("a", "b")
                 for n in ("dx", "dy", "sin_h", "cos_h", "contact", "shoepush", "speed")])
@@ -117,6 +124,10 @@ class CoPushEnv(gym.Env):
             self._events = open(os.path.join(log_dir, "events.log"), "w")
         self.state = None
         self.frame_hook = None          # callable(state, return_so_far) after every control step (videos)
+        self.hold = {d: False for d in DUCKS}
+        self.switch_log = []            # one dict per policy switch, across episodes
+        self._open_switches = []
+        self._last_pol = {}
 
     # ── episode ─────────────────────────────────────────────────────────────
     def set_curriculum_level(self, level: int) -> int:
@@ -174,6 +185,9 @@ class CoPushEnv(gym.Env):
         self.state = st
         self.sim.pop_events()
         self.monitor.reset()
+        self._close_switches(only_done=False)             # windows cut short by the reset
+        self.hold = {d: False for d in DUCKS}
+        self._last_pol = {d: self.sim.pol[d].policy for d in DUCKS}
         self.episode += 1
         self.steps, self.ret = 0, 0.0
         self.no_contact = {d: 0.0 for d in DUCKS}
@@ -189,12 +203,52 @@ class CoPushEnv(gym.Env):
                                   f"{box['yaw']:.1f}deg,{box['mass']:.3f}kg) seed={seed}")
         return self._obs(st), {"box": dict(box), "target": dict(self.cfg["target"])}
 
+    def set_hold(self, duck: str, on: bool) -> None:
+        """on: keep `duck` on velstand (switching now if needed); off: automatic switching again."""
+        self.hold[duck] = bool(on)
+        if on and self.sim.pol[duck].policy != "velstand":
+            self.sim.set_policy(duck, "velstand")
+
+    def _track_switches(self, st: dict) -> None:
+        """Open a window for every policy change since the last call; update and close windows."""
+        for d in DUCKS:
+            pol = self.sim.pol[d].policy
+            if self._last_pol.get(d, pol) != pol:
+                self._open_switches.append({"episode": self.episode, "t": st["t"], "duck": d,
+                                            "from": self._last_pol[d], "to": pol, "box0": st["box"]["position"],
+                                            "min_z": st[d]["trunk_z"], "max_tilt": st[d]["tilt_deg"],
+                                            "fell": False, "left": round(SWITCH_WINDOW_S / CONTROL_DT),
+                                            "box_moved": 0.0})
+            self._last_pol[d] = pol
+        for w in self._open_switches:
+            d = w["duck"]
+            w["min_z"] = min(w["min_z"], st[d]["trunk_z"])
+            w["max_tilt"] = max(w["max_tilt"], st[d]["tilt_deg"])
+            w["fell"] |= self.fell[d]
+            w["box_moved"] = math.dist(w["box0"], st["box"]["position"])
+            w["left"] -= 1
+        self._close_switches(only_done=True)
+
+    def _close_switches(self, only_done: bool) -> None:
+        keep = []
+        for w in self._open_switches:
+            if only_done and w["left"] > 0:
+                keep.append(w)
+                continue
+            w = {k: v for k, v in w.items() if k not in ("left", "box0")}
+            w["stumble"] = w["max_tilt"] > STUMBLE_TILT_DEG or w["min_z"] < STUMBLE_Z
+            self.switch_log.append(w)
+        self._open_switches = keep
+
     def _auto_switch(self, st: dict) -> None:
         for d in DUCKS:
             c = st["contact"][d]["in_contact"]
             self.no_contact[d] = 0.0 if c else self.no_contact[d] + CONTROL_DT
             pol = st[d]["policy"]
-            if pol == "velstand" and c:
+            if self.hold[d]:
+                if pol != "velstand":
+                    self.sim.set_policy(d, "velstand")
+            elif pol == "velstand" and c:
                 self.sim.set_policy(d, "shoepush")
             elif pol == "shoepush" and self.no_contact[d] >= self.ecfg["lose_contact_s"] - 1e-9:
                 self.sim.set_policy(d, "velstand")
@@ -209,6 +263,7 @@ class CoPushEnv(gym.Env):
         rc = self.rcfg
         newly_fell = False
         tol = math.radians(rc["success_yaw_deg"])
+        self._track_switches(st0)                        # e.g. set_hold() between steps
         for k in range(self.n_ctrl):
             st = self.sim.step(cmds if k == 0 else None)
             self._auto_switch(st)
@@ -232,6 +287,7 @@ class CoPushEnv(gym.Env):
             down_s += CONTROL_DT if any_down else 0.0
             ok = st["inside"] and st["yaw_error"] <= tol and not any_down
             self.success_held = self.success_held + CONTROL_DT if ok else 0.0
+            self._track_switches(st)
             if k < self.n_ctrl - 1:
                 flags += self.monitor.update(st, reward=0.0)[1]
         box_xy = st["box"]["position"]
@@ -349,41 +405,87 @@ VELSTAND_TURN_MIN = 0.5    # rad/s: velstand does not turn in place below this o
 
 
 class PushSteer:
-    """Scripted baseline: per-duck heading hold toward the target, stop while the box is inside.
+    """Scripted baseline: per-duck heading hold toward the target; square the box up; stand still.
 
-    Each duck runs copush.controllers.HeadingHoldPush (PI on heading with an integrated bias, so it
-    finds Shoe Push's left drift and low steering gain by itself; reference bent toward the
-    box->target line by the box's cross-track error) along the line from the box's start to the
-    target, once per env step (5 Hz). A turn command below VELSTAND_TURN_MIN on a duck that is on
-    velstand is raised to it (dead zone). While the box centre is inside the target both ducks get
-    (0, 0, 0) and the integrators are frozen; they resume if the box drifts out.
+    Pushing (box outside the target): each duck runs copush.controllers.HeadingHoldPush (PI on
+    heading with an integrated bias, which finds Shoe Push's left drift and low steering gain by
+    itself; reference bent toward the box->target line by the box's cross-track error) along the
+    line from the box's start to the target, once per env step (5 Hz). A turn command below
+    VELSTAND_TURN_MIN on a duck that is on velstand is raised to it (dead zone).
+    Inside but crooked (yaw error > the success tolerance): only the duck on the side that must
+    advance pushes, at CORRECT_VX, the other stays at vx 0, no turning: the box pivots.
+    Inside and square: both ducks are held on velstand at zero speed (env.set_hold), since Shoe
+    Push keeps nudging the box at zero command; the success timer then runs out. If the box
+    drifts out (or goes crooked) the holds are released and automatic switching puts the ducks
+    back on Shoe Push as soon as they touch the box.
     """
 
-    def __init__(self, env: CoPushEnv, vx: float = 0.2):
-        self.env, self.vx = env, vx
+    CORRECT_VX = 0.15
+
+    def __init__(self, env: CoPushEnv, vx: float = 0.2, diff: float = 0.0):
+        """diff > 0 adds differential speed while pushing: the duck on the outside of the needed
+        turn goes faster, vx * (1 + diff * e), the inside one slower, e = bearing error / 0.5 rad
+        clipped to [-1, 1] (bearing error: direction box->target minus the ducks' mean heading)."""
+        self.env, self.vx, self.diff = env, vx, diff
         self.episode = None
+        self.mode = "push"
 
     def _reset(self):
         from copush.controllers import HeadingHoldPush
         st = self.env.state
         bx, by = st["box"]["position"]
         gx, gy = st["goal"]["position"]
-        line = math.atan2(gy - by, gx - bx)
-        self.ctl = {d: HeadingHoldPush(vx=self.vx, duck=d, line_yaw=line, line_origin=(bx, by)) for d in DUCKS}
+        self.line = math.atan2(gy - by, gx - bx)
+        self.ctl = {d: HeadingHoldPush(vx=self.vx, duck=d, line_yaw=self.line, line_origin=(bx, by)) for d in DUCKS}
         self.episode = self.env.episode
+        self.mode = "push"
+
+    def _release(self):
+        for d in DUCKS:
+            if self.env.hold[d]:
+                self.env.set_hold(d, False)
 
     def __call__(self, obs):
-        if self.episode != self.env.episode:
+        env = self.env
+        if self.episode != env.episode:
             self._reset()
-        st = self.env.state
-        if st["inside"]:
+        st = env.state
+        tol = math.radians(env.rcfg["success_yaw_deg"])
+        if st["inside"] and st["yaw_error"] <= tol:
+            self.mode = "hold"
+            for d in DUCKS:
+                env.set_hold(d, True)
             return cmd_to_action(0.0, 0.0, 0.0, 0.0)
+        self._release()
+        if st["inside"]:
+            self.mode = "square"
+            # signed box yaw error, folded to (-90, 90] deg: > 0 means turned counter-clockwise
+            e = wrap_angle(st["box"]["yaw"] - st["goal"]["yaw"])
+            e = (e + math.pi / 2) % math.pi - math.pi / 2
+            bx, by = st["box"]["position"]
+            c, s_ = math.cos(self.line), math.sin(self.line)
+            left = max(DUCKS, key=lambda d: -s_ * (st[d]["position"][0] - bx) + c * (st[d]["position"][1] - by))
+            right = "duck_b" if left == "duck_a" else "duck_a"
+            pusher = left if e > 0 else right                # advancing the left end turns it clockwise
+            v = {d: (self.CORRECT_VX if d == pusher else 0.0) for d in DUCKS}
+            return cmd_to_action(v["duck_a"], 0.0, v["duck_b"], 0.0)
+        self.mode = "push"
+        scale = {d: 1.0 for d in DUCKS}
+        if self.diff:
+            bx, by = st["box"]["position"]
+            gx, gy = st["goal"]["position"]
+            hdg = math.atan2(sum(math.sin(st[d]["yaw"]) for d in DUCKS), sum(math.cos(st[d]["yaw"]) for d in DUCKS))
+            e = max(-1.0, min(1.0, wrap_angle(math.atan2(gy - by, gx - bx) - hdg) / 0.5))
+            c, s_ = math.cos(hdg), math.sin(hdg)
+            left = max(DUCKS, key=lambda d: -s_ * (st[d]["position"][0] - bx) + c * (st[d]["position"][1] - by))
+            for d in DUCKS:                                  # turn left (e > 0): right duck faster
+                scale[d] = max(0.0, 1.0 + self.diff * e * (-1.0 if d == left else 1.0))
         cmd = []
         for d in DUCKS:
             vx, _, vyaw = self.ctl[d].get_actions(st)[d]
             if st[d]["policy"] == "velstand" and 0.0 < abs(vyaw) < VELSTAND_TURN_MIN:
                 vyaw = math.copysign(VELSTAND_TURN_MIN, vyaw)
-            cmd += [vx, vyaw]
+            cmd += [min(VX_MAX, vx * scale[d]), vyaw]
         return cmd_to_action(*cmd)
 
 
