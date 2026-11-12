@@ -5,9 +5,10 @@ are in [REWARD_LOG.md](REWARD_LOG.md), and the 5-minute demo is in [DEMO.md](DEM
 
 **Now (2026-11-12):** with both ducks starting against the box, PPO (the reinforcement learning
 coordinator) gets the box into a target 0.30 m to the side, which needs a turn. Trained on random box
-starts (up to 0.15 m off and 45 degrees turned), it succeeds on 60% of 50 fixed test starts it never
-trained on. The policy it started from gets 50%, and the best script gets 32%. It still fails almost
-every start where the box is turned more than 15 degrees to the positive side (2 of 17).
+starts (up to 0.15 m off and 45 degrees turned), it succeeds on 72% of 50 fixed test starts it never
+trained on, after extra practice on the hard starts. Stage 1 got 60%, its starting policy 50%, and the best
+script 32%. It still fails most starts where the box is turned more than 15 degrees to the positive side
+(4 of 17), because those need a long turn before the push.
 
 | Date | Stage | One change | Result (plain words) | Eval size | Video |
 |---|---|---|---|---|---|
@@ -18,7 +19,8 @@ every start where the box is turned more than 15 degrees to the positive side (2
 | 2026-11-12 | In contact, target 0.30 m to the side, 0.60 m ahead | New `pivot_push` script and a reachability sweep | The script reaches this target 4 of 5 times, but duck A does 97% of the pushing | 5 randomized per target | [gif](media/overnight_pivot_push_script.gif) |
 | 2026-11-12 | Same layout, PPO | First PPO training on this layout (7 runs overnight) | PPO succeeds 60 to 80% across 3 seeds with random starts and ties the script. From the fixed start it trained on, it beats the script. None of the 4 tweaks changed results beyond the seed spread | 5 randomized + 1 fixed (preliminary) | [gif](media/overnight_ppo_success.gif) · [side by side](media/overnight_script_vs_ppo_side_by_side.mp4) |
 | 2026-11-12 | Stage 1: random box starts | **Box starts up to 0.15 m off and 45 degrees turned, ducks still against it** | PPO succeeds on 60% of test starts (the policy it started from: 50%, `pivot_push`: 32%). Fails almost every start turned more than 15 degrees to the positive side | 50 fixed held-out starts | [gif](media/stage1_pivot_push_vs_ppo_hard_start.gif) · [side by side](media/stage1_pivot_push_vs_ppo_hard_start.mp4) · [failure](media/stage1_failure_positive_angle.mp4) |
-| **2026-11-12** | **Stage 1b: why one side fails** | **Diagnosis only, no training** | **Not a physical limit: pivoting turns the box about equally fast both ways, and the policy does turn the right way. The hard side needs about 55 degrees of turning before pushing, the easy side about 1. Stopped before training** | **50 test starts + 60 turning trials** | none |
+| 2026-11-12 | Stage 1b: why one side fails | Diagnosis only, no training | Not a physical limit: pivoting turns the box about equally fast both ways, and the policy does turn the right way. The hard side needs about 55 degrees of turning before pushing, the easy side about 1. Stopped before training | 50 test starts + 60 turning trials | none |
+| **2026-11-12** | **Stage 1b: two fixes for the hard side** | **A: half of training starts on the hard side. B: time penalty 0.03 to 0.01 (reward v1.3)** | **A succeeds on 72% of test starts and B on 68% (stage 1: 60%), but on the hard side A wins only 4 of 17 and B 1 of 17 (stage 1: 2). B lets the ducks wait on hard starts. Keep A** | **50 fixed held-out starts** | [A side by side](media/stage1b_stage1_vs_a_long_turn.mp4) · [B waiting](media/stage1b_b_idle_drift.mp4) |
 
 ---
 
@@ -144,3 +146,31 @@ Details: [experiments/stage1b-turn-direction-fix/](../experiments/stage1b-turn-d
   The policy turns part of the way, then pushes the box past the target.
 - The plan said to stop and report if neither "physical" nor "learning" fit, so nothing was trained. The
   suggested fix is to train with half the starts on the hard side.
+
+## 2026-11-12: stage 1b, two fixes for the hard side
+
+Details: [experiments/stage1b-turn-direction-fix/](../experiments/stage1b-turn-direction-fix/README.md).
+Both runs continue from the stage 1 policy for 1M more steps and are tested on the same 50 starts.
+
+| Policy | All 50 starts | Box turned the easy way | Near straight | Box turned the hard way |
+|---|---|---|---|---|
+| stage 1 | 60% | 15/17 | 13/16 | 2/17 |
+| A: half the training starts on the hard side | **72%** | 16/17 | 16/16 | **4/17** |
+| B: smaller time penalty | 68% | 17/17 | 16/16 | 1/17 |
+
+- **The hard side barely moved.** Aiming at the target needs about 55 degrees of turning first. Stage 1 turns
+  40, A 44, B 37, and then they push. Gaining 2 starts out of 17 is within luck for one run.
+- **Neither hurt the easy side.** Both got better there, probably from the extra training: there was no
+  "same training, no change" run to compare against.
+- **Odd behavior:** A falls more (5 against 3, always duck A, always on hard starts). B waits on hard starts:
+  both ducks are nearly stopped 34% of the time (stage 1: 12%), and the box drifts away. That's the standing
+  still the bigger time penalty was added to stop, so reward v1.3 is not adopted.
+- **The new check set works.** Training checks now use 50 fixed, evenly spread starts, and their final scores
+  matched the test (72 and 72, 68 and 68). In stage 1 the checks said 80% when the test said 60%.
+
+Hard start (box turned 21 degrees the hard way), stage 1 left and A right:
+[stage1b_stage1_vs_a_long_turn.mp4](media/stage1b_stage1_vs_a_long_turn.mp4). B waiting while the box drifts:
+[stage1b_b_idle_drift.mp4](media/stage1b_b_idle_drift.mp4).
+
+**Next:** a control run (same extra training, no change), and letting the coordinator hold one duck still so
+it can pivot like the script.

@@ -25,6 +25,9 @@ The project plan is in [docs/COPUSH_PLAN.md](docs/COPUSH_PLAN.md).
   the box up to 0.15 m off and turned up to 45 degrees (the policy it started from: 50%, `pivot_push`
   script: 32%). It fails almost every start turned more than 15 degrees to the positive side.
   [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md)
+- **Stage 1b, fixing that side:** training with half the starts on the hard side raises the score to 72%,
+  but that side is still only 4 of 17 (stage 1: 2). A smaller time penalty gives 68% and makes the ducks wait
+  on hard starts. [experiments/stage1b-turn-direction-fix/](experiments/stage1b-turn-direction-fix/README.md)
 - **Target 0.30 m to the side, 0.60 m ahead (`overnight` layout):** early RL success. PPO gets the
   box in 60 to 80% of the time across 3 seeds when the box starts in a random spot, which ties the
   `pivot_push` script (preliminary, 5 episodes). From the fixed start it trained on, it beats the
