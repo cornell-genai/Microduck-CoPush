@@ -41,6 +41,8 @@ DEFAULTS = {
                "success_hold_s": 1.0, "time_penalty": 0.01, "fall_mode": "terminate",
                "fall_penalty": 10.0, "fall_rate": 1.0, "box_fail_penalty": 5.0, "box_tilt_deg": 30.0,
                "box_lost_dist": 0.40, "cooperation_mode": "none", "coop_lambda": 5.0},
+    "video": {"width": 480, "height": 270, "fps": 25, "speedup": 2},
+    "rl": {"eval_every": 10000, "eval_seed": 10000, "improve_margin": 2.0},
 }
 FALL_MODES = ("terminate", "continuous")
 COOPERATION_MODES = ("none", "gated_balanced")

@@ -70,3 +70,14 @@ reward:                     # copush.rewards.TaskReward; v1 = the defaults below
   cooperation_mode: none    # none (v1) | gated_balanced (v2):
                             #   + coop_lambda * max(0, progress) * min(F_A, F_B) / max(F_A, F_B)
   coop_lambda: 5.0
+
+video:                      # copush.video: episode videos (runs/<run_id>/videos/)
+  width: 480
+  height: 270
+  fps: 25
+  speedup: 2                # 20 s episode -> 10 s video
+
+rl:                         # copush.rl_callbacks.VideoEvalCallback (PPO, later)
+  eval_every: 10000         # training steps between evaluation episodes
+  eval_seed: 10000          # a held-out seed (env.heldout_seeds)
+  improve_margin: 2.0       # save an "improved" video when eval return beats the best by this
