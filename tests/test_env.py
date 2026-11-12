@@ -242,3 +242,21 @@ def test_steer_layout_puts_the_target_beyond_a_straight_push():
     _, info = e.reset(seed=0)
     t = info["target"]
     assert e.start_mode == "in_contact" and abs(t["y"] - e.cfg["box"]["y"]) > t["size"][0] / 2
+
+
+def test_pivot_push_pivots_with_one_duck_held_then_succeeds():
+    from copush.env import PivotThenPush
+    c = load_config()
+    c["layouts"]["close"]["target"] = {"x": 0.75, "y": -0.15, "yaw": 90}       # 0.15 m to the right
+    e = CoPushEnv(c, split="eval")
+    act = baseline("pivot_push", e)
+    assert isinstance(act, PivotThenPush)
+    obs, _ = e.reset(seed=10000)
+    obs, *_ = e.step(act(obs))
+    assert act.mode == "pivot" and e.hold == {"duck_a": False, "duck_b": True}  # right duck stops: box turns right
+    assert e.state["duck_b"]["policy"] == "velstand"
+    while True:
+        obs, _, term, trunc, info = e.step(act(obs))
+        if term or trunc:
+            break
+    assert info["reason"] == "success" and act.phase == "push"
