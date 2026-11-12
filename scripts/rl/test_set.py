@@ -36,6 +36,7 @@ from copush.experiments import (difficulty, load_stage, load_test_set, make_test
 
 OFFSET_BINS = (0.0, 0.05, 0.10, 0.15, 0.22)        # m; the corners of a +-0.15 m square reach 0.21
 ANGLE_BINS = (0.0, 15.0, 30.0, 45.0)               # deg; 15 = the success tolerance
+SIGNED_BINS = (-45.0, -30.0, -15.0, 15.0, 30.0, 45.0)   # deg, box yaw minus nominal; the sign is which way it is turned
 HIGHLIGHT = {"stage1": "#2a78d6", "01_reference": "#eb6834", "pivot_push": "#1baf7a"}   # dataviz slots 1-3
 MUTED = "#a3a29b"
 
@@ -97,7 +98,8 @@ def _row(name: str, s: dict) -> str:
 def buckets(stats, key: str, bins):
     out = []
     for lo, hi in zip(bins[:-1], bins[1:]):
-        sel = [s for s in stats if lo <= difficulty(s["start"])[key] < hi]
+        val = (lambda st: st["dyaw"]) if key == "signed_angle" else (lambda st: difficulty(st)[key])
+        sel = [s for s in stats if lo <= val(s["start"]) < hi]
         out.append((lo, hi, len(sel), sum(s["reason"] == "success" for s in sel)))
     return out
 
@@ -112,9 +114,10 @@ def plot(res: dict, path: str, title: str) -> None:
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.4), constrained_layout=True,
                              gridspec_kw={"width_ratios": [1, 1, 1.1]})
     order = [n for n in res if n not in HIGHLIGHT] + [n for n in HIGHLIGHT if n in res]   # highlights on top
-    for ax, key, bins, unit in ((axes[0], "offset", OFFSET_BINS, "m"), (axes[1], "angle", ANGLE_BINS, "deg")):
+    for ax, key, bins, unit in ((axes[0], "offset", OFFSET_BINS, "m"), (axes[1], "signed_angle", SIGNED_BINS, "deg")):
         any_b = buckets(next(iter(res.values())), key, bins)
         xs = list(range(len(any_b)))
+        ends = []
         for name in order:
             b = buckets(res[name], key, bins)
             ys = [100 * w / n if n else float("nan") for _, _, n, w in b]
@@ -123,16 +126,22 @@ def plot(res: dict, path: str, title: str) -> None:
                     alpha=1.0 if hi else 0.6, zorder=3 if hi else 2, markeredgecolor="white", markeredgewidth=1.5,
                     label=name)
             if hi:
-                ax.annotate(name, (xs[-1], ys[-1]), xytext=(8, 0), textcoords="offset points", va="center",
-                            fontsize=9, color="#3d3d3a")
+                ends.append([ys[-1], ys[-1], name])
+        ends.sort()
+        for i in range(1, len(ends)):                    # spread the end labels at least 6 points apart
+            ends[i][1] = max(ends[i][1], ends[i - 1][1] + 6)
+        for y, ly, name in ends:
+            ax.annotate(name, (xs[-1], y), xytext=(xs[-1] + 0.12, ly), va="center", fontsize=9, color="#3d3d3a")
         ax.set_xticks(xs, [f"{lo:g}-{hi:g} {unit}\n(n={n})" for lo, hi, n, _ in any_b])
         ax.set_xlim(-0.3, len(xs) - 0.3 + 0.6)
         ax.set_ylim(-3, 103)
         ax.set_ylabel("success rate (%)")
-        ax.set_xlabel("box offset from nominal start" if key == "offset" else "box angle vs target (absolute)")
+        ax.set_xlabel("box offset from nominal start" if key == "offset" else "box angle vs target, signed (deg)")
         ax.grid(axis="y", color="#e8e7e2", lw=0.8)
         ax.set_title(f"Success by {'offset' if key == 'offset' else 'angle'}")
-    axes[0].legend(loc="lower left", fontsize=8, frameon=False, ncol=2)
+        if key == "signed_angle":
+            ax.set_xticks(xs, [f"{lo:+g}..{hi:+g}\n(n={n})" for lo, hi, n, _ in any_b])
+    axes[0].legend(loc="upper left", fontsize=8, frameon=False, ncol=2)
     ax = axes[2]
     pol = "stage1" if "stage1" in res else next(iter(res))
     for won, mk, col, lab in ((True, "o", HIGHLIGHT.get(pol, "#2a78d6"), "success"), (False, "X", "#3d3d3a", "fail")):
@@ -188,6 +197,11 @@ def cmd_eval(stage: dict, cfg: dict, cfg_path: str) -> int:
         cells = [f"{w}/{k}" for *_, k, w in buckets(st, "offset", OFFSET_BINS)]
         cells += [f"{w}/{k}" for *_, k, w in buckets(st, "angle", ANGLE_BINS)]
         md.append(f"| {n} | " + " | ".join(cells) + " |")
+    md += ["", "Success by signed angle (box yaw minus nominal, deg):", "",
+           "| controller | " + " | ".join(f"{a:+g} to {b:+g}" for a, b in zip(SIGNED_BINS[:-1], SIGNED_BINS[1:])) + " |",
+           "|---|" + "---|" * (len(SIGNED_BINS) - 1)]
+    for n, st in res.items():
+        md.append(f"| {n} | " + " | ".join(f"{w}/{k}" for *_, k, w in buckets(st, "signed_angle", SIGNED_BINS)) + " |")
     md += ["", "![success vs difficulty](difficulty.png)", ""]
     with open(os.path.join(rdir, "test_set.md"), "w") as f:
         f.write("\n".join(md))
