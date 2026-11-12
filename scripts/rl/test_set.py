@@ -9,13 +9,15 @@ make          test.n box poses from the FINAL env.box_start range with its own R
               written to the stage's test_set file; refuses to overwrite it. Each start is checked:
               both ducks must touch the box in the first 1 s of push_forward (the in-contact
               start leaves them a hair behind the face; standing still they never touch it).
+              --checks: the stage's check_set instead (check.n / check.rng_seed), the fixed starts
+              the training checks run on; it must share no start with the test set.
 eval          every test.controllers baseline and test.policies PPO policy (deterministic; missing
               files are skipped), one episode per start, in parallel. Writes to the stage's results/:
               test_set.md (table), test_set.json (per-episode outcomes) and difficulty.png (success
               vs box offset and box angle buckets).
 side-by-side  one start, two controllers, one mp4 each and an hstack (ffmpeg) in <out>/videos/.
               Default start: the hardest (largest angle, then offset) where --right succeeds and
-              --left does not, from results/test_set.json.
+              --left does not, from results/test_set.json (--positive: only starts turned > +15 deg).
 """
 from __future__ import annotations
 
@@ -37,7 +39,8 @@ from copush.experiments import (difficulty, load_stage, load_test_set, make_test
 OFFSET_BINS = (0.0, 0.05, 0.10, 0.15, 0.22)        # m; the corners of a +-0.15 m square reach 0.21
 ANGLE_BINS = (0.0, 15.0, 30.0, 45.0)               # deg; 15 = the success tolerance
 SIGNED_BINS = (-45.0, -30.0, -15.0, 15.0, 30.0, 45.0)   # deg, box yaw minus nominal; the sign is which way it is turned
-HIGHLIGHT = {"stage1": "#2a78d6", "01_reference": "#eb6834", "pivot_push": "#1baf7a"}   # dataviz slots 1-3
+HIGHLIGHT = {"stage1": "#2a78d6", "01_reference": "#eb6834", "pivot_push": "#1baf7a",   # dataviz slots 1-5,
+             "a_oversample": "#eda100", "b_time_penalty": "#e87ba4"}                   # fixed per policy
 MUTED = "#a3a29b"
 
 
@@ -59,13 +62,20 @@ def _eval_one(job):
     return name, stats
 
 
-def cmd_make(stage: dict, cfg: dict, cfg_path: str) -> int:
-    path = repo_path(stage["test_set"])
+def cmd_make(stage: dict, cfg: dict, cfg_path: str, checks: bool = False) -> int:
+    rel = stage["check_set"] if checks else stage["test_set"]
+    path = repo_path(rel)
     if os.path.exists(path):
-        print(f"{stage['test_set']} exists; a test set is written once (delete it by hand to remake)")
+        print(f"{rel} exists; a test set is written once (delete it by hand to remake)")
         return 1
-    t = stage["test"]
+    t = stage["check"] if checks else stage["test"]
     starts = make_test_set(cfg, t["n"], t["rng_seed"])
+    if checks:
+        pose = lambda s: (s["x"], s["y"], s["yaw"])                      # noqa: E731
+        shared = {pose(s) for s in starts} & {pose(s) for s in load_test_set(stage["test_set"])["starts"]}
+        if shared:
+            print(f"check set shares {len(shared)} starts with the test set; pick another check.rng_seed")
+            return 1
     stats = test_set_episodes(cfg, starts, make_act_factory("push_forward"))
     bad = [s["start"]["id"] for s in stats if min(s["touch_s"].values()) <= 0.0]
     if bad:
@@ -79,9 +89,11 @@ def cmd_make(stage: dict, cfg: dict, cfg_path: str) -> int:
                    "nominal_box": {k: cfg["box"][k] for k in ("x", "y", "yaw")}, "target": tg,
                    "layout": cfg["env"]["layout"], "mass": cfg["box"]["mass"],
                    "note": "box poses (x, y in m, yaw in deg) for env.reset(options={'box': start}); "
-                           "never used in training. Both ducks touch the box in the first 1 s of push_forward from every start.",
+                           + ("training checks (early stop) only, separate from the test set. " if checks else
+                              "never used in training. ")
+                           + "Both ducks touch the box in the first 1 s of push_forward from every start.",
                    "starts": starts}, f, indent=1)
-    print(f"wrote {stage['test_set']}: {len(starts)} starts, all with both ducks touching the box within 1 s of push_forward")
+    print(f"wrote {rel}: {len(starts)} starts, all with both ducks touching the box within 1 s of push_forward")
     return 0
 
 
@@ -143,7 +155,7 @@ def plot(res: dict, path: str, title: str) -> None:
             ax.set_xticks(xs, [f"{lo:+g}..{hi:+g}\n(n={n})" for lo, hi, n, _ in any_b])
     axes[0].legend(loc="upper left", fontsize=8, frameon=False, ncol=2)
     ax = axes[2]
-    pol = "stage1" if "stage1" in res else next(iter(res))
+    pol = list(res)[-1]                                  # the stage's own policy (listed last in test.policies)
     for won, mk, col, lab in ((True, "o", HIGHLIGHT.get(pol, "#2a78d6"), "success"), (False, "X", "#3d3d3a", "fail")):
         pts = [s["start"] for s in res[pol] if (s["reason"] == "success") == won]
         ax.scatter([p["dyaw"] for p in pts], [p["dy"] for p in pts], s=[60 + 600 * max(0, p["dx"] + 0.15) for p in pts],
@@ -219,7 +231,8 @@ def cmd_side_by_side(stage: dict, cfg: dict, args) -> int:
     if args.start is None:
         ep = json.load(open(os.path.join(repo_path(stage["results"]), "test_set.json")))["episodes"]
         won = {e["id"] for e in ep[args.right] if e["reason"] == "success"}
-        lost = {e["id"] for e in ep[args.left] if e["reason"] != "success"}
+        lost = {e["id"] for e in ep[args.left] if e["reason"] != "success"
+                and (not args.positive or ts["starts"][e["id"]]["dyaw"] > 15)}
         ids = sorted(won & lost, key=lambda i: (abs(ts["starts"][i]["dyaw"]), difficulty(ts["starts"][i])["offset"]))
         if not ids:
             print(f"no start where {args.right} succeeds and {args.left} does not; pass --start")
@@ -254,10 +267,12 @@ def main() -> int:
     p.add_argument("--right", default="stage1")
     p.add_argument("--start", type=int, default=None)
     p.add_argument("--out", default=None)
+    p.add_argument("--checks", action="store_true", help="make: the check set instead of the test set")
+    p.add_argument("--positive", action="store_true", help="side-by-side: only starts turned > +15 deg")
     args = p.parse_args()
     stage, cfg = load_stage(args.config)
     if args.cmd == "make":
-        return cmd_make(stage, cfg, args.config)
+        return cmd_make(stage, cfg, args.config, checks=args.checks)
     if args.cmd == "eval":
         return cmd_eval(stage, cfg, args.config)
     return cmd_side_by_side(stage, cfg, args)
