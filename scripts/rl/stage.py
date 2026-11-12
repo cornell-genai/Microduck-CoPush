@@ -8,7 +8,8 @@ PPO is loaded from the stage's `warm_start` (its hyperparameters come with it; s
 trained on the resolved config (copush.experiments.load_stage) with ppo.n_envs SubprocVecEnv workers
 for `steps` steps, counted from 0.
     widen        BoxRangeCallback: the box start range starts at widen.levels[0] of env.box_start and
-                 widens one level whenever success on the current range reaches widen.threshold
+                 widens one level whenever success on the current range reaches widen.threshold;
+                 with `check_set` (a test-set JSON) the checks run on its fixed starts instead
     early stop   on the last level, success >= early_stop.success for early_stop.evals evals in a row
     videos       VideoEvalCallback on rl.eval_seed with the FULL range (one fixed start), capped at
                  max_videos including the final one
@@ -31,7 +32,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, ROOT)
 
 from copush.config import dump_config  # noqa: E402
-from copush.experiments import load_stage, repo_path  # noqa: E402
+from copush.experiments import load_stage, load_test_set, repo_path  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from overnight import _prune_after  # noqa: E402
@@ -83,6 +84,7 @@ def main() -> int:
     train_cfg["env"]["box_start"]["scale"] = wd["levels"][level]   # first resets already on this level
     video_cfg = copy.deepcopy(cfg)
     video_cfg["env"]["box_start"]["scale"] = 1.0
+    video_cfg["env"]["box_start"]["hard_frac"] = 0.0                # the same video start for every stage
     vec = VecMonitor(SubprocVecEnv([make_env(train_cfg) for _ in range(pc["n_envs"])]))
     tb = os.path.join(out, "tb")
     if ckpt:
@@ -154,8 +156,9 @@ def main() -> int:
                 self.checkpoint()
             return True
 
+    checks = load_test_set(stage["check_set"])["starts"] if stage.get("check_set") else None
     widen = BoxRangeCallback(cfg, wd["levels"], wd["threshold"], wd["eval_every"], wd["episodes"], wd["seed0"],
-                             stop_success=es["success"], stop_evals=es["evals"], verbose=1)
+                             stop_success=es["success"], stop_evals=es["evals"], starts=checks, verbose=1)
     ws = state.get("widen", {})
     widen.level, widen.last_eval, widen.streak = level, ws.get("last_eval", 0), ws.get("streak", 0)
     widen.history, widen.reached_full_at = list(ws.get("history", [])), ws.get("reached_full_at")
@@ -165,7 +168,10 @@ def main() -> int:
         model.learn(total_timesteps=remaining, callback=CallbackList([video, widen]), tb_log_name="ppo",
                     reset_num_timesteps=ckpt is None)
     else:                                                        # killed between the last step and results.json
+        from stable_baselines3.common.logger import configure
+        model.set_logger(configure(None, []))                    # learn() never ran, so there is no logger yet
         video.init_callback(model)
+        video.num_timesteps = model.num_timesteps                # set by on_step, which never ran
         video.evaluate(final=True)
     video.checkpoint()
     vec.close()
@@ -181,6 +187,7 @@ def main() -> int:
         "steps": int(model.num_timesteps), "steps_planned": total, "wall_s": video.wall(),
         "early_stopped": widen.stopped_early, "final_level": widen.level, "levels": wd["levels"],
         "reached_full_at": widen.reached_full_at, "box_start": cfg["env"]["box_start"],
+        "check_set": stage.get("check_set"), "reward_version": cfg["reward"]["version"],
         "widen_history": widen.history, "eval_flags": sorted(k[5:] for k in video.seen if k.startswith("flag:")),
         "eval_endings": sorted(k[4:] for k in video.seen if k.startswith("end:")),
         "eval_curve": [(e["step"], e["return"], e["reason"]) for e in evals],

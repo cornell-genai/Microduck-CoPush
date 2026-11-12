@@ -44,8 +44,8 @@ def decide(stats: dict, best: float, seen: Set[str], margin: float, first: bool)
     return None
 
 
-def run_episode(env: CoPushEnv, act, seed: int) -> dict:
-    obs, _ = env.reset(seed=seed)
+def run_episode(env: CoPushEnv, act, seed: int, options: Optional[dict] = None) -> dict:
+    obs, _ = env.reset(seed=seed, options=options)
     while True:
         obs, _, term, trunc, info = env.step(act(obs))
         if term or trunc:
@@ -160,11 +160,14 @@ class BoxRangeCallback(BaseCallback):
     with the box sampled from the current range (env.box_start scaled by levels[level]). Success
     >= threshold widens every training env (and the eval env) one level. On the last level,
     success >= stop_success for stop_evals evaluations in a row stops training (stop_evals 0: never).
+    With `starts` (a fixed check set of explicit box poses, copush.experiments) each evaluation runs
+    one episode per start instead (seed seed0 + i), and the range only matters for training.
     `history` has one dict per evaluation."""
 
     def __init__(self, cfg: dict, levels, threshold: float, every: int, episodes: int, seed0: int,
-                 stop_success: float = 1.1, stop_evals: int = 0, verbose: int = 0):
+                 stop_success: float = 1.1, stop_evals: int = 0, starts=None, verbose: int = 0):
         super().__init__(verbose)
+        self.starts = list(starts) if starts else None
         self.cfg, self.levels, self.threshold = cfg, list(levels), threshold
         self.every, self.episodes, self.seed0 = int(every), int(episodes), int(seed0)
         self.stop_success, self.stop_evals = stop_success, int(stop_evals)
@@ -184,20 +187,32 @@ class BoxRangeCallback(BaseCallback):
         if self.num_timesteps - self.last_eval < self.every:
             return True
         self.last_eval = self.num_timesteps
-        stats = [run_episode(self.env, self._act, self.seed0 + i) for i in range(self.episodes)]
-        rate = sum(s["reason"] == "success" for s in stats) / self.episodes
+        if self.starts:
+            stats = [run_episode(self.env, self._act, self.seed0 + i, {"box": s}) for i, s in enumerate(self.starts)]
+        else:
+            stats = [run_episode(self.env, self._act, self.seed0 + i) for i in range(self.episodes)]
+        rate = sum(s["reason"] == "success" for s in stats) / len(stats)
         full = self.level == len(self.levels) - 1
         self.streak = self.streak + 1 if full and rate >= self.stop_success else 0
         new = next_level(self.level, rate, self.threshold, len(self.levels))
         self.history.append({"step": self.num_timesteps, "level": self.level, "scale": self.levels[self.level],
                              "success_rate": rate, "falls": sum(any(s["fell"].values()) for s in stats),
                              "box_lost": sum(s["reason"] in ("box_lost", "box_tipped") for s in stats)})
+        if self.starts:                                  # success per box angle side: < -15, -15..+15, > +15 deg
+            side = lambda d: 0 if d < -15 else (2 if d > 15 else 1)          # noqa: E731
+            by = [[0, 0], [0, 0], [0, 0]]
+            for st0, s in zip(self.starts, stats):
+                by[side(st0["dyaw"])][0] += s["reason"] == "success"
+                by[side(st0["dyaw"])][1] += 1
+            self.history[-1]["by_side"] = by
         self.logger.record("widen/level", self.level)
         self.logger.record("widen/scale", self.levels[self.level])
         self.logger.record("widen/success_rate", rate)
         if self.verbose:
             print(f"widen @ {self.num_timesteps}: level {self.level} (scale {self.levels[self.level]:.2f}) "
-                  f"success {rate:.0%}" + (f", full-range streak {self.streak}" if full else ""), flush=True)
+                  f"success {rate:.0%}" + (f", full-range streak {self.streak}" if full else "")
+                  + (" (by side " + " / ".join(f"{w}/{n}" for w, n in self.history[-1]["by_side"]) + ")"
+                     if self.starts else ""), flush=True)
         if new != self.level:
             self.level = new
             self.training_env.env_method("set_box_range", self.levels[new])
