@@ -137,3 +137,96 @@ target, and it's logged as its own term (`contact`).
 - [random](../runs/rl-baselines-20261112-005350/videos/step_0_baseline_random_v12.mp4)
 - [push_forward](../runs/rl-baselines-20261112-005350/videos/step_0_baseline_push_forward_v12.mp4)
 - [push_steer](../runs/rl-baselines-20261112-005350/videos/step_0_baseline_push_steer_v12.mp4)
+
+## v1.1, round 3: setup changes only (2026-11-12)
+
+**What changed:** The reward is still v1.1. This round only changes the setup:
+- **`push_steer` fix:**
+  - The ducks stop only when the box is inside the target **and** its yaw error is within 15°.
+  - When they stop, both ducks are held on velstand at zero speed, because Shoe Push keeps
+    nudging the box at a zero command.
+  - If the box is inside but crooked, only the duck on the side that has to advance pushes, so
+    the box pivots.
+  - If the box drifts out, the hold is released and the ducks go back on Shoe Push when they
+    touch it.
+  - The hold (`CoPushEnv.set_hold`) is available to scripted controllers only. The PPO action space
+    can't request it.
+- **New `steer` layout:** like `close`, but the target is 0.30 m to the right of the push line. That
+  is beyond the target's own ±0.20 m and against Shoe Push's left drift, so a straight push misses.
+- **New `scripts/rl/train.py`:** PPO.
+
+**Why:**
+- In round 2, `push_steer` failed on a left offset because it stopped with the box crooked.
+- The `close` layout can't tell controllers apart, because any forward motion succeeds there.
+
+**Results:** Baselines are from run `rl-baselines-20261112-011732`. Episodes use the eval seeds from
+10000, and all videos use seed 10000.
+
+`close`, 5 episodes:
+
+| controller | mean return | success | falls | box lost | push share A / B |
+|---|---|---|---|---|---|
+| stand | −3.00 | 0% | 0/5 | 0/5 | – |
+| random | +12.89 ± 0.20 | 100% | 0/5 | 0/5 | 52 / 48% |
+| push_forward | +13.03 | 100% | 0/5 | 0/5 | 50 / 50% |
+| push_steer | +12.60 | 100% | 0/5 | 0/5 | 48 / 52% |
+
+`steer`, 10 episodes:
+
+| controller | mean return | success | falls | box lost | push share A / B |
+|---|---|---|---|---|---|
+| stand | −3.00 | 0% | 0/10 | 0/10 | – |
+| random | −15.93 ± 1.30 | 0% | 0/10 | 1/10 (tipped) | 52 / 48% |
+| push_forward | −16.98 | 0% | 0/10 | 0/10 | 50 / 50% |
+| push_steer | −15.10 | 0% | 0/10 | 0/10 | 58 / 42% |
+
+**Gates:**
+- `close` passes: `push_steer` +12.60 vs `stand` −3.00.
+- `steer` fails: every controller has 0% success.
+  - Shoe Push can't turn the box by 37° within 0.4 m of pushing. With both ducks saturated at
+    +1.5 rad/s they turned about 5° in 2 s, and the box passed the target's x.
+  - Four differential-speed variants (the outside duck pushes faster) also never succeeded; the
+    closest got within 0.13 m.
+
+**Other results:**
+- **`push_steer` fix:** the left-offset case (target 0.15 m left) now succeeds (+11.66): it squares
+  the box, holds on velstand, and the success timer completes.
+- **Policy-switch wobble:** I checked the 1 s after every switch across the `close`, `steer` and
+  `hard` baselines.
+  - Shoe Push → velstand: 48 switches. velstand → Shoe Push: 27.
+  - **No stumbles and no counted falls.** The worst tilt was 11.5° (stumble threshold 26°) and the
+    lowest trunk height 0.103 m.
+  - Switching needs no fix.
+
+**Videos** (seed 10000), in `runs/rl-baselines-20261112-011732/videos/`:
+- `close`:
+  [stand](../runs/rl-baselines-20261112-011732/videos/step_0_baseline_close_stand.mp4) ·
+  [random](../runs/rl-baselines-20261112-011732/videos/step_0_baseline_close_random.mp4) ·
+  [push_forward](../runs/rl-baselines-20261112-011732/videos/step_0_baseline_close_push_forward.mp4) ·
+  [push_steer](../runs/rl-baselines-20261112-011732/videos/step_0_baseline_close_push_steer.mp4)
+  (this one shows the switch to velstand at the end)
+- `steer`:
+  [stand](../runs/rl-baselines-20261112-011732/videos/step_0_baseline_steer_stand.mp4) ·
+  [random](../runs/rl-baselines-20261112-011732/videos/step_0_baseline_steer_random.mp4) ·
+  [push_forward](../runs/rl-baselines-20261112-011732/videos/step_0_baseline_steer_push_forward.mp4) ·
+  [push_steer](../runs/rl-baselines-20261112-011732/videos/step_0_baseline_steer_push_steer.mp4)
+- [index](../runs/rl-baselines-20261112-011732/videos/index.md)
+
+**PPO:**
+- Run A (`close`, 100k steps, pipeline test), run `ppo-A-close-20261112-012145`, 6.3 min:
+  - **Final policy** (5 deterministic episodes, seeds from 10000): mean return **+13.14**, success
+    100%, falls 0/5, box lost 0/5, push share 52 / 48%. It beats `push_forward` (+13.03),
+    `random` (+12.89) and `push_steer` (+12.60), but only by 0.1–0.5.
+  - **It's faster, not smarter.** The mean commanded vx is 0.265 / 0.221 m/s, against 0.2 for the
+    scripts. Training episode length fell from 25.5 to 20.7 steps, and `rollout/ep_rew_mean` rose
+    from 11.3 to about 13.0.
+  - **Deterministic eval curve:** flat from the first eval (+13.06 at 10k, +13.00 to +13.29
+    after). The task is already solved by any forward push, so that's a ceiling, not a training
+    failure.
+  - **No reward gaming:** it didn't stand still or lose the box, and it raised no monitor flags.
+  - Videos:
+    [step_10000_baseline](../runs/ppo-A-close-20261112-012145/videos/step_10000_baseline.mp4) ·
+    [step_100352_final](../runs/ppo-A-close-20261112-012145/videos/step_100352_final.mp4). No
+    "improved" or "new_behavior" video was triggered, which fits a flat curve.
+  - TensorBoard logs: `runs/ppo-A-close-20261112-012145/tb/`.
+- Run B (`steer`, 300k): not run, because the steer gate failed.
