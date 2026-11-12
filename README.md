@@ -21,6 +21,10 @@ The project plan is in [docs/COPUSH_PLAN.md](docs/COPUSH_PLAN.md).
 - **Close target (0.40 m straight ahead):** solved. Every controller that pushes forward
   succeeds. PPO run A reached +13.14 return with 100% success, slightly better than the scripts,
   because it learned to push faster.
+- **Stage 1, random box starts (`overnight` layout):** PPO succeeds on 60% of 50 held-out starts with
+  the box up to 0.15 m off and turned up to 45 degrees (the policy it started from: 50%, `pivot_push`
+  script: 32%). It fails almost every start turned more than 15 degrees to the positive side.
+  [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md)
 - **Target 0.30 m to the side, 0.60 m ahead (`overnight` layout):** early RL success. PPO gets the
   box in 60 to 80% of the time across 3 seeds when the box starts in a random spot, which ties the
   `pivot_push` script (preliminary, 5 episodes). From the fixed start it trained on, it beats the
