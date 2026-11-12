@@ -205,6 +205,15 @@ class CoPushSim:
         self.events.append((0.0, "reset", "scene reset"))
         return self.get_state()
 
+    def mark_start(self) -> dict:
+        """Start the episode clock here (after a settle phase): t = 0, contact totals and the
+        sticky fall flags cleared. Physics state is untouched."""
+        self.t = 0.0
+        self.contact_total = {k: {} for k in DUCKS}
+        self.fallen = {k: self._is_fallen(k) for k in DUCKS}
+        self.events = []
+        return self.get_state()
+
     def set_box_mass(self, mass: float) -> None:
         """Change the box mass (inertia scaled with it). Takes effect immediately; call reset() after."""
         self.cfg["box"]["mass"] = float(mass)

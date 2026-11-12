@@ -87,11 +87,67 @@ def test_fixed_start_by_default_and_randomized_option(env):
     assert renv.sim.m.body_mass[bid] == pytest.approx(boxes[2]["mass"])
 
 
-def test_policy_switches_on_contact_and_not_without(env):
+def test_policy_switches_on_contact_and_not_without():
+    env = CoPushEnv(cfg_with(env={"layout": "hard"}))                    # approach start
+    assert env.state is None and env.start_mode == "approach" and env.cfg["target"]["x"] == 1.20
     _, infos = run(env, baseline("push_forward", env), max_steps=25)       # 5 s: contact at ~3.4 s
     assert env.state["duck_a"]["policy"] == "shoepush" and env.state["duck_b"]["policy"] == "shoepush"
     run(env, baseline("stand", env), max_steps=10)
     assert env.state["duck_a"]["policy"] == "velstand"
+
+
+def test_in_contact_start_is_the_default(env):
+    obs, info = env.reset(seed=0)
+    st = env.state
+    assert env.start_mode == "in_contact" and info["target"]["x"] == pytest.approx(0.75) and st["t"] == 0.0
+    for d, y in (("duck_a", 0.10), ("duck_b", -0.10)):
+        assert st[d]["policy"] == "shoepush" and not st[d]["fallen"]
+        assert st[d]["position"][0] == pytest.approx(0.35 - 0.095, abs=0.01)    # behind the box's face
+        assert st[d]["position"][1] == pytest.approx(y, abs=0.01)
+        assert abs(math.degrees(st[d]["yaw"])) < 3
+    assert st["box"]["position"] == pytest.approx((0.35, 0.0), abs=0.002)        # settling did not shove it
+    _, _, _, _, i = env.step(baseline("push_forward", env)(obs))
+    assert i["contact_time"]["duck_a"] > 0 and i["contact_time"]["duck_b"] > 0
+
+
+def test_push_steer_reaches_the_close_target(env):
+    ret, infos = run(env, baseline("push_steer", env))
+    assert infos[-1]["reason"] == "success" and ret > 5
+
+
+def test_reward_version_is_selected_from_the_config():
+    from copush.config import with_reward_version
+    v1 = CoPushEnv(with_reward_version(load_config(), "v1"))
+    v12 = CoPushEnv(with_reward_version(load_config(), "v1.2"))
+    assert (v1.rcfg["w_yaw"], v1.rcfg["time_penalty"], v1.rcfg["fall_min_down_s"]) == (3.0, 0.01, 0.0)
+    assert (v12.rcfg["w_yaw"], v12.rcfg["time_penalty"], v12.rcfg["contact_penalty"]) == (1.0, 0.03, 0.02)
+    assert CoPushEnv().rcfg["version"] == "v1.1"
+
+
+@pytest.mark.parametrize("version,counts", [("v1", True), ("v1.1", False)])
+def test_a_brief_stumble_is_not_a_fall_from_v11(version, counts):
+    from copush.config import with_reward_version
+    e = CoPushEnv(with_reward_version(load_config(), version))
+    e.reset(seed=0)
+    calls = {"n": 0}
+    real = e.sim._is_fallen
+
+    def flicker(duck):                         # duck A "down" for the first 0.1 s only
+        if duck == "duck_a":
+            calls["n"] += 1
+            return calls["n"] <= 5
+        return real(duck)
+    e.sim._is_fallen = flicker
+    _, _, term, _, info = e.step(baseline("stand", e)(None))
+    assert (info["reason"] == "fall") is counts and term is counts
+
+
+def test_curriculum_levels_move_the_target():
+    e = CoPushEnv(cfg_with(env={"curriculum": {**load_config()["env"]["curriculum"], "enabled": True}}))
+    assert e.cfg["target"]["x"] == pytest.approx(0.35 + 0.40)
+    assert e.set_curriculum_level(2) == 2 and e.cfg["target"]["x"] == pytest.approx(0.35 + 0.85)
+    assert e.cfg["target"]["y"] == pytest.approx(0.20)
+    assert e.set_curriculum_level(9) == 2
 
 
 def _tip_over(env, duck="duck_a"):
@@ -105,7 +161,7 @@ def test_fall_v1_terminates_v2_continuous_keeps_going():
     e = CoPushEnv()
     e.reset(seed=0)
     _tip_over(e)
-    _, r, term, _, info = e.step(baseline("stand", e)(None))
+    _, r, term, _, info = e.step(baseline("stand", e)(None))        # down the whole 0.2 s step
     assert term and info["reason"] == "fall" and info["terms"]["fall"] == -10.0
 
     c = CoPushEnv(cfg_with(reward={"fall_mode": "continuous", "fall_rate": 1.0}))
@@ -118,11 +174,11 @@ def test_fall_v1_terminates_v2_continuous_keeps_going():
 
 def test_coop_bonus_in_physics_balanced_push_vs_pinch():
     coop = {"cooperation_mode": "gated_balanced", "coop_lambda": 5.0}
-    both = CoPushEnv(cfg_with(reward=coop))
+    both = CoPushEnv(cfg_with(reward=coop, env={"layout": "hard"}))
     _, infos = run(both, baseline("push_forward", both), max_steps=40)
     assert max(i["b"] for i in infos) > 0.3 and sum(i["terms"]["coop"] for i in infos) > 0
 
-    pinch_cfg = cfg_with(reward=coop)
+    pinch_cfg = cfg_with(reward=coop, env={"layout": "hard"})
     pinch_cfg["duck_a"].update({"x": 0.0, "y": 0.0})
     pinch_cfg["duck_b"].update({"x": 0.70, "y": 0.0, "yaw": 180})          # facing A across the box
     pinch = CoPushEnv(pinch_cfg)
