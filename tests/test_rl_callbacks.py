@@ -14,7 +14,7 @@ from copush.config import load_config, policy_path  # noqa: E402
 if not all(os.path.exists(policy_path(load_config(), n)) for n in ("velstand", "shoepush")):
     pytest.skip("policies missing (scripts/fetch_policies.sh)", allow_module_level=True)
 
-from copush.rl_callbacks import VideoEvalCallback, behaviors, decide  # noqa: E402
+from copush.rl_callbacks import CurriculumCallback, VideoEvalCallback, behaviors, decide, next_level  # noqa: E402
 
 
 def stats(ret, reason="timeout", flags=()):
@@ -50,3 +50,26 @@ def test_callback_on_a_tiny_ppo_run(tmp_path):
     assert len(evals) == cb.n_evals >= 4                         # 16, 32, 48 + final
     index = (vids / "index.md").read_text()
     assert all(n in index for n in names)
+
+
+def test_next_level():
+    assert next_level(0, 0.8, 0.8, 3) == 1
+    assert next_level(0, 0.6, 0.8, 3) == 0
+    assert next_level(2, 1.0, 0.8, 3) == 2
+
+
+def test_curriculum_callback_levels_up_the_training_envs(tmp_path):
+    from stable_baselines3 import PPO
+    from stable_baselines3.common.vec_env import DummyVecEnv
+    from copush.env import CoPushEnv
+
+    cfg = load_config()
+    cfg["env"]["max_steps"] = 3
+    cfg["env"]["curriculum"].update({"enabled": True, "success_threshold": 0.0, "eval_episodes": 1})
+    vec = DummyVecEnv([lambda: CoPushEnv(cfg)])
+    model = PPO("MlpPolicy", vec, n_steps=8, batch_size=8, n_epochs=1, seed=0, verbose=0)
+    cb = CurriculumCallback(cfg, every=8)
+    model.learn(total_timesteps=24, callback=cb)
+    assert cb.level == 2                                      # threshold 0: every eval levels up, capped
+    assert vec.envs[0].curriculum_level == 2
+    assert vec.envs[0].cfg["target"]["x"] == pytest.approx(0.35 + 0.85)

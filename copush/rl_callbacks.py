@@ -105,3 +105,49 @@ class VideoEvalCallback(BaseCallback):
         if self.verbose:
             print(f"eval @ {self.num_timesteps}: return {stats['return']:+.2f} ({stats['reason']}), video: {reason}")
         return stats, reason
+
+
+# ── curriculum (env.curriculum, off by default) ──────────────────────────────
+
+def next_level(level: int, success_rate: float, threshold: float, n_levels: int) -> int:
+    return level + 1 if success_rate >= threshold and level + 1 < n_levels else level
+
+
+class CurriculumCallback(BaseCallback):
+    """Every `every` steps: eval_episodes deterministic episodes at the current level (held-out
+    seeds, split "eval"); success rate >= success_threshold moves every training env (and the eval
+    env) to the next level of env.curriculum (target further along the push line / sideways)."""
+
+    def __init__(self, cfg: dict, every: Optional[int] = None, verbose: int = 0):
+        super().__init__(verbose)
+        self.cfg = cfg
+        self.cur = cfg["env"]["curriculum"]
+        self.every = int(every if every is not None else cfg["rl"]["eval_every"])
+        self.level, self.last_eval, self.history = 0, 0, []
+
+    def _init_callback(self) -> None:
+        self.env = CoPushEnv(self.cfg, split="eval")
+        self.env.set_curriculum_level(self.level)
+
+    def _act(self, obs):
+        return self.model.predict(obs, deterministic=True)[0]
+
+    def _on_step(self) -> bool:
+        if self.num_timesteps - self.last_eval < self.every:
+            return True
+        self.last_eval = self.num_timesteps
+        seed0 = self.cfg["env"]["heldout_seeds"][0]
+        wins = sum(run_episode(self.env, self._act, seed0 + i)["reason"] == "success"
+                   for i in range(self.cur["eval_episodes"]))
+        rate = wins / self.cur["eval_episodes"]
+        new = next_level(self.level, rate, self.cur["success_threshold"], len(self.cur["distances"]))
+        self.history.append({"step": self.num_timesteps, "level": self.level, "success_rate": rate})
+        self.logger.record("curriculum/level", self.level)
+        self.logger.record("curriculum/success_rate", rate)
+        if new != self.level:
+            self.level = new
+            self.training_env.env_method("set_curriculum_level", new)
+            self.env.set_curriculum_level(new)
+            if self.verbose:
+                print(f"curriculum: level {new} at step {self.num_timesteps} (success {rate:.0%})")
+        return True
