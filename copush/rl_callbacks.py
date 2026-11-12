@@ -151,3 +151,62 @@ class CurriculumCallback(BaseCallback):
             if self.verbose:
                 print(f"curriculum: level {new} at step {self.num_timesteps} (success {rate:.0%})")
         return True
+
+
+# ── auto-widen the box start range (env.box_start) ───────────────────────────
+
+class BoxRangeCallback(BaseCallback):
+    """Every `every` steps: `episodes` deterministic episodes on held-out seeds seed0, seed0 + 1, ...
+    with the box sampled from the current range (env.box_start scaled by levels[level]). Success
+    >= threshold widens every training env (and the eval env) one level. On the last level,
+    success >= stop_success for stop_evals evaluations in a row stops training (stop_evals 0: never).
+    `history` has one dict per evaluation."""
+
+    def __init__(self, cfg: dict, levels, threshold: float, every: int, episodes: int, seed0: int,
+                 stop_success: float = 1.1, stop_evals: int = 0, verbose: int = 0):
+        super().__init__(verbose)
+        self.cfg, self.levels, self.threshold = cfg, list(levels), threshold
+        self.every, self.episodes, self.seed0 = int(every), int(episodes), int(seed0)
+        self.stop_success, self.stop_evals = stop_success, int(stop_evals)
+        self.level, self.last_eval, self.streak, self.history = 0, 0, 0, []
+        self.reached_full_at = None
+        self.stopped_early = False
+
+    def _init_callback(self) -> None:
+        self.env = CoPushEnv(self.cfg, split="eval")
+        self.env.set_box_range(self.levels[self.level])
+        self.training_env.env_method("set_box_range", self.levels[self.level])
+
+    def _act(self, obs):
+        return self.model.predict(obs, deterministic=True)[0]
+
+    def _on_step(self) -> bool:
+        if self.num_timesteps - self.last_eval < self.every:
+            return True
+        self.last_eval = self.num_timesteps
+        stats = [run_episode(self.env, self._act, self.seed0 + i) for i in range(self.episodes)]
+        rate = sum(s["reason"] == "success" for s in stats) / self.episodes
+        full = self.level == len(self.levels) - 1
+        self.streak = self.streak + 1 if full and rate >= self.stop_success else 0
+        new = next_level(self.level, rate, self.threshold, len(self.levels))
+        self.history.append({"step": self.num_timesteps, "level": self.level, "scale": self.levels[self.level],
+                             "success_rate": rate, "falls": sum(any(s["fell"].values()) for s in stats),
+                             "box_lost": sum(s["reason"] in ("box_lost", "box_tipped") for s in stats)})
+        self.logger.record("widen/level", self.level)
+        self.logger.record("widen/scale", self.levels[self.level])
+        self.logger.record("widen/success_rate", rate)
+        if self.verbose:
+            print(f"widen @ {self.num_timesteps}: level {self.level} (scale {self.levels[self.level]:.2f}) "
+                  f"success {rate:.0%}" + (f", full-range streak {self.streak}" if full else ""), flush=True)
+        if new != self.level:
+            self.level = new
+            self.training_env.env_method("set_box_range", self.levels[new])
+            self.env.set_box_range(self.levels[new])
+            if new == len(self.levels) - 1:
+                self.reached_full_at = self.num_timesteps
+            if self.verbose:
+                print(f"widen: level {new} (scale {self.levels[new]:.2f}) at step {self.num_timesteps}", flush=True)
+        if self.stop_evals and self.streak >= self.stop_evals:
+            self.stopped_early = True
+            return False
+        return True
