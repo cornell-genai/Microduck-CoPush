@@ -1,6 +1,6 @@
 # Microduck-CoPush
 
-Two little simulated robot ducks learn to push a box into a target together (Cornell Generative AI
+Two simulated robot ducks learn to push a box into a target together (Cornell Generative AI
 club, fall 2026).
 
 [![PPO: both ducks push the box into the target](docs/media/overnight_ppo_success.gif)](docs/media/overnight_ppo_success.mp4)
