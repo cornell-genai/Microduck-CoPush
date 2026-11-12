@@ -1,6 +1,9 @@
 # Microduck-CoPush
 
 Two simulated Pollen MicroDucks push one box into a target area together (Cornell Generative AI club, fall 2026).
+
+**📈 [See our progress timeline, with clips →](docs/TIMELINE.md)**
+
 - **Low level:** each duck walks with frozen, pretrained neural policies. velstand walks, and Shoe
   Push leans into a box.
 - **High level:** our code only decides each duck's forward speed and turn rate, five times a
