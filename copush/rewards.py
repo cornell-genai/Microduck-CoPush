@@ -18,11 +18,15 @@ edge) so a long-lasting condition is one line, not thousands:
     reward_vs_dist  reward summed over the window is > 0.05 while box_to_target did not fall
     fall            a duck fell
     edge            box crossed the target boundary >= 3 times within the window
+
+`TaskReward` is the RL reward (copush.env, one call per 0.2 s env step): v1 by default, with the
+v2 options (continuous falls, gated balanced cooperation) switched on from configs/copush.yaml.
 """
 from __future__ import annotations
 
 import math
 from collections import deque
+from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Tuple
 
 RewardFn = Callable[[Optional[dict], dict], float]
@@ -44,6 +48,76 @@ def progress_reward(prev: Optional[dict], state: dict) -> float:
 
 REWARDS: Dict[str, RewardFn] = {"progress": progress_reward}
 
+
+# ── RL reward (copush.env) ───────────────────────────────────────────────────
+
+TERMS = ("pos", "yaw", "success", "time", "fall", "box_fail", "coop")
+
+
+def balance(f_a: float, f_b: float) -> float:
+    """b = min(F_A, F_B) / max(F_A, F_B), 0 when neither pushes. Inputs are already >= 0."""
+    hi = max(f_a, f_b)
+    return 0.0 if hi <= 0.0 else min(f_a, f_b) / hi
+
+
+@dataclass
+class StepSummary:
+    """What the env measured over one env step (0.2 s)."""
+    dist_before: float                  # box centre to target centre, m
+    dist_after: float
+    yaw_before: float                   # yaw error modulo 180 deg, rad, in [0, pi/2]
+    yaw_after: float
+    success_held_s: float = 0.0         # how long the success condition has held, up to the end of the step
+    fell: bool = False                  # a duck fell for the first time during this step
+    down_s: float = 0.0                 # seconds of this step during which any duck was down
+    box_tilt_deg: float = 0.0
+    box_lost: bool = False              # box centre > box_lost_dist from both trunks
+    push: Dict[str, float] = field(default_factory=lambda: {"duck_a": 0.0, "duck_b": 0.0})
+    # push[duck]: contact force on the box along box->target, clipped >= 0 per physics substep,
+    # averaged over every substep of the env step (N)
+
+
+class TaskReward:
+    """v1 (defaults) and the v2 options, from the `reward` section of configs/copush.yaml.
+
+    Per env step:  pos  = w_pos * (dist_before - dist_after)
+                   yaw  = w_yaw * (yaw_before - yaw_after)
+                   time = -time_penalty
+      success  +success_bonus, ends the episode, once success held for success_hold_s
+      fall     terminate: -fall_penalty, ends the episode
+               continuous: -fall_rate * down_s, episode continues
+      box_fail -box_fail_penalty, ends the episode, if the box tips > box_tilt_deg or is lost
+      coop     gated_balanced: coop_lambda * max(0, dist_before - dist_after) * balance(F_A, F_B)
+
+    `step()` returns (terms, terminated, reason); every term in TERMS is present (0 if unused),
+    so logs always have the same columns. Failures are checked before success.
+    """
+
+    def __init__(self, cfg: dict):
+        self.c = dict(cfg)
+
+    def step(self, s: StepSummary) -> Tuple[Dict[str, float], bool, Optional[str]]:
+        c = self.c
+        t = {k: 0.0 for k in TERMS}
+        t["pos"] = c["w_pos"] * (s.dist_before - s.dist_after)
+        t["yaw"] = c["w_yaw"] * (s.yaw_before - s.yaw_after)
+        t["time"] = -c["time_penalty"]
+        if c["cooperation_mode"] == "gated_balanced":
+            t["coop"] = (c["coop_lambda"] * max(0.0, s.dist_before - s.dist_after)
+                         * balance(s.push["duck_a"], s.push["duck_b"]))
+        reason = None
+        if c["fall_mode"] == "terminate":
+            if s.fell:
+                t["fall"], reason = -c["fall_penalty"], "fall"
+        else:
+            t["fall"] = -c["fall_rate"] * s.down_s
+        if reason is None and (s.box_tilt_deg > c["box_tilt_deg"] or s.box_lost):
+            t["box_fail"] = -c["box_fail_penalty"]
+            reason = "box_tipped" if s.box_tilt_deg > c["box_tilt_deg"] else "box_lost"
+        if reason is None and s.success_held_s >= c["success_hold_s"] - 1e-9:
+            t["success"], reason = c["success_bonus"], "success"
+        return t, reason is not None, reason
+
 WINDOW_S = 2.0           # sliding window the flags look at
 MIN_IMPULSE = 0.5        # N*s of box contact in the window before contact flags are judged (a steady push is ~2-3)
 SHARE = 0.80
@@ -64,8 +138,10 @@ class RewardMonitor:
         self.hist: deque = deque()
         self.active: Dict[str, float] = {}
 
-    def update(self, state: dict) -> Tuple[float, List[str]]:
-        r = float(self.reward_fn(self.prev, state))
+    def update(self, state: dict, reward: Optional[float] = None) -> Tuple[float, List[str]]:
+        """reward=None: compute it with reward_fn. Otherwise use the given value (copush.env feeds
+        its own TaskReward total on the last control step of each env step, 0 on the others)."""
+        r = float(self.reward_fn(self.prev, state)) if reward is None else float(reward)
         self.cum += r
         contact = {d: dict(c["by_part"]) for d, c in state["contact"].items()}
         self.hist.append((state["t"], r, state["box_to_target"], state["box"]["position"],

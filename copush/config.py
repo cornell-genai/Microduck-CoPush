@@ -33,7 +33,17 @@ DEFAULTS = {
                  "shoepush": "data/policies/robert/shoe_push/forward/policy.onnx"},
     "keyboard": {"vx_step": 0.05, "vyaw_step": 0.3, "vx_max": 0.3, "vx_min": -0.3, "vyaw_max": 1.5},
     "actuator": {"vin": 7.4, "vin_drop_gain": 0.1},
+    "env": {"step_s": 0.2, "max_steps": 100, "lose_contact_s": 0.5, "randomize": False,
+            "random": {"box_x": [0.30, 0.36], "box_y": [-0.04, 0.04], "box_yaw": [75, 105],
+                       "box_mass": [0.10, 0.25]},
+            "heldout_seeds": [10000, 10099]},
+    "reward": {"w_pos": 10.0, "w_yaw": 3.0, "success_bonus": 10.0, "success_yaw_deg": 15.0,
+               "success_hold_s": 1.0, "time_penalty": 0.01, "fall_mode": "terminate",
+               "fall_penalty": 10.0, "fall_rate": 1.0, "box_fail_penalty": 5.0, "box_tilt_deg": 30.0,
+               "box_lost_dist": 0.40, "cooperation_mode": "none", "coop_lambda": 5.0},
 }
+FALL_MODES = ("terminate", "continuous")
+COOPERATION_MODES = ("none", "gated_balanced")
 
 
 def _merge(base: dict, over: dict) -> dict:
@@ -55,6 +65,11 @@ def load_config(path: Optional[str] = DEFAULT_PATH, overrides: Optional[dict] = 
     for duck in ("duck_a", "duck_b"):
         if cfg[duck]["policy"] not in POLICY_NAMES:
             raise ValueError(f"{duck}.policy must be one of {POLICY_NAMES}, got {cfg[duck]['policy']!r}")
+    if cfg["reward"]["fall_mode"] not in FALL_MODES:
+        raise ValueError(f"reward.fall_mode must be one of {FALL_MODES}, got {cfg['reward']['fall_mode']!r}")
+    if cfg["reward"]["cooperation_mode"] not in COOPERATION_MODES:
+        raise ValueError(f"reward.cooperation_mode must be one of {COOPERATION_MODES}, "
+                         f"got {cfg['reward']['cooperation_mode']!r}")
     return cfg
 
 
