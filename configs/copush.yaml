@@ -49,6 +49,9 @@ env:                        # RL environment (copush/env.py)
   step_s: 0.2               # one env step = 10 control steps
   max_steps: 100            # 20 s episodes
   lose_contact_s: 0.5       # Shoe Push -> velstand after this long without box contact
+  stand_still:              # OFF: lets the learner stand a duck still (the scripts use set_hold)
+    enabled: false          # true: commanded vx < vx_threshold -> that duck on velstand at zero speed
+    vx_threshold: 0.02      # m/s; action vx < -0.87 (vx = 0.15 (a + 1))
   randomize: false          # true: sample the box per episode from `random` (train seeds only)
   random:
     box_x: [0.30, 0.36]     # keeps the box < 0.40 m from a duck at the start (else "lost")

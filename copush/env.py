@@ -37,7 +37,9 @@ once a duck has been down fall_min_down_s without a break (v1: immediately).
 
 set_hold(duck, True) keeps a duck on velstand even while it touches the box (scripted baselines use
 it to stand still: Shoe Push keeps nudging the box at zero command); the action space has no such
-switch. Every policy switch opens a SWITCH_WINDOW_S window in `switch_log`: lowest trunk z, worst
+switch unless env.stand_still.enabled (OFF by default): then a duck whose commanded forward speed
+is below env.stand_still.vx_threshold is held on velstand at zero speed (no turning) for that
+step, and released as soon as its command is above it again. Every policy switch opens a SWITCH_WINDOW_S window in `switch_log`: lowest trunk z, worst
 tilt, whether a fall was counted, how far the box moved.
 
 Logging (log_dir set): env_steps.csv, one row per env step with every reward term, per-duck
@@ -125,6 +127,7 @@ class CoPushEnv(gym.Env):
         self.state = None
         self.frame_hook = None          # callable(state, return_so_far) after every control step (videos)
         self.hold = {d: False for d in DUCKS}
+        self.stand_still = self.ecfg["stand_still"]
         self.switch_log = []            # one dict per policy switch, across episodes
         self._open_switches = []
         self._last_pol = {}
@@ -256,6 +259,13 @@ class CoPushEnv(gym.Env):
     def step(self, action):
         st0 = self.state
         cmds = action_to_cmd(action)
+        if self.stand_still["enabled"]:                  # commanded vx below the threshold = stand on velstand
+            for d, L in (("duck_a", "A"), ("duck_b", "B")):
+                still = cmds[L][0] < self.stand_still["vx_threshold"]
+                if still:
+                    cmds[L] = (0.0, 0.0, 0.0)
+                if still != self.hold[d]:
+                    self.set_hold(d, still)
         push = {d: 0.0 for d in DUCKS}
         force = {d: 0.0 for d in DUCKS}
         ctime = {d: 0.0 for d in DUCKS}
