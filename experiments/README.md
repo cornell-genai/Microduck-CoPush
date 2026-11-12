@@ -7,6 +7,7 @@ stage's exam.
 | Stage | One change | Status | Headline result |
 |---|---|---|---|
 | [stage1-random-box-pose](stage1-random-box-pose/) | Random box starts (offset up to 0.15 m, angle up to 45 deg), ducks still against the box | done | 60% on its 50-start test set (01_reference 50%, pivot_push 32%); full range by step 80k, early stop at 980k; blind spot: box turned to positive angles (2/17) |
+| [stage1b-turn-direction-fix](stage1b-turn-direction-fix/) | Diagnose the positive-angle blind spot, then one fix | stopped after diagnosis (UNCLEAR) | Not physical (pivot turns 12.7 vs 13.9 deg/s both ways) and the policy does turn CW; positive starts need about 55 deg of CW turning first, negative about 1 deg. No training yet |
 
 ## Layout
 
