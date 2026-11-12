@@ -1,0 +1,29 @@
+# Dry run of the overnight queue (scripts/rl/overnight.py): 3 tiny runs, every code path.
+#   scripts/rl/overnight.sh --config configs/overnight_test.yaml
+out: runs/overnight-20261112/tests/dryrun
+steps_per_run: 5000
+checkpoint_every: 2000
+eval_episodes: 2
+max_videos: 3
+max_attempts: 2
+early_stop: {flat_steps: 300000, flat_range: 0.25}
+
+reference:
+  env: {layout: overnight}
+  layouts:
+    overnight: {start_mode: in_contact, target: {x: 0.95, y: -0.30, yaw: 90}}
+  reward: {version: v1.1}
+  ppo: {seed: 1}
+  rl: {eval_every: 2000}
+
+runs:
+  - name: 01_reference
+    change: none (reference)
+  - name: 02_stand_still
+    change: stand-still action
+    overrides: {env: {stand_still: {enabled: true}}}
+  - name: 03_curriculum
+    change: curriculum
+    overrides:
+      env:
+        curriculum: {enabled: true, distances: [0.40, 0.40, 0.60, 0.60], offsets: [0.0, -0.10, -0.20, -0.30]}
