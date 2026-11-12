@@ -1,20 +1,105 @@
 # Microduck-CoPush
 
-Two simulated Pollen MicroDucks cooperatively pushing a box in MuJoCo: first with scripted
-coordination, later with a learned high-level controller. Plan: [docs/COPUSH_PLAN.md](docs/COPUSH_PLAN.md).
-Week 1 status: [docs/WEEK1_STATUS.md](docs/WEEK1_STATUS.md).
+Two simulated Pollen MicroDucks push one box into a target area together (Cornell Generative AI club, fall 2026).
+- **Low level:** each duck walks with frozen, pretrained neural policies. velstand walks, and Shoe
+  Push leans into a box.
+- **High level:** our code only decides each duck's forward speed and turn rate, five times a
+  second. A scripted controller does that today; a reinforcement-learning (RL) coordinator is
+  being trained to replace it.
 
-This repo is a **client** of Pollen's repos and never copies their code:
+The project plan is in [docs/COPUSH_PLAN.md](docs/COPUSH_PLAN.md).
+
+## Status (2026-11-12)
+
+- **Simulator:** done. Two identical ducks, a 28 × 10 × 9 cm box and a target area in MuJoCo. It
+  runs about 20× faster than real time, and 85× with 8 parallel copies.
+- **RL environment:** done (Gymnasium). It comes with reward versions v1, v1.1 and v1.2, scripted
+  baselines, start layouts, logging, and short evaluation videos.
+- **Close target (0.40 m straight ahead):** solved. Every controller that pushes forward
+  succeeds. PPO run A reached +13.14 return with 100% success, slightly better than the scripts,
+  because it learned to push faster.
+- **Target 0.30 m to the side (`steer` layout):** not reachable yet. It needs a 37° turn, and Shoe
+  Push only turns about 5° every 2 s while pushing.
+- What we changed in the reward and why: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
+
+## See it
+
+Each thumbnail links to a clip of a few seconds; the clips play at 2× speed.
+
+| Two ducks pushing (scripted) | `push_steer` squares the box, then stands still | PPO run A (close target) | Steer layout: can't turn in time |
+|---|---|---|---|
+| [![two ducks pushing](docs/media/two_duck_push.jpg)](docs/media/two_duck_push.mp4) | [![push_steer squaring](docs/media/push_steer_squaring.jpg)](docs/media/push_steer_squaring.mp4) | [![PPO run A](docs/media/ppo_run_a_final.jpg)](docs/media/ppo_run_a_final.mp4) | [![steer overshoot](docs/media/steer_overshoot.jpg)](docs/media/steer_overshoot.mp4) |
+
+## Quick start
+
+You need `uv`, with this repo cloned next to Pollen's `microduck_rl` (setup below). All commands run
+from the repo root.
+
+```sh
+sh scripts/fetch_policies.sh                                      # once: the ONNX walking/pushing policies
+
+scripts/copush.sh --viewer                                        # watch + drive both ducks from the terminal
+scripts/copush.sh --headless --duration 15 --script push_forward  # scripted push -> runs/<timestamp>/
+```
+
+[docs/SIM_GUIDE.md](docs/SIM_GUIDE.md) covers keys, start positions, the Python API and common
+problems, and [docs/CHEATSHEET.md](docs/CHEATSHEET.md) is a one-page version.
+
+RL uses `scripts/rl.sh`. It is Python with gymnasium and stable-baselines3 added as a uv overlay,
+so microduck_rl's own environment is left alone.
+
+```sh
+scripts/rl.sh scripts/rl/baselines.py                             # baselines + gates per layout (~2 min)
+scripts/rl.sh scripts/rl/train.py --layout close --steps 100000 --name A   # PPO, ~6 min on a laptop
+scripts/rl.sh -m tensorboard.main --logdir runs                   # training curves
+scripts/rl.sh -m pytest                                           # all tests
+```
+
+Every run writes `runs/<run_id>/`, which is git-ignored. It holds the config, CSV logs, events,
+short videos with an `index.md`, and for PPO the TensorBoard logs and `model.zip`. Settings live in
+[configs/copush.yaml](configs/copush.yaml):
+- the start layout: `close`, `steer` or `hard`
+- the reward version
+- PPO hyperparameters
+- the video settings
+
+## Docs
+
+| | |
+|---|---|
+| [docs/SIM_GUIDE.md](docs/SIM_GUIDE.md) · [docs/CHEATSHEET.md](docs/CHEATSHEET.md) | running the two-duck sim |
+| [docs/REWARD_LOG.md](docs/REWARD_LOG.md) | each reward version: what changed, why, results, videos |
+| [docs/results/b0_single_duck_push.md](docs/results/b0_single_duck_push.md) | one duck + Shoe Push baseline (steering gain, drift) |
+| [docs/WEEK1_STATUS.md](docs/WEEK1_STATUS.md) | Week 1: two ducks in duck-sim / robotd |
+| [docs/COPUSH_PLAN.md](docs/COPUSH_PLAN.md) | the semester plan |
+
+## Repo layout
+
+```
+copush/         sim.py (two-duck MuJoCo world), duck_policy.py (per-duck ONNX runner),
+                env.py (Gymnasium env + scripted baselines), rewards.py, rl_eval.py, rl_callbacks.py,
+                video.py, config.py; plus the Week 1 duck-sim client (sim_client.py, runner.py, ...)
+configs/        copush.yaml (scene, layouts, reward versions, PPO, video)
+scripts/        copush.sh / copush_sim.py (sim), rl.sh + rl/ (checks, baselines, train), b0/ (B0 harness),
+                sim.sh, check_m1.py, two_duck_demo.py (Week 1 duck-sim path)
+scenes/         copush_base.xml (floor/lights for the two-duck world), B0 and Week 1 scenes
+tests/          pytest; simulator tests skip outside microduck_rl's environment
+docs/           guides, results, media/ (README videos, < 1 MB each)
+```
+
+## Week 1 path: duck-sim / robotd
+
+This repo is a **client** of Pollen's repos and never copies their code. The Week 1 setup ran each duck
+as a real `robotd` driving a MuJoCo body: commanded like a robot (`robot.move` JSON-RPC, 10 Hz) and read
+back from the simulator's body port. The two-duck sim above replaced it for CoPush experiments (it
+runs faster than real time, and Shoe Push misbehaves under robotd; see WEEK1_STATUS.md).
 
 | repo | role | pinned in |
 |---|---|---|
 | [pollen-robotics/microduck](https://github.com/pollen-robotics/microduck) | `robotd` (the real robot daemon, 50 Hz loop + ONNX policies) and `scripts/duck-sim` | `upstream.lock` |
 | [pollen-robotics/microduck_rl](https://github.com/pollen-robotics/microduck_rl) | `duck-body` (MuJoCo body server), scenes, policy runtime | `upstream.lock` |
 
-Each duck is a real `robotd` driving a MuJoCo body. We command it like a robot (`robot.move`
-JSON-RPC on its socket, resent at 10 Hz) and read ground truth from the simulator's body port.
-
-## Setup (macOS / Linux)
+### Setup (macOS / Linux)
 
 Needs `git`, [`uv`](https://docs.astral.sh/uv/) and Rust (`cargo`). Clone this repo next to the
 upstream ones (setup clones them if missing):
@@ -36,18 +121,7 @@ local changes; `COPUSH_NO_PIN=1` to skip pinning), runs `uv sync` in microduck_r
 the daemons, and installs our scene into microduck_rl as an untracked `scene_copush_box.xml`.
 Policies are fetched by duck-sim on the first launch.
 
-## Two-duck sim (B0 harness path, faster than real time)
-
-Two backlash ducks + box + target on the B0 harness (BAM actuators, ONNX policies), without
-duck-sim/robotd. Quick guide: [docs/SIM_GUIDE.md](docs/SIM_GUIDE.md), one page:
-[docs/CHEATSHEET.md](docs/CHEATSHEET.md).
-
-```sh
-scripts/copush.sh --viewer                                        # drive both ducks from the terminal
-scripts/copush.sh --headless --duration 15 --script push_forward  # -> runs/<timestamp>/
-```
-
-## Commands
+### Commands
 
 All simulator commands go through `scripts/sim.sh`, a thin wrapper over `microduck/scripts/duck-sim`
 that sets 2 ducks, headless by default, and loads our body-server extension (box pose, spawn
@@ -100,18 +174,6 @@ Do not use `scripts/sim.sh drive` for duck B: upstream `drive` always commands a
 
 ```sh
 uv run pytest
-```
-
-## Layout
-
-```
-copush/            library: state.py (shared state + Controller), sim_client.py, controllers.py,
-                   runner.py (10 Hz loop), recorder.py (CSV), metrics.py, _bodyext/ (body-server extension)
-scripts/           setup.sh, sim.sh, install_scene.sh, two_duck_demo.py, check_m1.py, plot_run.py
-scenes/            scene_box.xml
-tests/             tests on data/sample/mock_run.csv
-docs/              COPUSH_PLAN.md, WEEK1_STATUS.md, results
-data/sample/       mock CSV for tests (data/runs/ and data/plots/ are gitignored)
 ```
 
 ## The shared interface
