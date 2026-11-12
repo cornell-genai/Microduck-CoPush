@@ -27,4 +27,6 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
      rates, not scores.
    - Training checks said 80% but the exam said 60%: the 20 check starts happened to be easy. Test on
      a fixed, evenly spread set.
-6. **Next (30 s):** fix the one-direction blind spot, then stage 2: the ducks start away from the box.
+6. **Next (30 s):** the one-side blind spot is not a physical limit (the ducks can pivot the box about
+   equally fast both ways). The hard side just needs a long turn first, so the next run practices those
+   starts more. Then stage 2: the ducks start away from the box.

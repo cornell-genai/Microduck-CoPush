@@ -17,7 +17,8 @@ every start where the box is turned more than 15 degrees to the positive side (2
 | 2026-11-12 | In contact, target 0.30 m to the side, 0.40 m ahead | Target moved to the side | No controller succeeds. The ducks can't turn the box in time | 10 per controller | [mp4](media/steer_overshoot.mp4) |
 | 2026-11-12 | In contact, target 0.30 m to the side, 0.60 m ahead | New `pivot_push` script and a reachability sweep | The script reaches this target 4 of 5 times, but duck A does 97% of the pushing | 5 randomized per target | [gif](media/overnight_pivot_push_script.gif) |
 | 2026-11-12 | Same layout, PPO | First PPO training on this layout (7 runs overnight) | PPO succeeds 60 to 80% across 3 seeds with random starts and ties the script. From the fixed start it trained on, it beats the script. None of the 4 tweaks changed results beyond the seed spread | 5 randomized + 1 fixed (preliminary) | [gif](media/overnight_ppo_success.gif) · [side by side](media/overnight_script_vs_ppo_side_by_side.mp4) |
-| **2026-11-12** | **Stage 1: random box starts** | **Box starts up to 0.15 m off and 45 degrees turned, ducks still against it** | **PPO succeeds on 60% of test starts (the policy it started from: 50%, `pivot_push`: 32%). Fails almost every start turned more than 15 degrees to the positive side** | **50 fixed held-out starts** | [gif](media/stage1_pivot_push_vs_ppo_hard_start.gif) · [side by side](media/stage1_pivot_push_vs_ppo_hard_start.mp4) · [failure](media/stage1_failure_positive_angle.mp4) |
+| 2026-11-12 | Stage 1: random box starts | **Box starts up to 0.15 m off and 45 degrees turned, ducks still against it** | PPO succeeds on 60% of test starts (the policy it started from: 50%, `pivot_push`: 32%). Fails almost every start turned more than 15 degrees to the positive side | 50 fixed held-out starts | [gif](media/stage1_pivot_push_vs_ppo_hard_start.gif) · [side by side](media/stage1_pivot_push_vs_ppo_hard_start.mp4) · [failure](media/stage1_failure_positive_angle.mp4) |
+| **2026-11-12** | **Stage 1b: why one side fails** | **Diagnosis only, no training** | **Not a physical limit: pivoting turns the box about equally fast both ways, and the policy does turn the right way. The hard side needs about 55 degrees of turning before pushing, the easy side about 1. Stopped before training** | **50 test starts + 60 turning trials** | none |
 
 ---
 
@@ -128,3 +129,18 @@ within 0.28 m, then pushes the box past the target:
 
 **Next:** fix the one-direction blind spot (for example, train on mirrored episodes) and use an evenly
 spread check set, before stage 2 (ducks start away from the box).
+
+## 2026-11-12: stage 1b, why one side fails (diagnosis only)
+
+Details: [experiments/stage1b-turn-direction-fix/](../experiments/stage1b-turn-direction-fix/README.md).
+
+- **Can the ducks turn the box both ways?** Yes. When one duck stands and the other pushes alone, the box
+  turns 12.7 degrees per second clockwise and 13.9 counter-clockwise. Only the "both ducks turn" command is
+  lopsided (4.8 vs 8.7).
+- **Does the policy only turn one way?** No. On the hard side it turns the right way, just as fast as the
+  pivot.
+- **So what's different?** The target is off to the right. A box turned the "positive" way points away from it
+  and needs about 55 degrees of turning before the push; a box turned the other way already points at it.
+  The policy turns part of the way, then pushes the box past the target.
+- The plan said to stop and report if neither "physical" nor "learning" fit, so nothing was trained. The
+  suggested fix is to train with half the starts on the hard side.
