@@ -33,11 +33,18 @@ OBS_DIM = 3 + 3 + 3 * N_JOINTS + N_CMD          # 61
 _GRAVITY = np.array([0.0, 0.0, -1.0], dtype=np.float32)
 
 
-def load_sessions(paths: Dict[str, str]) -> Dict[str, ort.InferenceSession]:
-    """name -> InferenceSession. One session can be shared by every duck (run() is stateless)."""
+def load_sessions(paths: Dict[str, str], threads: int = 1) -> Dict[str, ort.InferenceSession]:
+    """name -> InferenceSession. One session can be shared by every duck (run() is stateless).
+
+    threads=1: the policies are small MLPs, and onnxruntime's default (one thread per core) makes
+    parallel training envs fight over the cores (8 workers ran no faster than 1).
+    """
+    opts = ort.SessionOptions()
+    opts.intra_op_num_threads = threads
+    opts.inter_op_num_threads = threads
     out = {}
     for name, path in paths.items():
-        s = ort.InferenceSession(path)
+        s = ort.InferenceSession(path, sess_options=opts)
         if list(s.get_inputs()[0].shape)[-1] != OBS_DIM or list(s.get_outputs()[0].shape)[-1] != N_JOINTS:
             raise ValueError(f"{path}: expected obs[{OBS_DIM}] -> actions[{N_JOINTS}]")
         out[name] = s
