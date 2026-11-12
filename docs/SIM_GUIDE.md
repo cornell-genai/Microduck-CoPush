@@ -7,7 +7,7 @@ about 20× faster than real time headless. One-page reference: [CHEATSHEET.md](C
 ## Setup (once)
 
 You need `microduck_rl` cloned next to this repo with its environment synced, and the policies
-downloaded. Use the repo's existing scripts (README "Setup"): `scripts/setup.sh`, then
+downloaded. Use the repo's existing scripts ([SETUP.md, Install](../SETUP.md#install)): `scripts/setup.sh`, then
 `sh scripts/fetch_policies.sh`. *These were not re-run while writing this guide.* To check that
 everything is in place:
 
