@@ -51,7 +51,7 @@ REWARDS: Dict[str, RewardFn] = {"progress": progress_reward}
 
 # ── RL reward (copush.env) ───────────────────────────────────────────────────
 
-TERMS = ("pos", "yaw", "success", "time", "fall", "box_fail", "coop")
+TERMS = ("pos", "yaw", "success", "time", "fall", "box_fail", "coop", "contact")
 
 
 def balance(f_a: float, f_b: float) -> float:
@@ -68,17 +68,21 @@ class StepSummary:
     yaw_before: float                   # yaw error modulo 180 deg, rad, in [0, pi/2]
     yaw_after: float
     success_held_s: float = 0.0         # how long the success condition has held, up to the end of the step
-    fell: bool = False                  # a duck fell for the first time during this step
+    fell: bool = False                  # a duck first counted as fallen during this step (the env
+                                        # counts a fall once it has been down fall_min_down_s)
     down_s: float = 0.0                 # seconds of this step during which any duck was down
     box_tilt_deg: float = 0.0
     box_lost: bool = False              # box centre > box_lost_dist from both trunks
+    inside: bool = False                # box centre inside the target at the end of the step
+    off_box_s: Dict[str, float] = field(default_factory=lambda: {"duck_a": 0.0, "duck_b": 0.0})
+    # off_box_s[duck]: how long the duck has been off the box without a break, at the end of the step
     push: Dict[str, float] = field(default_factory=lambda: {"duck_a": 0.0, "duck_b": 0.0})
     # push[duck]: contact force on the box along box->target, clipped >= 0 per physics substep,
     # averaged over every substep of the env step (N)
 
 
 class TaskReward:
-    """v1 (defaults) and the v2 options, from the `reward` section of configs/copush.yaml.
+    """v1 / v1.1 / v1.2 and the v2 options: pass copush.config.effective_reward(cfg).
 
     Per env step:  pos  = w_pos * (dist_before - dist_after)
                    yaw  = w_yaw * (yaw_before - yaw_after)
@@ -88,6 +92,7 @@ class TaskReward:
                continuous: -fall_rate * down_s, episode continues
       box_fail -box_fail_penalty, ends the episode, if the box tips > box_tilt_deg or is lost
       coop     gated_balanced: coop_lambda * max(0, dist_before - dist_after) * balance(F_A, F_B)
+      contact  -contact_penalty per duck off the box for > contact_off_s, unless the box is inside
 
     `step()` returns (terms, terminated, reason); every term in TERMS is present (0 if unused),
     so logs always have the same columns. Failures are checked before success.
@@ -105,6 +110,9 @@ class TaskReward:
         if c["cooperation_mode"] == "gated_balanced":
             t["coop"] = (c["coop_lambda"] * max(0.0, s.dist_before - s.dist_after)
                          * balance(s.push["duck_a"], s.push["duck_b"]))
+        if c.get("contact_penalty", 0.0) and not s.inside:
+            n_off = sum(1 for v in s.off_box_s.values() if v > c["contact_off_s"] + 1e-9)
+            t["contact"] = -c["contact_penalty"] * n_off
         reason = None
         if c["fall_mode"] == "terminate":
             if s.fell:

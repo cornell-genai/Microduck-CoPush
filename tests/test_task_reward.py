@@ -122,3 +122,24 @@ def test_coop_pinching_from_opposite_sides_gives_no_bonus():
 def test_coop_is_off_in_v1():
     t, _, _ = TaskReward(V1).step(S(db=0.80, da=0.78, push={"duck_a": 1.5, "duck_b": 1.5}))
     assert t["coop"] == 0.0
+
+
+# ── v1.2: contact penalty ────────────────────────────────────────────────────
+V12 = cfg(contact_penalty=0.02, contact_off_s=0.3)
+
+
+def test_contact_penalty_per_duck_off_the_box_too_long():
+    r = TaskReward(V12)
+    t, _, _ = r.step(S(off_box_s={"duck_a": 0.2, "duck_b": 0.0}))
+    assert t["contact"] == 0.0                                    # 0.2 s off: not yet
+    t, _, _ = r.step(S(off_box_s={"duck_a": 0.4, "duck_b": 0.0}))
+    assert t["contact"] == pytest.approx(-0.02)
+    t, _, _ = r.step(S(off_box_s={"duck_a": 0.4, "duck_b": 1.0}))
+    assert t["contact"] == pytest.approx(-0.04)
+
+
+def test_contact_penalty_is_off_while_the_box_is_inside_and_in_v11():
+    t, _, _ = TaskReward(V12).step(S(inside=True, off_box_s={"duck_a": 2.0, "duck_b": 2.0}))
+    assert t["contact"] == 0.0
+    t, _, _ = TaskReward(V1).step(S(off_box_s={"duck_a": 2.0, "duck_b": 2.0}))
+    assert t["contact"] == 0.0

@@ -33,14 +33,28 @@ DEFAULTS = {
                  "shoepush": "data/policies/robert/shoe_push/forward/policy.onnx"},
     "keyboard": {"vx_step": 0.05, "vyaw_step": 0.3, "vx_max": 0.3, "vx_min": -0.3, "vyaw_max": 1.5},
     "actuator": {"vin": 7.4, "vin_drop_gain": 0.1},
-    "env": {"step_s": 0.2, "max_steps": 100, "lose_contact_s": 0.5, "randomize": False,
+    "env": {"layout": "close", "settle_s": 0.3, "contact_setback": 0.095, "contact_spacing": 0.20,
+            "step_s": 0.2, "max_steps": 100, "lose_contact_s": 0.5, "randomize": False,
             "random": {"box_x": [0.30, 0.36], "box_y": [-0.04, 0.04], "box_yaw": [75, 105],
                        "box_mass": [0.10, 0.25]},
-            "heldout_seeds": [10000, 10099]},
-    "reward": {"w_pos": 10.0, "w_yaw": 3.0, "success_bonus": 10.0, "success_yaw_deg": 15.0,
+            "heldout_seeds": [10000, 10099],
+            "curriculum": {"enabled": False, "distances": [0.40, 0.60, 0.85], "offsets": [0.0, 0.10, 0.20],
+                           "success_threshold": 0.8, "eval_episodes": 5}},
+    "layouts": {"close": {"start_mode": "in_contact", "target": {"x": 0.75, "y": 0.0, "yaw": 90}},
+                "hard": {"start_mode": "approach", "target": {"x": 1.20, "y": 0.0, "yaw": 90}}},
+    "reward": {"version": "v1.1", "w_pos": 10.0, "w_yaw": 3.0, "success_bonus": 10.0, "success_yaw_deg": 15.0,
                "success_hold_s": 1.0, "time_penalty": 0.01, "fall_mode": "terminate",
-               "fall_penalty": 10.0, "fall_rate": 1.0, "box_fail_penalty": 5.0, "box_tilt_deg": 30.0,
-               "box_lost_dist": 0.40, "cooperation_mode": "none", "coop_lambda": 5.0},
+               "fall_penalty": 10.0, "fall_min_down_s": 0.0, "fall_rate": 1.0, "box_fail_penalty": 5.0,
+               "box_tilt_deg": 30.0, "box_lost_dist": 0.40, "cooperation_mode": "none", "coop_lambda": 5.0,
+               "contact_penalty": 0.0, "contact_off_s": 0.3},
+    "reward_versions": {"v1": {},
+                        "v1.1": {"fall_min_down_s": 0.2, "w_yaw": 1.0, "box_fail_penalty": 10.0,
+                                 "time_penalty": 0.03},
+                        "v1.2": {"fall_min_down_s": 0.2, "w_yaw": 1.0, "box_fail_penalty": 10.0,
+                                 "time_penalty": 0.03, "contact_penalty": 0.02}},
+    "ppo": {"n_envs": 8, "total_steps": 300000, "n_steps": 256, "batch_size": 256, "n_epochs": 10,
+            "learning_rate": 0.0003, "gamma": 0.99, "gae_lambda": 0.95, "clip_range": 0.2,
+            "ent_coef": 0.01, "seed": 0},
     "video": {"width": 480, "height": 270, "fps": 25, "speedup": 2},
     "rl": {"eval_every": 10000, "eval_seed": 10000, "improve_margin": 2.0},
 }
@@ -67,12 +81,34 @@ def load_config(path: Optional[str] = DEFAULT_PATH, overrides: Optional[dict] = 
     for duck in ("duck_a", "duck_b"):
         if cfg[duck]["policy"] not in POLICY_NAMES:
             raise ValueError(f"{duck}.policy must be one of {POLICY_NAMES}, got {cfg[duck]['policy']!r}")
+    if cfg["reward"]["version"] not in cfg["reward_versions"]:
+        raise ValueError(f"reward.version {cfg['reward']['version']!r} not in reward_versions {sorted(cfg['reward_versions'])}")
+    if cfg["env"]["layout"] not in cfg["layouts"]:
+        raise ValueError(f"env.layout {cfg['env']['layout']!r} not in layouts {sorted(cfg['layouts'])}")
     if cfg["reward"]["fall_mode"] not in FALL_MODES:
         raise ValueError(f"reward.fall_mode must be one of {FALL_MODES}, got {cfg['reward']['fall_mode']!r}")
     if cfg["reward"]["cooperation_mode"] not in COOPERATION_MODES:
         raise ValueError(f"reward.cooperation_mode must be one of {COOPERATION_MODES}, "
                          f"got {cfg['reward']['cooperation_mode']!r}")
     return cfg
+
+
+def effective_reward(cfg: dict, version: Optional[str] = None) -> dict:
+    """cfg["reward"] with reward_versions[version] (default: reward.version) applied on top."""
+    v = version or cfg["reward"]["version"]
+    if v not in cfg["reward_versions"]:
+        raise ValueError(f"unknown reward version {v!r} (have {sorted(cfg['reward_versions'])})")
+    out = _merge(cfg["reward"], cfg["reward_versions"][v])
+    out["version"] = v
+    return out
+
+
+def with_reward_version(cfg: dict, version: str) -> dict:
+    """A copy of cfg whose reward.version is `version`."""
+    out = copy.deepcopy(cfg)
+    effective_reward(out, version)                  # validates
+    out["reward"]["version"] = version
+    return out
 
 
 def policy_path(cfg: dict, name: str) -> str:
