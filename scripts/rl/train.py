@@ -41,6 +41,7 @@ def main() -> int:
     p.add_argument("--steps", type=int, default=None, help="default: ppo.total_steps")
     p.add_argument("--name", default="run")
     p.add_argument("--eval-episodes", type=int, default=5)
+    p.add_argument("--stand-still", action="store_true", help="env.stand_still.enabled: vx below the threshold = velstand")
     args = p.parse_args()
 
     from stable_baselines3 import PPO
@@ -50,6 +51,8 @@ def main() -> int:
     cfg = with_reward_version(load_config(), args.version)
     if args.layout:
         cfg["env"]["layout"] = args.layout
+    if args.stand_still:
+        cfg["env"]["stand_still"]["enabled"] = True
     layout = cfg["env"]["layout"]
     pc = cfg["ppo"]
     steps = args.steps or pc["total_steps"]
