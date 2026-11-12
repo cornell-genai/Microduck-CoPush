@@ -279,3 +279,48 @@ def test_pivot_push_pivots_with_one_duck_held_then_succeeds():
         if term or trunc:
             break
     assert info["reason"] == "success" and act.phase == "push"
+
+
+def test_box_start_offsets_the_box_within_the_scaled_range_and_keeps_the_ducks_on_it():
+    cfg = load_config()
+    cfg["env"]["box_start"].update(enabled=True, dx=0.15, dy=0.15, dyaw=45.0)
+    env = CoPushEnv(cfg)
+    b0 = env.box0
+    for scale in (0.2, 1.0):
+        env.set_box_range(scale)
+        seen = []
+        for seed in range(6):
+            _, info = env.reset(seed=seed)
+            box = info["box"]
+            seen.append(box["yaw"])
+            assert abs(box["x"] - b0["x"]) <= 0.15 * scale + 1e-9 and abs(box["y"] - b0["y"]) <= 0.15 * scale + 1e-9
+            assert abs(box["yaw"] - b0["yaw"]) <= 45 * scale + 1e-9 and box["mass"] == b0["mass"]
+            st = env.state
+            for d in ("duck_a", "duck_b"):                 # both ducks behind the box's long face, facing it
+                assert st[d]["policy"] == "shoepush" and not st[d]["fallen"]
+                assert math.dist(st[d]["position"], st["box"]["position"]) < 0.16
+        assert len(set(seen)) == 6
+    assert env.set_box_range(3.0) == 1.0
+
+
+def test_reset_option_box_pose_overrides_sampling():
+    cfg = load_config()
+    cfg["env"]["box_start"]["enabled"] = True
+    env = CoPushEnv(cfg, split="eval")
+    pose = {"x": 0.40, "y": 0.05, "yaw": 120.0}
+    _, info = env.reset(seed=10000, options={"box": pose})
+    assert {k: info["box"][k] for k in pose} == pose
+    assert env.state["box"]["position"] == pytest.approx((0.40, 0.05), abs=0.005)
+    assert math.degrees(env.state["box"]["yaw"]) % 180 == pytest.approx(120.0 % 180, abs=1.0)
+
+
+def test_test_sets_are_deterministic_and_cover_the_full_range():
+    from copush.experiments import make_test_set
+    cfg = load_config()
+    cfg["env"]["box_start"].update(enabled=True, dx=0.15, dy=0.15, dyaw=45.0, scale=0.2)
+    a, b = make_test_set(cfg, 50, 7), make_test_set(cfg, 50, 7)
+    assert a == b and a != make_test_set(cfg, 50, 8)
+    assert max(abs(s["dyaw"]) for s in a) > 0.2 * 45                # scale ignored: the final range
+    assert all(s["x"] == pytest.approx(cfg["box"]["x"] + s["dx"]) for s in a)
+    for k, m in (("dx", 0.15), ("dyaw", 45.0)):                     # one start per 1/50 slice of each axis
+        assert sorted(int((s[k] + m) / (2 * m) * 50) for s in a) == list(range(50))

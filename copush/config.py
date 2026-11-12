@@ -38,6 +38,7 @@ DEFAULTS = {
             "stand_still": {"enabled": False, "vx_threshold": 0.02}, "randomize": False,
             "random": {"box_x": [0.30, 0.36], "box_y": [-0.04, 0.04], "box_yaw": [75, 105],
                        "box_mass": [0.10, 0.25]},
+            "box_start": {"enabled": False, "dx": 0.10, "dy": 0.10, "dyaw": 30.0, "scale": 1.0},
             "heldout_seeds": [10000, 10099],
             "curriculum": {"enabled": False, "distances": [0.40, 0.60, 0.85], "offsets": [0.0, 0.10, 0.20],
                            "success_threshold": 0.8, "eval_episodes": 5}},

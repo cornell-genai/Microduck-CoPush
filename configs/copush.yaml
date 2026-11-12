@@ -58,6 +58,12 @@ env:                        # RL environment (copush/env.py)
     box_y: [-0.04, 0.04]
     box_yaw: [75, 105]      # deg
     box_mass: [0.10, 0.25]  # kg
+  box_start:                # OFF: box pose offset from box.x / box.y / box.yaw per episode (train seeds),
+    enabled: false          #   ducks still placed in contact with its long face; mass stays box.mass
+    dx: 0.10                # m, +- along world x (toward the target ahead)
+    dy: 0.10                # m, +- along world y (> 0 = left, away from a target on the right)
+    dyaw: 30.0              # deg, +- box yaw relative to its nominal yaw (= the target's yaw)
+    scale: 1.0              # fraction of the range above in use (auto-widen: set_box_range)
   heldout_seeds: [10000, 10099]   # inclusive; evaluation only, refused in split="train"
   curriculum:               # OFF: target moves further / sideways as eval success grows
     enabled: false
