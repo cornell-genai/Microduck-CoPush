@@ -29,11 +29,13 @@ The project plan is in [docs/COPUSH_PLAN.md](docs/COPUSH_PLAN.md).
 
 ## See it
 
-Each thumbnail links to a clip of a few seconds; the clips play at 2× speed.
+The clips play at 2× speed. Click one for the sharper mp4.
 
-| Two ducks pushing (scripted) | `push_steer` squares the box, then stands still | PPO run A (close target) | Steer layout: can't turn in time |
-|---|---|---|---|
-| [![two ducks pushing](docs/media/two_duck_push.jpg)](docs/media/two_duck_push.mp4) | [![push_steer squaring](docs/media/push_steer_squaring.jpg)](docs/media/push_steer_squaring.mp4) | [![PPO run A](docs/media/ppo_run_a_final.jpg)](docs/media/ppo_run_a_final.mp4) | [![steer overshoot](docs/media/steer_overshoot.jpg)](docs/media/steer_overshoot.mp4) |
+| Two ducks pushing (scripted) | `push_steer` squares the box, then stands still |
+|---|---|
+| [![two ducks pushing](docs/media/two_duck_push.gif)](docs/media/two_duck_push.mp4) | [![push_steer squaring](docs/media/push_steer_squaring.gif)](docs/media/push_steer_squaring.mp4) |
+| **PPO run A (close target)** | **Steer layout: can't turn in time** |
+| [![PPO run A](docs/media/ppo_run_a_final.gif)](docs/media/ppo_run_a_final.mp4) | [![steer overshoot](docs/media/steer_overshoot.gif)](docs/media/steer_overshoot.mp4) |
 
 ## Quick start
 
@@ -94,7 +96,7 @@ scripts/        copush.sh / copush_sim.py (sim), rl.sh + rl/ (checks, baselines,
                 sim.sh, check_m1.py, two_duck_demo.py (Week 1 duck-sim path)
 scenes/         copush_base.xml (floor/lights for the two-duck world), B0 and Week 1 scenes
 tests/          pytest; simulator tests skip outside microduck_rl's environment
-docs/           guides, results, media/ (README videos, < 1 MB each)
+docs/           guides, results, media/ (README GIFs + mp4s, < 1 MB each)
 ```
 
 ## Week 1 path: duck-sim / robotd
