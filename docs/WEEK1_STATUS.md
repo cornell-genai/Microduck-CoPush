@@ -21,7 +21,7 @@ walk policy, default `backlash` scene, headless unless stated.
 | P3 | Define the initial experiment metrics | done | `copush/metrics.py` |
 | P3 | Build a CSV recorder and mock-data evaluation tests | done | `copush/recorder.py`, `tests/` (22 tests), `data/sample/mock_run.csv` |
 | P3 | Create the first plotting template | done | `scripts/plot_run.py` |
-| all | Demo: short recording of both robots receiving different commands | **not done** (needs a human screen recording) | command in README, "Viewer demo" |
+| all | Demo: short recording of both robots receiving different commands | **not done** (needs a human screen recording) | command in SETUP.md, "Viewer demo" |
 
 ## M1 results
 
