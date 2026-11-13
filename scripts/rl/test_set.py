@@ -204,7 +204,7 @@ def cmd_eval(stage: dict, cfg: dict, cfg_path: str) -> int:
                                 for n, st in res.items()}}, f, indent=1)
     rng = ts["range"]
     md = [f"# Test set results: {stage['name']}", "",
-          f"{len(ts['starts'])} fixed held-out starts ([{stage['test_set']}](../../test_sets/{os.path.basename(stage['test_set'])})), "
+          f"{len(ts['starts'])} fixed held-out starts ([{stage['test_set']}]({os.path.relpath(repo_path(stage['test_set']), rdir)})), "
           f"box offset up to +-{rng['dx']:.2f} m (x) / +-{rng['dy']:.2f} m (y) and +-{rng['dyaw']:.0f} deg, both ducks "
           f"against the box. One deterministic episode per start, reward {cfg['reward']['version']}.", "",
           "| controller | success | falls | box lost | push share A / B | mean return | mean steps | final dist (m) | ends | monitor flags (episodes) |",
