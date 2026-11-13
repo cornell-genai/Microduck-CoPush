@@ -22,6 +22,12 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
    Two follow-up fixes raised the score to 72% (more practice on hard starts) and 68% (a smaller time
    penalty), but the hard side is still 4 of 17 at best.
    Play: [stage1b_stage1_vs_a_long_turn.mp4](media/stage1b_stage1_vs_a_long_turn.mp4) (stage 1 left, more practice right)
+   **Then give each duck its own controller:** the same network runs separately on each duck's own view.
+   With the partner's position in view, it succeeds on 74% of the same 50 starts (5 of 17 on the hard
+   side), and both ducks still share the push. One seed, and central with the same extra training got
+   72%, so read it as "as good as one central brain".
+   Play: [decentral_stage1_vs_d2_hard_start.mp4](media/decentral_stage1_vs_d2_hard_start.mp4)
+   (central left, per-duck right, box turned +32 degrees)
 5. **What we learned about reward design (1 min):**
    - When we let a duck stand still, it stopped helping: one duck pushed alone, because the reward
      never asks for two.
@@ -32,6 +38,6 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
      a fixed, evenly spread set. With 50 evenly spread check starts, the checks matched the exam.
    - Making waiting cheaper (time penalty 0.03 to 0.01) brought back standing still on hard starts.
      Play: [stage1b_b_idle_drift.mp4](media/stage1b_b_idle_drift.mp4)
-6. **Next (30 s):** the hard side needs a long turn first (about 55 degrees), and the policy stops at about
-   40. Next we let the coordinator hold one duck still so it can pivot. Then stage 2: the ducks start away
-   from the box.
+6. **Next (30 s):** each duck now has its own controller by default. Next: a second seed, separate
+   weights per duck, and a fix for the hard side (a long turn, about 55 degrees, before pushing). Then
+   stage 2: the ducks start away from the box.

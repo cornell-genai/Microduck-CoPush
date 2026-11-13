@@ -1,0 +1,205 @@
+{
+ "teacher": "runs/stage1-random-box-pose/model.zip",
+ "env_config": "experiments/stage1-random-box-pose/config.yaml",
+ "n_train_steps": 35341,
+ "n_val_steps": 5747,
+ "variants": {
+  "d1": {
+   "include_partner": false,
+   "rounds": [
+    {
+     "round": 0,
+     "samples": 70682,
+     "val": {
+      "vx": {
+       "r2": 0.9009696841239929,
+       "mae": 0.02035791054368019,
+       "unit": "m/s"
+      },
+      "vyaw": {
+       "r2": 0.9377367496490479,
+       "mae": 0.15825574100017548,
+       "unit": "rad/s"
+      }
+     }
+    },
+    {
+     "round": 1,
+     "samples": 105658,
+     "val": {
+      "vx": {
+       "r2": 0.9199713468551636,
+       "mae": 0.017954226583242416,
+       "unit": "m/s"
+      },
+      "vyaw": {
+       "r2": 0.9458772540092468,
+       "mae": 0.14497651159763336,
+       "unit": "rad/s"
+      }
+     }
+    }
+   ]
+  },
+  "d2": {
+   "include_partner": true,
+   "rounds": [
+    {
+     "round": 0,
+     "samples": 70682,
+     "val": {
+      "vx": {
+       "r2": 0.9399663805961609,
+       "mae": 0.013690102845430374,
+       "unit": "m/s"
+      },
+      "vyaw": {
+       "r2": 0.9535866975784302,
+       "mae": 0.13588833808898926,
+       "unit": "rad/s"
+      }
+     }
+    },
+    {
+     "round": 1,
+     "samples": 105026,
+     "val": {
+      "vx": {
+       "r2": 0.9512081146240234,
+       "mae": 0.011378983967006207,
+       "unit": "m/s"
+      },
+      "vyaw": {
+       "r2": 0.9629372954368591,
+       "mae": 0.11515098810195923,
+       "unit": "rad/s"
+      }
+     }
+    }
+   ]
+  }
+ },
+ "test": {
+  "stage1 (teacher)": {
+   "success": 30,
+   "n": 50,
+   "by_side": [
+    [
+     15,
+     17
+    ],
+    [
+     13,
+     16
+    ],
+    [
+     2,
+     17
+    ]
+   ],
+   "falls": 3,
+   "push_share_a": 0.4623691212068654,
+   "fixed_start": {
+    "reason": "success",
+    "steps": 33
+   }
+  },
+  "d1 BC only": {
+   "success": 30,
+   "n": 50,
+   "by_side": [
+    [
+     15,
+     17
+    ],
+    [
+     14,
+     16
+    ],
+    [
+     1,
+     17
+    ]
+   ],
+   "falls": 2,
+   "push_share_a": 0.4714386565075119,
+   "fixed_start": {
+    "reason": "success",
+    "steps": 32
+   }
+  },
+  "d1 after DAgger": {
+   "success": 31,
+   "n": 50,
+   "by_side": [
+    [
+     16,
+     17
+    ],
+    [
+     14,
+     16
+    ],
+    [
+     1,
+     17
+    ]
+   ],
+   "falls": 0,
+   "push_share_a": 0.48809549384186224,
+   "fixed_start": {
+    "reason": "success",
+    "steps": 32
+   }
+  },
+  "d2 BC only": {
+   "success": 30,
+   "n": 50,
+   "by_side": [
+    [
+     15,
+     17
+    ],
+    [
+     14,
+     16
+    ],
+    [
+     1,
+     17
+    ]
+   ],
+   "falls": 2,
+   "push_share_a": 0.4554490869212718,
+   "fixed_start": {
+    "reason": "success",
+    "steps": 32
+   }
+  },
+  "d2 after DAgger": {
+   "success": 32,
+   "n": 50,
+   "by_side": [
+    [
+     17,
+     17
+    ],
+    [
+     14,
+     16
+    ],
+    [
+     1,
+     17
+    ]
+   ],
+   "falls": 3,
+   "push_share_a": 0.46913449896974124,
+   "fixed_start": {
+    "reason": "success",
+    "steps": 33
+   }
+  }
+ },
+ "wall_s": 472.1908067080076
+}

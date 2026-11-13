@@ -25,6 +25,10 @@ Create any missing file using the templates below.
 
 ## Steps after each run or round
 
+On a side branch, write results only in that experiment's own folder
+(`experiments/<name>/`). Steps 2, 6 and 7 (TIMELINE, DEMO, README) happen only when the
+branch is merged to main; see the Branch rule below.
+
 1. **Gather facts** from the run folders (SUMMARY.md, report.md, DECISIONS.md,
    evals.jsonl, video index.md). Every claim must point to a run folder. If a number
    isn't in the files, say it's unknown rather than estimating.
@@ -37,9 +41,10 @@ Create any missing file using the templates below.
 5. **Make a side-by-side video** when comparing two controllers on the same start
    (for example script vs PPO). These are the most convincing demo material.
 6. **Update DEMO.md** so it shows the current best story.
-7. **Refresh the README on every round and every PR.** Update these sections to match
+7. **Refresh the README on every merge to main.** Update these sections to match
    the README template below:
-   - **Current status:** current stage, headline result in plain words, date.
+   - **Current status:** current stage, headline result in plain words, date, and which
+     controller is the default (D2 unless the config says otherwise).
    - **Progress:** add the new hero GIF in order, with a one-line caption of the milestone.
    - **Reward function:** regenerate the formula and the value table from the current
      config (`configs/copush.yaml`: `reward` with `reward_versions[reward.version]` applied
@@ -65,6 +70,17 @@ Create any missing file using the templates below.
   exactly that.
 - **Flag reward hacking or odd behavior** (one duck doing all the work, standing still,
   losing the box on purpose, monitor flags) even when success is high.
+- **Name the controller.** The default is decentralized with the partner in view (D2:
+  each duck runs the shared network on its own view; `controller` in `configs/copush.yaml`).
+  The central controller (one network for both ducks) is still selectable. Say which one a
+  result used, and compare D2 against central only at equal training.
+
+## Branch rule
+
+On side branches, results go only in that experiment's own folder
+(`experiments/<name>/README.md` and its results). The README, docs/TIMELINE.md and
+docs/DEMO.md get updated only when merging to main, so parallel branches don't
+conflict on them.
 
 ## README rule
 
@@ -110,6 +126,14 @@ angle, with the box anywhere and at any angle, learn to push it into the target 
 
 - **Current stage:** <stage, in plain words>
 - **Last finished result:** <headline result in plain words, with eval size>
+
+**How it works:** <one paragraph; each duck runs its own copy of the controller (D2, the default)>
+
+## Decentralized control
+
+<one sentence, one small table (central / D1 / D2: success, hard-side wins, both ducks
+pushing, lazy-duck episodes), one caveat line, the side-by-side GIF, one link to
+experiments/decentralized-control/README.md>
 
 ## Progress
 

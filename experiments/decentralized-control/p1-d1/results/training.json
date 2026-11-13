@@ -1,0 +1,310 @@
+{
+ "name": "decentral-p1-d1",
+ "change": "decentralized, own view only; PPO fine-tune from the distilled policy, fixed start",
+ "warm_start": "runs/decentral-distill/d1.zip",
+ "steps": 802816,
+ "steps_planned": 800000,
+ "wall_s": 1496.8715332080028,
+ "early_stopped": false,
+ "final_level": 0,
+ "levels": [
+  1.0
+ ],
+ "reached_full_at": null,
+ "box_start": {
+  "enabled": false,
+  "dx": 0.1,
+  "dy": 0.1,
+  "dyaw": 30.0,
+  "scale": 1.0
+ },
+ "check_set": null,
+ "reward_version": "v1.1",
+ "decentral": {
+  "include_partner": false
+ },
+ "gate": null,
+ "widen_history": [
+  {
+   "step": 100000,
+   "level": 0,
+   "scale": 1.0,
+   "success_rate": 1.0,
+   "falls": 0,
+   "box_lost": 0
+  },
+  {
+   "step": 200000,
+   "level": 0,
+   "scale": 1.0,
+   "success_rate": 1.0,
+   "falls": 0,
+   "box_lost": 0
+  },
+  {
+   "step": 300000,
+   "level": 0,
+   "scale": 1.0,
+   "success_rate": 1.0,
+   "falls": 0,
+   "box_lost": 0
+  },
+  {
+   "step": 400000,
+   "level": 0,
+   "scale": 1.0,
+   "success_rate": 1.0,
+   "falls": 0,
+   "box_lost": 0
+  },
+  {
+   "step": 500000,
+   "level": 0,
+   "scale": 1.0,
+   "success_rate": 1.0,
+   "falls": 0,
+   "box_lost": 0
+  },
+  {
+   "step": 600000,
+   "level": 0,
+   "scale": 1.0,
+   "success_rate": 1.0,
+   "falls": 0,
+   "box_lost": 0
+  },
+  {
+   "step": 700000,
+   "level": 0,
+   "scale": 1.0,
+   "success_rate": 1.0,
+   "falls": 0,
+   "box_lost": 0
+  },
+  {
+   "step": 800000,
+   "level": 0,
+   "scale": 1.0,
+   "success_rate": 1.0,
+   "falls": 0,
+   "box_lost": 0
+  }
+ ],
+ "eval_flags": [],
+ "eval_endings": [
+  "success"
+ ],
+ "eval_curve": [
+  [
+   20000,
+   15.41763358033028,
+   "success"
+  ],
+  [
+   40000,
+   15.460445527033455,
+   "success"
+  ],
+  [
+   60000,
+   14.66033085726858,
+   "success"
+  ],
+  [
+   80000,
+   15.32015618141617,
+   "success"
+  ],
+  [
+   100000,
+   15.617493324119923,
+   "success"
+  ],
+  [
+   120000,
+   15.49656274253449,
+   "success"
+  ],
+  [
+   140000,
+   15.615089426262475,
+   "success"
+  ],
+  [
+   160000,
+   15.195369339378644,
+   "success"
+  ],
+  [
+   180000,
+   15.12640699100648,
+   "success"
+  ],
+  [
+   200000,
+   15.740266522495144,
+   "success"
+  ],
+  [
+   220000,
+   15.651956775843626,
+   "success"
+  ],
+  [
+   240000,
+   15.401271659810845,
+   "success"
+  ],
+  [
+   260000,
+   15.627976423700666,
+   "success"
+  ],
+  [
+   280000,
+   15.445184061227378,
+   "success"
+  ],
+  [
+   300000,
+   15.391914427397104,
+   "success"
+  ],
+  [
+   320000,
+   15.371255877033532,
+   "success"
+  ],
+  [
+   340000,
+   15.626770198948865,
+   "success"
+  ],
+  [
+   360000,
+   15.37784522651419,
+   "success"
+  ],
+  [
+   380000,
+   15.580357823458556,
+   "success"
+  ],
+  [
+   400000,
+   15.538655974689986,
+   "success"
+  ],
+  [
+   420000,
+   15.483590809705177,
+   "success"
+  ],
+  [
+   440000,
+   15.434201969139483,
+   "success"
+  ],
+  [
+   460000,
+   15.429625262953738,
+   "success"
+  ],
+  [
+   480000,
+   15.554099592708871,
+   "success"
+  ],
+  [
+   500000,
+   15.487666736041206,
+   "success"
+  ],
+  [
+   520000,
+   15.505916990690103,
+   "success"
+  ],
+  [
+   540000,
+   15.194518665166076,
+   "success"
+  ],
+  [
+   560000,
+   15.545356040064291,
+   "success"
+  ],
+  [
+   580000,
+   15.341546603113581,
+   "success"
+  ],
+  [
+   600000,
+   15.693989903401613,
+   "success"
+  ],
+  [
+   620000,
+   15.605304308485978,
+   "success"
+  ],
+  [
+   640000,
+   15.320817334862953,
+   "success"
+  ],
+  [
+   660000,
+   15.50230371039019,
+   "success"
+  ],
+  [
+   680000,
+   15.460808674159102,
+   "success"
+  ],
+  [
+   700000,
+   15.341202559028478,
+   "success"
+  ],
+  [
+   720000,
+   15.496059633144322,
+   "success"
+  ],
+  [
+   740000,
+   15.674391354461106,
+   "success"
+  ],
+  [
+   760000,
+   15.439241880318107,
+   "success"
+  ],
+  [
+   780000,
+   15.56940759107805,
+   "success"
+  ],
+  [
+   800000,
+   15.482122783969633,
+   "success"
+  ],
+  [
+   802816,
+   15.550632650347755,
+   "success"
+  ]
+ ],
+ "best_video": "step_802816_final.mp4",
+ "final_video": "step_802816_final.mp4",
+ "videos": [
+  "step_20000_baseline.mp4",
+  "step_802816_final.mp4"
+ ]
+}

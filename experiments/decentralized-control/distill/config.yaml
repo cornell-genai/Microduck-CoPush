@@ -1,0 +1,18 @@
+# Distillation: copy the centralized stage 1 policy into per-duck policies D1 (own view) and D2
+# (own view + partner). scripts/rl.sh scripts/rl/distill.py --config experiments/decentralized-control/distill/config.yaml
+teacher: runs/stage1-random-box-pose/model.zip
+env_config: experiments/stage1-random-box-pose/config.yaml   # stage 1's env: random box starts, full range
+out: runs/decentral-distill                # d1.zip, d2.zip (+ BC-only and per-round copies), git-ignored
+results: experiments/decentralized-control/distill/results
+
+train_seed0: 50000                         # training seeds (never env.heldout_seeds 10000..10099)
+train_episodes: 600
+val_episodes: 100                          # held-out episodes for copy quality (teacher driving)
+noise_frac: 0.5                            # share of training episodes with action noise ...
+noise_std: 0.15                            # ... of this sd (in action units, [-1, 1]); labels stay noise-free
+dagger_rounds: 1                           # student drives, teacher labels, refit
+dagger_episodes: 300
+
+epochs: 40
+lr: 0.001
+batch: 512

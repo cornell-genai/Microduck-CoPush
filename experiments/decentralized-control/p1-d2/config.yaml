@@ -1,0 +1,41 @@
+# Decentralized control, phase 1, D2 (own view + partner): the fixed in-contact start of 01_reference.
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/decentralized-control/p1-d2/config.yaml
+#   (or all four runs through the queue: configs/decentral.yaml)
+#
+# Resolved config = base < reference block of `reference` (01_reference: reward v1.1, layout overnight,
+# seed 1, fixed start) < overrides. Each duck runs the shared policy on its own view (copush.decentral).
+# Steps count duck entries: 2 per simulator step, so 800k entries = 01_reference's 400k simulator steps.
+name: decentral-p1-d2
+change: decentralized, own view + partner; PPO fine-tune from the distilled policy, fixed start
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/decentral-distill/d2.zip   # distilled from the centralized stage 1 policy
+out: runs/decentral-p1-d2
+results: experiments/decentralized-control/p1-d2/results
+test_set: experiments/test_sets/stage1.json
+
+overrides:
+  controller: {mode: decentral, include_partner: true}
+  rl: {eval_every: 20000}                 # video evals every 10k simulator steps, as 01_reference
+
+steps: 800000                             # duck entries = 400k simulator steps
+checkpoint_every: 200000
+max_videos: 12
+
+widen:                                    # fixed start: no range; the checks just log fixed-start success
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 100000
+  episodes: 3
+  seed0: 10001
+
+early_stop: {success: 0.80, evals: 0}     # never: 400k simulator steps like 01_reference
+
+test:
+  n: 50
+  rng_seed: 20261112
+  controllers: []
+  policies:
+    01_reference: runs/overnight-20261112/runs/01_reference/model.zip
+    d2: {path: runs/decentral-p1-d2/model.zip, decentral: {include_partner: true}}

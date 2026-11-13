@@ -21,7 +21,8 @@ starting the queue again continues where it stopped.
 A run with `stage: experiments/<...>/config.yaml` is a generalization-plan stage instead: the child
 is scripts/rl/stage.py on that config (warm start, box range, check-set early stop, its own
 checkpoints and resume), writing to the stage's `out`; the queue keeps status.json and train.log in
-<out>/runs/<NAME>/ and lists the run in SUMMARY.md's stage table.
+<out>/runs/<NAME>/ and lists the run in SUMMARY.md's stage table. A stage child that exits with code 3
+failed its `gate` (stage.py): the run is marked "gated", not crashed, and the queue goes on.
 
 One run (child, --run-one NAME) writes <out>/runs/<NAME>/: config.yaml, train.log, status.json,
 state.json + checkpoints/ckpt_<step>.zip (every checkpoint_every steps, newest only), tb/, videos/
@@ -130,9 +131,9 @@ def _prune_after(videos_dir: str, step: int) -> None:
 def train_one(q: dict, run: dict, until: float = 0.0) -> int:
     from stable_baselines3 import PPO
     from stable_baselines3.common.callbacks import CallbackList
-    from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 
-    from copush.env import CoPushEnv, make_env
+    from copush.decentral import make_vec_env, policy_action
+    from copush.env import CoPushEnv
     from copush.rl_callbacks import CurriculumCallback, VideoEvalCallback, behaviors, decide, run_episode
     from copush.rl_eval import run_episodes, summarize
 
@@ -150,7 +151,7 @@ def train_one(q: dict, run: dict, until: float = 0.0) -> int:
         state, ckpt = {}, None
     parent = os.getppid()
 
-    vec = VecMonitor(SubprocVecEnv([make_env(cfg) for _ in range(pc["n_envs"])]))
+    vec = make_vec_env(cfg, pc["n_envs"])
     tb = os.path.join(rd, "tb")
     if ckpt:
         model = PPO.load(ckpt, env=vec, device="cpu", tensorboard_log=tb)
@@ -274,11 +275,11 @@ def train_one(q: dict, run: dict, until: float = 0.0) -> int:
     vec.close()
     model.save(os.path.join(rd, "model.zip"))
 
-    act = lambda obs: model.predict(obs, deterministic=True)[0]          # noqa: E731
     rand_cfg = copy.deepcopy(eval_cfg)
     rand_cfg["env"]["randomize"] = True
-    summ = summarize(run_episodes(CoPushEnv(rand_cfg, split="eval"), lambda s: act, q["eval_episodes"],
-                                  seed0=cfg["rl"]["eval_seed"]))
+    rand_env = CoPushEnv(rand_cfg, split="eval")
+    act = lambda obs: policy_action(model, rand_env, cfg, obs)          # noqa: E731
+    summ = summarize(run_episodes(rand_env, lambda s: act, q["eval_episodes"], seed0=cfg["rl"]["eval_seed"]))
     vdir = os.path.join(rd, "videos")
     evals = [json.loads(ln) for ln in open(os.path.join(vdir, "evals.jsonl")) if ln.strip()]
     vids = sorted(f for f in os.listdir(vdir) if f.endswith(".mp4"))
@@ -492,6 +493,9 @@ def run_queue(q: dict) -> int:
         if st.get("status") == "done" and os.path.exists(results_path(q, run)):
             log(f"{name}: already done, skipping")
             continue
+        if st.get("status") == "gated":
+            log(f"{name}: gated, skipping")
+            continue
         if st.get("status") == "crashed" and st.get("crashes", 0) >= q.get("max_attempts", 2):
             log(f"{name}: crashed {st['crashes']} times, skipping")
             continue
@@ -522,6 +526,9 @@ def run_queue(q: dict) -> int:
         if rc == 0 and os.path.exists(results_path(q, run)):
             st.update({"status": "done", "finished": f"{dt.datetime.now():%Y-%m-%d %H:%M:%S}", "returncode": 0})
             log(f"{name}: finished")
+        elif rc == 3 and run.get("stage"):
+            st.update({"status": "gated", "finished": f"{dt.datetime.now():%Y-%m-%d %H:%M:%S}", "returncode": 3})
+            log(f"{name}: GATED (its gate failed, see runs/{name}/train.log); not trained, continuing")
         else:
             st.update({"status": "crashed", "crashes": st.get("crashes", 0) + 1, "returncode": rc,
                        "finished": f"{dt.datetime.now():%Y-%m-%d %H:%M:%S}"})
