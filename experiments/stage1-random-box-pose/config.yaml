@@ -1,0 +1,47 @@
+# Stage 1: random box starts, ducks still touching the box's long face.
+#
+#   scripts/rl.sh scripts/rl/test_set.py make --config experiments/stage1-random-box-pose/config.yaml   # once
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/stage1-random-box-pose/config.yaml
+#   scripts/rl.sh scripts/rl/test_set.py eval --config experiments/stage1-random-box-pose/config.yaml
+#
+# Resolved config = base < reference block of `reference` < overrides. The reference block is
+# 01_reference's (reward v1.1, layout overnight: target 0.60 m ahead, 0.30 m right; PPO seed 1).
+name: stage1-random-box-pose
+change: random box starts (env.box_start), warm start from 01_reference
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/overnight-20261112/runs/01_reference/model.zip   # its final policy (401408 steps)
+out: runs/stage1-random-box-pose          # checkpoints, videos, logs (git-ignored)
+results: experiments/stage1-random-box-pose/results
+test_set: experiments/test_sets/stage1.json
+
+overrides:                                # the one change on top of 01_reference
+  env:
+    box_start:                            # FINAL range; offsets from the nominal box (0.35, 0.00, 90 deg)
+      enabled: true
+      dx: 0.15                            # m, +-: target 0.45 .. 0.75 m ahead
+      dy: 0.15                            # m, +-: target 0.15 .. 0.45 m to the right
+      dyaw: 45.0                          # deg, +- box yaw vs the target's (success needs <= 15)
+
+steps: 1000000                            # 8 envs (ppo.n_envs), as 01_reference
+checkpoint_every: 100000
+max_videos: 12                            # VideoEvalCallback, on rl.eval_seed with the FULL range
+
+widen:                                    # auto-widen (copush.rl_callbacks.BoxRangeCallback)
+  levels: [0.2, 0.4, 0.6, 0.8, 1.0]       # fractions of the final range; training starts at the first
+  threshold: 0.70                         # success on the current range that widens one step
+  eval_every: 20000                       # training steps
+  episodes: 20                            # held-out seeds 10001 .. 10020 (10000 is the video seed)
+  seed0: 10001
+
+early_stop:                               # on the full range only
+  success: 0.80
+  evals: 3                                # in a row
+
+test:                                     # the exam: experiments/test_sets/stage1.json
+  n: 50
+  rng_seed: 20261112                      # used once by `test_set.py make`; the file is then fixed
+  controllers: [stand, random, push_forward, push_steer, pivot_push]
+  policies:                               # PPO policies, deterministic
+    01_reference: runs/overnight-20261112/runs/01_reference/model.zip
+    stage1: runs/stage1-random-box-pose/model.zip

@@ -15,14 +15,12 @@ the box and push it into the target together.
 
 ## Current status (2026-11-12)
 
-- **Current stage: Stage 1, random box start (training now).** The box starts in a random spot (up
-  to 15 cm off in each direction) and at a random angle (up to 45 degrees). The ducks still start
-  touching it.
-- **Last finished result:** the ducks start against the box, and the target is 0.60 m ahead and
-  0.30 m to the side, so the box has to turn on the way. Our learned controller gets the box in
-  60 to 80% of the time when the box starts in a slightly random spot. That ties our best
-  hand-written script. From the exact start it practiced on, it's faster than the script (32 vs 54
-  steps) and uses both ducks equally. This is preliminary: we tested on only 5 episodes.
+- **Current stage: Stage 1, random box start.** The box starts in a random spot (up to 15 cm off in
+  each direction) and at a random angle (up to 45 degrees). The ducks still start touching it.
+- **Last finished result:** our learned controller gets the box into the target on 60% of 50 test
+  starts it never trained on. The policy it started from gets 50%, and our best hand-written script
+  gets 32%. It fails almost every start where the box is turned more than 15 degrees to one side
+  (2 of 17). Details: [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md)
 
 **How it works:** each duck walks and pushes with frozen, pretrained neural networks from Pollen
 Robotics. On top of that, our controller picks each duck's forward speed and turn rate every 0.2 s.
@@ -44,6 +42,8 @@ Clips play at 2x speed. Click one for the sharper video.
 | **5. A pivot script makes it reachable.** One duck waits while the other turns the box, but it's almost a one-duck push. | **6. RL learns the side target.** Both ducks share the push and finish in 32 steps. |
 | [![solo push](docs/media/overnight_solo_push.gif)](docs/media/overnight_solo_push.mp4) | [![box lost](docs/media/overnight_box_lost.gif)](docs/media/overnight_box_lost.mp4) |
 | **Bug: one duck quits.** Allowed to stand still, duck B walks away and duck A pushes alone. | **Bug: crooked and lost.** Mid-training, the box reaches the target turned 65 degrees, then both ducks leave. |
+| [![pivot_push vs stage 1](docs/media/stage1_pivot_push_vs_ppo_hard_start.gif)](docs/media/stage1_pivot_push_vs_ppo_hard_start.mp4) | |
+| **7. Stage 1: random box starts.** On a hard start, the script (left) fails and the learned controller (right) succeeds. 60% on 50 test starts. | |
 
 ## The reward function
 
@@ -88,8 +88,8 @@ Why each value is what it is: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
 
 ## Next steps
 
-- **Finish Stage 1:** reach 80% success with random box starts, tested on 20 held-out episodes
-  instead of 5.
+- **Fix the one-side blind spot from Stage 1:** the box turned more than 15 degrees to the positive
+  side succeeds only 2 of 17 times.
 - **Start the ducks away from the box,** so they have to walk to it first. That's the next step
   toward the final goal.
 - **Make the reward ask for teamwork,** so one duck can't quit and leave the other to push alone.

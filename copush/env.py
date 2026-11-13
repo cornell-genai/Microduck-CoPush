@@ -28,7 +28,11 @@ tipped/lost). env.layout picks a start mode and target from `layouts`:
         apart, stand for settle_s on velstand, then switch to Shoe Push; the episode clock starts
         after that.
     hard: start_mode approach, the original scene (walk 0.35 m to the box, target 0.85 m away).
-Fixed box by default; env.randomize samples it from env.random using the env's np_random. Seeds in
+Fixed box by default; env.randomize samples it from env.random using the env's np_random.
+env.box_start (off) instead offsets the box pose from box.x / box.y / box.yaw, uniform in +-scale x
+dx / dy / dyaw (mass fixed), with the ducks still placed in contact; set_box_range(scale) widens it
+(copush.rl_callbacks.BoxRangeCallback). reset(options={"box": {"x", "y", "yaw"}}) starts from an
+explicit box pose instead (test sets, scripts/rl/test_set.py). Seeds in
 env.heldout_seeds are refused with split="train" (keep them for eval). env.curriculum (off) moves
 the target with set_curriculum_level(k), driven by copush.rl_callbacks.CurriculumCallback.
 
@@ -106,6 +110,7 @@ class CoPushEnv(gym.Env):
         self.box0 = dict(self.cfg["box"])
         self.target0 = dict(self.cfg["target"])
         self.curriculum_level = 0
+        self.box_scale = float(self.ecfg["box_start"]["scale"])
         if self.ecfg["curriculum"]["enabled"]:
             self.set_curriculum_level(0)
         self.n_ctrl = max(1, int(round(self.ecfg["step_s"] / CONTROL_DT)))
@@ -142,6 +147,11 @@ class CoPushEnv(gym.Env):
         self.cfg["target"]["y"] = self.box0["y"] + cur["offsets"][level]
         return level
 
+    def set_box_range(self, scale: float) -> float:
+        """env.box_start: box offsets are sampled from scale x the full range (clamped to [0, 1])."""
+        self.box_scale = max(0.0, min(1.0, float(scale)))
+        return self.box_scale
+
     def _place_in_contact(self) -> None:
         """Both ducks against the box's long face on the side away from the target, facing it."""
         box, tg, e = self.cfg["box"], self.cfg["target"], self.ecfg
@@ -167,7 +177,17 @@ class CoPushEnv(gym.Env):
             raise ValueError(f"seed {seed} is held out for evaluation (env.heldout_seeds); use split='eval'")
         super().reset(seed=seed)
         box = self.cfg["box"]
-        if self.ecfg["randomize"]:
+        bs = self.ecfg["box_start"]
+        pose = (options or {}).get("box")
+        if pose is not None:                              # an explicit start (test sets)
+            box.update({k: float(pose[k]) for k in ("x", "y", "yaw")})
+            self.sim.set_box_mass(self.box0["mass"])
+        elif bs["enabled"]:
+            u = lambda m: self.box_scale * float(self.np_random.uniform(-m, m))   # noqa: E731
+            box.update({"x": self.box0["x"] + u(bs["dx"]), "y": self.box0["y"] + u(bs["dy"]),
+                        "yaw": self.box0["yaw"] + u(bs["dyaw"])})
+            self.sim.set_box_mass(self.box0["mass"])
+        elif self.ecfg["randomize"]:
             r = self.ecfg["random"]
             box["x"] = float(self.np_random.uniform(*r["box_x"]))
             box["y"] = float(self.np_random.uniform(*r["box_y"]))

@@ -70,8 +70,9 @@ def overlay_lines(st: dict, ret: float) -> list:
 
 
 def record_episode(env, act: Callable, path: str, seed: Optional[int] = None,
-                   video_cfg: Optional[dict] = None) -> dict:
+                   video_cfg: Optional[dict] = None, options: Optional[dict] = None) -> dict:
     """Run one episode of `env` with act(obs) -> action, writing `path`. Returns episode_stats.
+    `options` goes to env.reset (e.g. {"box": pose} for a test-set start).
 
     Frames are taken every `speedup / (fps * CONTROL_DT)` control steps, so the video plays
     `speedup` times faster than real time.
@@ -89,7 +90,7 @@ def record_episode(env, act: Callable, path: str, seed: Optional[int] = None,
 
     env.frame_hook = hook
     try:
-        obs, _ = env.reset(seed=seed)
+        obs, _ = env.reset(seed=seed, options=options)
         while True:
             obs, _, term, trunc, info = env.step(act(obs))
             if term or trunc:
