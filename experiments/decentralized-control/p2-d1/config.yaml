@@ -11,7 +11,6 @@ change: decentralized, own view only; random box starts (stage 1 range), warm st
 base: configs/copush.yaml
 reference: configs/overnight.yaml
 warm_start: runs/decentral-p1-d1/model.zip
-decentral: {include_partner: false}
 gate:                                     # train only if a phase 1 variant succeeded on the fixed start
   - runs/decentral-p1-d1/results.json
   - runs/decentral-p1-d2/results.json
@@ -21,6 +20,7 @@ test_set: experiments/test_sets/stage1.json
 check_set: experiments/test_sets/stage1_checks.json
 
 overrides:
+  controller: {mode: decentral, include_partner: false}
   rl: {eval_every: 20000}
   env:
     box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}   # stage 1's range

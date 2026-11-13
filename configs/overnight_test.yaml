@@ -14,6 +14,7 @@ reference:
     overnight: {start_mode: in_contact, target: {x: 0.95, y: -0.30, yaw: 90}}
   reward: {version: v1.1}
   ppo: {seed: 1}
+  controller: {mode: central}   # these runs (and stages built on 01_reference) are centralized
   rl: {eval_every: 2000}
 
 runs:

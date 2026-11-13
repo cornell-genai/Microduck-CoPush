@@ -11,12 +11,12 @@ change: decentralized, own view + partner; PPO fine-tune from the distilled poli
 base: configs/copush.yaml
 reference: configs/overnight.yaml
 warm_start: runs/decentral-distill/d2.zip   # distilled from the centralized stage 1 policy
-decentral: {include_partner: true}
 out: runs/decentral-p1-d2
 results: experiments/decentralized-control/p1-d2/results
 test_set: experiments/test_sets/stage1.json
 
 overrides:
+  controller: {mode: decentral, include_partner: true}
   rl: {eval_every: 20000}                 # video evals every 10k simulator steps, as 01_reference
 
 steps: 800000                             # duck entries = 400k simulator steps
