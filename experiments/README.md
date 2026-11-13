@@ -7,6 +7,7 @@ stage's exam.
 | Stage | One change | Status | Headline result |
 |---|---|---|---|
 | [stage1-random-box-pose](stage1-random-box-pose/) | Random box starts (offset up to 0.15 m, angle up to 45 deg), ducks still against the box | done | 60% on its 50-start test set (01_reference 50%, pivot_push 32%); full range by step 80k, early stop at 980k; blind spot: box turned to positive angles (2/17) |
+| [decentralized-control](decentralized-control/) | Each duck runs the same network on its own view (D1: own view; D2: plus partner), distilled from stage 1 then PPO | done | D2 74% on stage 1's test set (5/17 long-turn), D1 60%, centralized stage 1 60%; no lazy duck |
 
 ## Layout
 
