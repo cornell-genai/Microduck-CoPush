@@ -19,6 +19,11 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
    Be honest about the gap: it fails almost every start where the box is turned more than 15 degrees
    one way (2 of 17). Play: [stage1_failure_positive_angle.mp4](media/stage1_failure_positive_angle.mp4)
    Show the plot: [difficulty.png](../experiments/stage1-random-box-pose/results/difficulty.png)
+   **Then give each duck its own controller:** the same network runs separately on each duck's own view.
+   With the partner's position in view, it succeeds on 74% of the same 50 starts (5 of 17 on the hard
+   side), and both ducks still share the push. One seed, so read it as "no worse than one central brain".
+   Play: [decentral_stage1_vs_d2_hard_start.mp4](media/decentral_stage1_vs_d2_hard_start.mp4)
+   (central left, per-duck right, box turned +32 degrees)
 5. **What we learned about reward design (1 min):**
    - When we let a duck stand still, it stopped helping: one duck pushed alone, because the reward
      never asks for two.
@@ -27,4 +32,5 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
      rates, not scores.
    - Training checks said 80% but the exam said 60%: the 20 check starts happened to be easy. Test on
      a fixed, evenly spread set.
-6. **Next (30 s):** fix the one-direction blind spot, then stage 2: the ducks start away from the box.
+6. **Next (30 s):** a second seed for the per-duck controllers, separate weights per duck, then stage 2: the
+   ducks start away from the box.

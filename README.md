@@ -25,6 +25,12 @@ The project plan is in [docs/COPUSH_PLAN.md](docs/COPUSH_PLAN.md).
   the box up to 0.15 m off and turned up to 45 degrees (the policy it started from: 50%, `pivot_push`
   script: 32%). It fails almost every start turned more than 15 degrees to the positive side.
   [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md)
+- **Decentralized control (each duck has its own controller):** each duck runs the same network on
+  its own view and picks only its own speed and turn. Seeing the partner's position matters: with it,
+  the ducks succeed on 74% of the same 50 test starts (5 of 17 on the hard, positive-angle side), and
+  60% without it. The centralized stage 1 controller gets 60%. Both ducks keep sharing the push (no lazy
+  duck). One seed each, and the 74% had more training than stage 1, so read it as "no worse than
+  centralized", not "better". [experiments/decentralized-control/](experiments/decentralized-control/README.md)
 - **Target 0.30 m to the side, 0.60 m ahead (`overnight` layout):** early RL success. PPO gets the
   box in 60 to 80% of the time across 3 seeds when the box starts in a random spot, which ties the
   `pivot_push` script (preliminary, 5 episodes). From the fixed start it trained on, it beats the
@@ -43,6 +49,11 @@ The clips play at 2× speed. Click one for the sharper mp4.
 | [![two ducks pushing](docs/media/two_duck_push.gif)](docs/media/two_duck_push.mp4) | [![push_steer squaring](docs/media/push_steer_squaring.gif)](docs/media/push_steer_squaring.mp4) |
 | **PPO run A (close target)** | **Steer layout: can't turn in time** |
 | [![PPO run A](docs/media/ppo_run_a_final.gif)](docs/media/ppo_run_a_final.mp4) | [![steer overshoot](docs/media/steer_overshoot.gif)](docs/media/steer_overshoot.mp4) |
+
+**Hard start, centralized stage 1 (left) vs each duck with its own controller (right).** The box starts turned
++32°. Stage 1 runs out of time; the decentralized ducks finish in 41 steps.
+
+[![stage 1 vs decentralized D2](docs/media/decentral_stage1_vs_d2_hard_start.gif)](docs/media/decentral_stage1_vs_d2_hard_start.mp4)
 
 ## Quick start
 

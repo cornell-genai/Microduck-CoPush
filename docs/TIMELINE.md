@@ -18,6 +18,7 @@ every start where the box is turned more than 15 degrees to the positive side (2
 | 2026-11-12 | In contact, target 0.30 m to the side, 0.60 m ahead | New `pivot_push` script and a reachability sweep | The script reaches this target 4 of 5 times, but duck A does 97% of the pushing | 5 randomized per target | [gif](media/overnight_pivot_push_script.gif) |
 | 2026-11-12 | Same layout, PPO | First PPO training on this layout (7 runs overnight) | PPO succeeds 60 to 80% across 3 seeds with random starts and ties the script. From the fixed start it trained on, it beats the script. None of the 4 tweaks changed results beyond the seed spread | 5 randomized + 1 fixed (preliminary) | [gif](media/overnight_ppo_success.gif) · [side by side](media/overnight_script_vs_ppo_side_by_side.mp4) |
 | **2026-11-12** | **Stage 1: random box starts** | **Box starts up to 0.15 m off and 45 degrees turned, ducks still against it** | **PPO succeeds on 60% of test starts (the policy it started from: 50%, `pivot_push`: 32%). Fails almost every start turned more than 15 degrees to the positive side** | **50 fixed held-out starts** | [gif](media/stage1_pivot_push_vs_ppo_hard_start.gif) · [side by side](media/stage1_pivot_push_vs_ppo_hard_start.mp4) · [failure](media/stage1_failure_positive_angle.mp4) |
+| 2026-11-12 | Stage 1 range, decentralized | Each duck runs the same network on its own view (D1), or its own view plus the partner's position (D2); copied from stage 1, then PPO | D2 succeeds on 74% (5/17 on the hard side), D1 and centralized stage 1 on 60%; no lazy duck. One seed; D2 had 1.4M more steps, so no worse than centralized rather than better | 50 fixed test starts | [video](media/decentral_stage1_vs_d2_hard_start.mp4) |
 
 ---
 
@@ -128,3 +129,31 @@ within 0.28 m, then pushes the box past the target:
 
 **Next:** fix the one-direction blind spot (for example, train on mirrored episodes) and use an evenly
 spread check set, before stage 2 (ducks start away from the box).
+
+## 2026-11-12: each duck gets its own controller
+
+One change from stage 1: instead of one controller deciding for both ducks, each duck runs the same network
+on its own view and picks only its own speed and turn. D1 sees only itself, the box and the target; D2 also sees
+where its partner is. Both were first copied from the stage 1 controller (8 minutes), then trained with PPO on
+the fixed start (400k steps) and then on random box starts (1M steps).
+
+| controller | 50 test starts | hard side (turned > +15 deg) |
+|---|---|---|
+| stage 1 (one controller for both) | 60% | 2/17 |
+| D1 (own view) | 60% | 1/17 |
+| **D2 (own view + partner)** | **74%** | **5/17** |
+
+- **Copying works:** the per-duck copies match the central controller closely (R² 0.92 to 0.96) and score 62%
+  and 64% before any PPO.
+- **Teamwork holds up:** both ducks touch the box together on 92 to 94% of steps (stage 1: 86%), and no episode
+  has a lazy duck.
+- **Odd behavior:** without the partner in view, D1 keeps turning the box on hard starts (182 deg in total on
+  average, where 55 deg is needed). D2 falls a bit more (5 against 3) and loses the box twice.
+- **Careful:** one seed each, and D2 trained 1.4M steps longer than stage 1. A centralized run with 1M extra
+  steps reached 72% in stage 1b, so this says "no worse than centralized", not "better".
+
+| Box turned +32 deg: stage 1 left (times out), D2 right (41 steps) |
+|---|
+| [![stage 1 vs D2](media/decentral_stage1_vs_d2_hard_start.gif)](media/decentral_stage1_vs_d2_hard_start.mp4) |
+
+Details: [experiments/decentralized-control/](../experiments/decentralized-control/README.md)
