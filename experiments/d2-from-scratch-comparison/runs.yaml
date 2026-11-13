@@ -1,0 +1,24 @@
+# Which run folder is which setup and seed. Add one line per new seed; scripts/rl/compare_setups.py
+# picks it up. `controller` says how a run counts steps: decentral runs count duck entries (2 per
+# simulator step), so their steps are halved to simulator steps.
+test_set: experiments/test_sets/stage1.json                 # the 50-start stage 1 exam (random box starts)
+test_config: experiments/stage1-random-box-pose/config.yaml # the env the exam runs under, as in earlier comparisons
+
+setups:
+  central-scratch:
+    label: central, from scratch
+    controller: central
+    seeds:
+      1: runs/overnight-20261112/runs/01_reference   # reused: trained with exactly these settings
+      2: runs/overnight-20261112/runs/06_seed2       # reused: same settings, seed 2
+      3: runs/overnight-20261112/runs/07_seed3       # reused: same settings, seed 3
+  d2-scratch:
+    label: D2, from scratch
+    controller: decentral
+    seeds:
+      1: runs/d2-from-scratch/d2-scratch-s1
+  d2-distilled:
+    label: D2, distilled
+    controller: decentral
+    seeds:
+      1: runs/decentral-p1-d2                        # reused: the decentralized-control phase 1 D2 run
