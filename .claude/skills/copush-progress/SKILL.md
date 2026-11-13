@@ -9,6 +9,9 @@ Keeps a clear, honest record of what the team did and found, so anyone can show 
 project in 5 minutes. This skill only edits docs and media. Never change code, configs,
 or reward settings while using it.
 
+Read [AGENTS.md](../../../AGENTS.md) first (project rules, tracks, git rules, report format)
+and [ROADMAP.md](../../../ROADMAP.md) (the plan, each track's status and next steps).
+
 ## Files this skill maintains
 
 | File | Purpose | Committed? |
@@ -18,10 +21,17 @@ or reward settings while using it.
 | `docs/DEMO.md` | 5-minute demo outline, always current | yes |
 | `docs/media/` | A few short "hero" videos, each under 1 MB | yes |
 | `README.md` | Short project page: goal, status, progress GIFs, reward function, next steps (template below) | yes |
+| `ROADMAP.md` | The plan: one section per track (status, next steps), dated decisions, open questions | yes |
 | `SETUP.md` | Every terminal command: install, sim, training, tests, queue, troubleshooting | yes |
+| `AGENTS.md` | Stable rules and context for AI agents; change only when a rule changes | yes |
 | `notes/progress_blog.md` | Personal blog ideas and findings | no (git-ignored) |
 
 Create any missing file using the templates below.
+
+**Keep the .md count lean.** The live docs are README.md, AGENTS.md, SETUP.md and
+ROADMAP.md at the root, docs/REWARD_LOG.md, docs/DEMO.md and docs/TIMELINE.md, plus one
+README per experiment folder. Add to one of these rather than creating a new .md file;
+outdated docs go to `docs/archive/`, not next to the live ones.
 
 ## Steps after each run or round
 
@@ -32,7 +42,9 @@ branch is merged to main; see the Branch rule below.
 1. **Gather facts** from the run folders (SUMMARY.md, report.md, DECISIONS.md,
    evals.jsonl, video index.md). Every claim must point to a run folder. If a number
    isn't in the files, say it's unknown rather than estimating.
-2. **Add a TIMELINE row** (template below). One row per round.
+2. **Add a TIMELINE row** (template below). One row per round. On a side branch, update
+   only your own track section of ROADMAP.md (status, next steps); add a dated line to
+   its Decisions list when the team decides something.
 3. **Update REWARD_LOG.md** only if the reward changed.
 4. **Pick a hero video** if this round is a milestone (first success on a new stage,
    a new behavior, a clear before/after). Compress and copy it to `docs/media/`
@@ -44,13 +56,13 @@ branch is merged to main; see the Branch rule below.
 7. **Refresh the README on every merge to main.** Update these sections to match
    the README template below:
    - **Current status:** current stage, headline result in plain words, date, and which
-     controller is the default (D2 unless the config says otherwise).
+     controller the result used (central is the default unless the config says otherwise).
    - **Progress:** add the new hero GIF in order, with a one-line caption of the milestone.
    - **Reward function:** regenerate the formula and the value table from the current
      config (`configs/copush.yaml`: `reward` with `reward_versions[reward.version]` applied
      on top; or `copush.config.effective_reward`), and the episode endings from
      `copush/rewards.py` and `copush/env.py`. Never fill in values from memory.
-   - **Next steps:** 2 to 4 bullets.
+   - **Next steps:** 2 to 3 bullets, one per track, linking to ROADMAP.md for the full plan.
    Any new command goes in SETUP.md, never in the README.
 8. **Append to notes/progress_blog.md:** surprising findings, reward hacking examples,
    bugs, and lessons, each with key numbers and a link.
@@ -70,10 +82,10 @@ branch is merged to main; see the Branch rule below.
   exactly that.
 - **Flag reward hacking or odd behavior** (one duck doing all the work, standing still,
   losing the box on purpose, monitor flags) even when success is high.
-- **Name the controller.** The default is decentralized with the partner in view (D2:
-  each duck runs the shared network on its own view; `controller` in `configs/copush.yaml`).
-  The central controller (one network for both ducks) is still selectable. Say which one a
-  result used, and compare D2 against central only at equal training.
+- **Name the controller.** The default is central (one network for both ducks;
+  `controller` in `configs/copush.yaml`). Decentralized D2 (each duck runs the shared
+  network on its own view plus its partner) is selectable. Say which one a result used,
+  and compare D2 against central only at equal training.
 
 ## Branch rule
 
@@ -127,7 +139,7 @@ angle, with the box anywhere and at any angle, learn to push it into the target 
 - **Current stage:** <stage, in plain words>
 - **Last finished result:** <headline result in plain words, with eval size>
 
-**How it works:** <one paragraph; each duck runs its own copy of the controller (D2, the default)>
+**How it works:** <one paragraph; one central controller by default, D2 as the decentralized option>
 
 ## Decentralized control
 
@@ -153,11 +165,13 @@ Why each value is what it is: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
 
 ## Next steps
 
-<2-4 bullets>
+The full plan, per track, is in [ROADMAP.md](ROADMAP.md).
+
+<2-3 bullets, one per track>
 
 ## Links
 
-SETUP.md · docs/REWARD_LOG.md · docs/TIMELINE.md · experiments/README.md · docs/DEMO.md
+ROADMAP.md · SETUP.md · AGENTS.md · docs/REWARD_LOG.md · docs/TIMELINE.md · experiments/README.md · docs/DEMO.md
 ```
 
 ### DEMO.md
@@ -192,7 +206,7 @@ Check the size with `ls -lh docs/media/`.
 
 ## Git rules
 
-- Commit only docs, README, SETUP.md, and docs/media on the current branch.
+- Commit only docs, README, ROADMAP.md, SETUP.md, and docs/media on the current branch.
 - Use the user's git identity. No Claude co-author lines, no "Generated with" lines.
 - Don't push or merge unless the user asks.
 - notes/ and runs/ stay git-ignored.
