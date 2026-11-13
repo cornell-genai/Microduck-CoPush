@@ -132,34 +132,34 @@ def cmd_plot(spec, exp, runs_yaml) -> int:
     fig.savefig(os.path.join(out, "learning_curves.png"), dpi=120)
     plt.close(fig)
 
-    # test-set success and cooperation: bars are the seed mean, dots the seeds
+    # test-set success and cooperation: bars (and the number under each label) are the seed mean, dots the seeds
     def bars(fname, panels):
         fig, axes = plt.subplots(1, len(panels), figsize=(4.2 * len(panels), 3.6), constrained_layout=True, squeeze=False)
-        for ax, (key, title, ylim) in zip(axes[0], panels):
+        for ax, (key, title) in zip(axes[0], panels):
+            ticks = []
             for i, name in enumerate(summary):
                 vals = [v["test"][key] for v in summary[name]["seeds"].values() if "test" in v]
+                ticks.append(summary[name]["label"].replace(", ", "\n") + (f"\n{np.mean(vals):.0%}" if vals else "\nnot run"))
                 if not vals:
                     continue
                 ax.bar(i, np.mean(vals), width=0.6, color=COLORS[i], edgecolor="white", linewidth=2)
                 ax.scatter([i] * len(vals), vals, color="#333333", s=14, zorder=3)
-                ax.text(i, np.mean(vals) + 0.02 * (ylim[1] - ylim[0]), f"{np.mean(vals):.0%}" if ylim[1] <= 1 else f"{np.mean(vals):.0f}",
-                        ha="center", va="bottom", fontsize=9)
-            ax.set_xticks(range(len(summary)), [summary[n]["label"].replace(", ", "\n") for n in summary])
-            ax.set(title=title, ylim=ylim)
+            ax.set_xticks(range(len(summary)), ticks)
+            ax.set(title=title, ylim=(0, 1))
             ax.spines[["top", "right"]].set_visible(False)
         fig.savefig(os.path.join(out, fname), dpi=120)
         plt.close(fig)
 
     n_test = {n: sum("test" in v for v in sm["seeds"].values()) for n, sm in summary.items()}
-    bars("test_set_success.png", [("success", "Test set success (50 random box starts)", (0, 1))])
-    bars("cooperation.png", [("push_share_a", "Push share of duck A (test set)", (0, 1)),
-                             ("both_touch", "Steps with both ducks pushing", (0, 1))])
+    bars("test_set_success.png", [("success", "Test set success (50 random box starts)")])
+    bars("cooperation.png", [("push_share_a", "Duck A's share of the push (test set)"),
+                             ("both_touch", "Steps with both ducks touching the box")])
 
     md = ["# Setup comparison", "",
           f"Runs: `{runs_yaml}`. Steps are simulator steps. Fixed-start numbers come",
           "from each run's deterministic eval episodes (videos/evals.jsonl); test-set numbers from",
           f"`{spec['test_set']}` (one deterministic episode per start, scripts/rl/compare_policies.py).", "",
-          "| setup | seed | first fixed-start success | final fixed-start eval | final push share A | test success | test push share A | both pushing | lazy duck |",
+          "| setup | seed | first fixed-start success | final fixed-start eval | final push share A | test success | test push share A | both touching | lazy duck |",
           "|---|---|---|---|---|---|---|---|---|"]
     for name, sm in summary.items():
         for k, v in sm["seeds"].items():
