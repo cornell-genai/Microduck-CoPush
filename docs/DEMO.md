@@ -38,6 +38,7 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
      a fixed, evenly spread set. With 50 evenly spread check starts, the checks matched the exam.
    - Making waiting cheaper (time penalty 0.03 to 0.01) brought back standing still on hard starts.
      Play: [stage1b_b_idle_drift.mp4](media/stage1b_b_idle_drift.mp4)
-6. **Next (30 s):** each duck now has its own controller by default. Next: a second seed, separate
-   weights per duck, and a fix for the hard side (a long turn, about 55 degrees, before pushing). Then
-   stage 2: the ducks start away from the box.
+6. **Next (30 s):** three tracks ([ROADMAP.md](../ROADMAP.md)). Steering: fix the hard side (a long
+   turn, about 55 degrees, before pushing). Rendezvous: the ducks start away from the box. Decentralized:
+   does D2 trained from scratch match the copied D2? At the end, the central controller is distilled
+   into per-duck controllers.

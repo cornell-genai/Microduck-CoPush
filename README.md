@@ -17,17 +17,17 @@ the box and push it into the target together.
 
 - **Current stage: Stage 1, random box start.** The box starts in a random spot (up to 15 cm off in
   each direction) and at a random angle (up to 45 degrees). The ducks still start touching it.
-- **Last finished result:** each duck now runs its own controller, and with its partner in view it
-  gets the box in on 74% of 50 test starts (one central controller for both: 60%). It's now the
-  default. See [Decentralized control](#decentralized-control).
+- **Last finished result:** each duck ran its own controller, and with its partner in view it got
+  the box in on 74% of 50 test starts (one central controller for both: 60%). The central controller
+  stays the default while we improve it; see [Decentralized control](#decentralized-control).
 - **Still unsolved:** starts where the box is turned more than 15 degrees to the positive side (5 of
   17 at best). Earlier tries are in [stage 1](experiments/stage1-random-box-pose/README.md) and
   [stage 1b](experiments/stage1b-turn-direction-fix/README.md).
 
 **How it works:** each duck walks and pushes with frozen, pretrained neural networks from Pollen
 Robotics. On top of that, a small controller picks each duck's forward speed and turn rate every
-0.2 s. Each duck runs its own copy of that controller, using what it sees: the box, the target and
-its partner. It's trained with reinforcement learning (RL): it tries things in a physics simulator
+0.2 s. By default one controller decides for both ducks; in decentralized mode (D2) each duck runs
+its own copy, using what it sees: the box, the target and its partner. It's trained with reinforcement learning (RL): it tries things in a physics simulator
 (MuJoCo) and learns from a score called the reward. The method is PPO (Proximal Policy
 Optimization), a standard RL algorithm.
 
@@ -40,7 +40,7 @@ central controller.
 |---|---|---|---|---|
 | central (one controller for both ducks) | 60% | 2 | 86% of steps | 2 |
 | D1: own view only | 60% | 1 | 92% of steps | 0 |
-| **D2: own view + partner (default)** | **74%** | **5** | **94% of steps** | **0** |
+| **D2: own view + partner** | **74%** | **5** | **94% of steps** | **0** |
 
 Caveat: one seed each, D2 started by copying the central controller, and central with similar extra
 training reached 72%.
@@ -110,19 +110,20 @@ Why each value is what it is: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
 
 ## Next steps
 
-- **Fix the hard side:** the box turned more than 15 degrees to the positive side still succeeds only
-  5 of 17 times. It needs a long turn (about 55 degrees) before the push.
-- **Check the decentralized result:** a second seed, and separate (not shared) networks for the two
-  ducks.
-- **Start the ducks away from the box,** so they have to walk to it first. That's the next step
-  toward the final goal.
-- **Make the reward ask for teamwork,** so one duck can't quit and leave the other to push alone.
+The full plan, per track, is in [ROADMAP.md](ROADMAP.md).
+
+- **Steering:** win the hard side (box turned more than 15 degrees the positive way, 5 of 17 at best),
+  then widen the box angle range.
+- **Rendezvous:** start the ducks away from the box, so they walk to it and push together.
+- **Decentralized:** check whether D2 trained from scratch matches the copied D2 (3 seeds each).
 
 ## Links
 
 | | |
 |---|---|
+| [ROADMAP.md](ROADMAP.md) | the plan: tracks, owners, next steps, decisions |
 | [SETUP.md](SETUP.md) | install, run the simulator, train, test, troubleshoot |
+| [AGENTS.md](AGENTS.md) | shared context and rules for AI coding agents |
 | [docs/TIMELINE.md](docs/TIMELINE.md) | every milestone and experiment round, with clips |
 | [docs/REWARD_LOG.md](docs/REWARD_LOG.md) | each reward version: what changed, why, and the results |
 | [experiments/README.md](experiments/README.md) | the experiment for each stage and its results |

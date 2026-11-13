@@ -124,11 +124,11 @@ def test_duck_vec_env_layout_and_shared_reward():
     assert np.allclose(obs[3], local_obs(st, "duck_b", False), atol=1e-6)
 
 
-def test_default_controller_is_d2_and_old_stages_stay_central():
+def test_default_controller_is_central_and_d2_stays_selectable():
     from copush.decentral import partner_view
     from copush.experiments import load_stage
-    assert partner_view(load_config()) is True                                   # D2 by default
-    assert partner_view(load_config(overrides={"controller": {"mode": "central"}})) is None
+    assert partner_view(load_config()) is None                                   # central by default
+    assert partner_view(load_config(overrides={"controller": {"mode": "decentral"}})) is True   # D2
     for path, want in (("experiments/stage1-random-box-pose/config.yaml", None),
                        ("experiments/stage1b-turn-direction-fix/a-oversample-hard/config.yaml", None),
                        ("experiments/decentralized-control/p2-d1/config.yaml", False),
@@ -142,9 +142,9 @@ def test_policy_action_follows_the_controller():
     from copush.decentral import policy_action
     st, model = _state(), LinearModel(len(local_names(True)))
     env = type("E", (), {"state": st})()
-    cfg = load_config()
+    cfg = load_config(overrides={"controller": {"mode": "decentral", "include_partner": True}})
     assert np.allclose(policy_action(model, env, cfg, None), decentral_action(model, st, True))
     central = LinearModel(4)
     obs = np.ones(4, dtype=np.float32)
-    cfg_c = load_config(overrides={"controller": {"mode": "central"}})
+    cfg_c = load_config()                                                         # central by default
     assert np.allclose(policy_action(central, env, cfg_c, obs), central.predict(obs)[0])
