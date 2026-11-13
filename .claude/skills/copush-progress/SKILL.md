@@ -39,7 +39,8 @@ Create any missing file using the templates below.
 6. **Update DEMO.md** so it shows the current best story.
 7. **Refresh the README on every round and every PR.** Update these sections to match
    the README template below:
-   - **Current status:** current stage, headline result in plain words, date.
+   - **Current status:** current stage, headline result in plain words, date, and which
+     controller is the default (D2 unless the config says otherwise).
    - **Progress:** add the new hero GIF in order, with a one-line caption of the milestone.
    - **Reward function:** regenerate the formula and the value table from the current
      config (`configs/copush.yaml`: `reward` with `reward_versions[reward.version]` applied
@@ -65,6 +66,10 @@ Create any missing file using the templates below.
   exactly that.
 - **Flag reward hacking or odd behavior** (one duck doing all the work, standing still,
   losing the box on purpose, monitor flags) even when success is high.
+- **Name the controller.** The default is decentralized with the partner in view (D2:
+  each duck runs the shared network on its own view; `controller` in `configs/copush.yaml`).
+  The central controller (one network for both ducks) is still selectable. Say which one a
+  result used, and compare D2 against central only at equal training.
 
 ## README rule
 
@@ -110,6 +115,14 @@ angle, with the box anywhere and at any angle, learn to push it into the target 
 
 - **Current stage:** <stage, in plain words>
 - **Last finished result:** <headline result in plain words, with eval size>
+
+**How it works:** <one paragraph; each duck runs its own copy of the controller (D2, the default)>
+
+## Decentralized control
+
+<one sentence, one small table (central / D1 / D2: success, hard-side wins, both ducks
+pushing, lazy-duck episodes), one caveat line, the side-by-side GIF, one link to
+experiments/decentralized-control/README.md>
 
 ## Progress
 

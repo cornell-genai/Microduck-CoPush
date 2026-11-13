@@ -80,6 +80,27 @@ scripts/rl.sh -m tensorboard.main --logdir runs                            # tra
 Baseline controllers are `stand`, `random`, `push_forward`, `push_steer`, and `pivot_push`, all in
 `copush/env.py`.
 
+### Who decides: the controller setting
+
+By default each duck runs its own copy of the learned controller from its own view, with its partner's
+position in view (D2). That's `controller` in `configs/copush.yaml`:
+
+```yaml
+controller:
+  mode: decentral           # or central: one controller for both ducks
+  include_partner: true     # decentral only; false is D1 (own view only)
+```
+
+`train.py` takes `--controller central`, `d1` or `d2` to override it. A stage config sets it under
+`overrides` (stages built on `configs/overnight.yaml` are central, like 01_reference). With a
+decentral controller, PPO counts each duck as its own environment, so `--steps` counts duck steps,
+2 per simulator step. Code: `copush/decentral.py`.
+
+```sh
+scripts/rl.sh scripts/rl/train.py --layout steer --steps 100000 --name D2                       # default: D2
+scripts/rl.sh scripts/rl/train.py --layout steer --steps 100000 --name C --controller central   # one controller
+```
+
 ## Tests
 
 ```sh

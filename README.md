@@ -13,24 +13,42 @@ Two ducks start anywhere within a set distance of the target, facing any directi
 be anywhere, at any angle. Without a script telling them what to do, the ducks learn to walk to
 the box and push it into the target together.
 
-## Current status (2026-11-12)
+## Current status (2026-11-13)
 
-- **Current stage: Stage 1, random box start (and the 1b follow-up).** The box starts in a random spot (up to 15 cm off in
+- **Current stage: Stage 1, random box start.** The box starts in a random spot (up to 15 cm off in
   each direction) and at a random angle (up to 45 degrees). The ducks still start touching it.
-- **Last finished result:** our learned controller gets the box into the target on 60% of 50 test
-  starts it never trained on. The policy it started from gets 50%, and our best hand-written script
-  gets 32%. It fails almost every start where the box is turned more than 15 degrees to one side
-  (2 of 17). Details: [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md)
-- **Stage 1b, trying to fix that side:** training with half the starts on the hard side raises the
-  overall score to 72%, but the hard side is still only 4 of 17. A smaller time penalty gives 68% and
-  makes the ducks wait on hard starts. Details:
-  [experiments/stage1b-turn-direction-fix/](experiments/stage1b-turn-direction-fix/README.md)
+- **Last finished result:** each duck now runs its own controller, and with its partner in view it
+  gets the box in on 74% of 50 test starts (one central controller for both: 60%). It's now the
+  default. See [Decentralized control](#decentralized-control).
+- **Still unsolved:** starts where the box is turned more than 15 degrees to the positive side (5 of
+  17 at best). Earlier tries are in [stage 1](experiments/stage1-random-box-pose/README.md) and
+  [stage 1b](experiments/stage1b-turn-direction-fix/README.md).
 
 **How it works:** each duck walks and pushes with frozen, pretrained neural networks from Pollen
-Robotics. On top of that, our controller picks each duck's forward speed and turn rate every 0.2 s.
-That controller is trained with reinforcement learning (RL): it tries things in a physics simulator
+Robotics. On top of that, a small controller picks each duck's forward speed and turn rate every
+0.2 s. Each duck runs its own copy of that controller, using what it sees: the box, the target and
+its partner. It's trained with reinforcement learning (RL): it tries things in a physics simulator
 (MuJoCo) and learns from a score called the reward. The method is PPO (Proximal Policy
 Optimization), a standard RL algorithm.
+
+## Decentralized control
+
+Each duck runs its own controller from its own view, and with the partner in view it matches the
+central controller.
+
+| controller | success (50 test starts) | hard-side wins (of 17) | both ducks pushing | lazy-duck episodes |
+|---|---|---|---|---|
+| central (one controller for both ducks) | 60% | 2 | 86% of steps | 2 |
+| D1: own view only | 60% | 1 | 92% of steps | 0 |
+| **D2: own view + partner (default)** | **74%** | **5** | **94% of steps** | **0** |
+
+Caveat: one seed each, D2 started by copying the central controller, and central with equal extra
+training reached 72%.
+
+[![central (left) vs D2 (right), box turned +32 degrees](docs/media/decentral_stage1_vs_d2_hard_start.gif)](docs/media/decentral_stage1_vs_d2_hard_start.mp4)
+
+Box turned +32 degrees: central (left) runs out of time, D2 (right) finishes in 41 steps. Full
+results: [experiments/decentralized-control/](experiments/decentralized-control/README.md).
 
 ## Progress
 
@@ -92,13 +110,13 @@ Why each value is what it is: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
 
 ## Next steps
 
-- **Fix the one-side blind spot:** the box turned more than 15 degrees to the positive side still
-  succeeds only 4 of 17 times. Next ideas: let one duck hold still so the other can pivot the box.
+- **Fix the hard side:** the box turned more than 15 degrees to the positive side still succeeds only
+  5 of 17 times. It needs a long turn (about 55 degrees) before the push.
+- **Check the decentralized result:** a second seed, and separate (not shared) networks for the two
+  ducks.
 - **Start the ducks away from the box,** so they have to walk to it first. That's the next step
   toward the final goal.
 - **Make the reward ask for teamwork,** so one duck can't quit and leave the other to push alone.
-- **Give each duck its own controller.** Right now one controller decides for both ducks. Next, we
-  want two separate controllers, one per duck, each deciding from what that duck can see.
 
 ## Links
 
