@@ -9,7 +9,7 @@ eval   the test set (scripts/rl/compare_policies.py, one deterministic episode p
        setup whose seeds have a model.zip, into <experiment>/setups/<setup>/results/test_set/
 plot   <experiment>/comparison/: learning_curves.png (fixed-start eval success and return vs simulator
        steps, from each run's videos/evals.jsonl; one line per setup, shaded min to max over seeds when
-       there are several), test_set_success.png, cooperation.png, summary.md and summary.json
+       there are several; top row from 0, bottom row shifted right by a setup's prior_steps), test_set_success.png, cooperation.png, summary.md and summary.json
 """
 from __future__ import annotations
 
@@ -105,30 +105,48 @@ def cmd_plot(spec, exp, runs_yaml) -> int:
                              "push_share_a": float(np.mean([e["push_share_a"] for e in ep])),
                              "both_touch": float(np.mean([e["both_touch_frac"] for e in ep])),
                              "lazy": int(sum(e["lazy"] for e in ep))}
-        summary[name] = {"label": s["label"], "seeds": seeds}
+        summary[name] = {"label": s["label"], "seeds": seeds, "prior": int(s.get("prior_steps", 0))}
 
-    # learning curves
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4), constrained_layout=True)
-    for i, (name, sm) in enumerate(summary.items()):
-        if not sm["seeds"]:
-            continue
-        end = max(v["end"] for v in sm["seeds"].values())
-        g = [on_grid(v["rows"], end) for v in sm["seeds"].values()]
-        n = len(g)
-        for ax, key in zip(axes, ("success", "return")):
-            y = np.array([x[key] for x in g], dtype=float)
-            ax.plot(g[0]["step"] / 1e3, np.nanmean(y, axis=0), color=COLORS[i], ls=STYLES[i], lw=2,
-                    label=f"{sm['label']} ({n} seed{'s' if n > 1 else ''})")
-            if n > 1:
-                ax.fill_between(g[0]["step"] / 1e3, np.nanmin(y, axis=0), np.nanmax(y, axis=0), color=COLORS[i],
-                                alpha=0.15, lw=0)
-    axes[0].set(title="Fixed start: eval success (share of seeds)", xlabel="simulator steps (thousands)",
-                ylabel="success", ylim=(-0.05, 1.05))
-    axes[1].set(title="Fixed start: eval return", xlabel="simulator steps (thousands)", ylabel="return")
-    for ax in axes:
-        ax.grid(alpha=0.25)
-        ax.spines[["top", "right"]].set_visible(False)
-    axes[1].legend(frameon=False, loc="lower right")
+    # learning curves. Top row: each run's own steps, all from 0. Bottom row: a setup with prior_steps
+    # (training before this run, e.g. the distilled teacher's) starts that far to the right, so every
+    # curve is plotted against its total simulator steps of training.
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8), constrained_layout=True)
+    for row, shift in enumerate((False, True)):
+        for i, (name, sm) in enumerate(summary.items()):
+            if not sm["seeds"]:
+                continue
+            end = max(v["end"] for v in sm["seeds"].values())
+            g = [on_grid(v["rows"], end) for v in sm["seeds"].values()]
+            n, prior = len(g), sm["prior"] if shift else 0
+            x = (g[0]["step"] + prior) / 1e6
+            label = f"{sm['label']} ({n} seed{'s' if n > 1 else ''})"
+            if sm["prior"]:
+                label += f"; bottom row: shifted right by its {sm['prior'] / 1e6:.2f}M prior steps"
+            for ax, key in zip(axes[row], ("success", "return")):
+                y = np.array([v[key] for v in g], dtype=float)
+                ax.plot(x, np.nanmean(y, axis=0), color=COLORS[i], ls=STYLES[i], lw=2, label=label)
+                if n > 1:
+                    ax.fill_between(x, np.nanmin(y, axis=0), np.nanmax(y, axis=0), color=COLORS[i], alpha=0.15, lw=0)
+        for ax, key in zip(axes[row], ("success", "return")):
+            title = "eval success (share of seeds)" if key == "success" else "eval return"
+            ax.set(title=f"Fixed start: {title}" + (", counting prior training" if shift else ", steps in this run"),
+                   xlabel="simulator steps of training" + (", including prior training" if shift else " in this run")
+                   + " (millions)", ylabel=key)
+            if key == "success":
+                ax.set_ylim(-0.05, 1.05)
+            ax.set_xlim(left=0)
+            ax.grid(alpha=0.25)
+            ax.spines[["top", "right"]].set_visible(False)
+            for i, sm in enumerate(summary.values()):           # bracket: the prior training, not plotted
+                if shift and sm["prior"] and sm["seeds"]:
+                    lo, hi = ax.get_ylim()
+                    yb = lo + 0.06 * (hi - lo)
+                    ax.annotate("", xy=(sm["prior"] / 1e6, yb), xytext=(0, yb),
+                                arrowprops=dict(arrowstyle="<->", color=COLORS[i], lw=1.5))
+                    ax.text(sm["prior"] / 2e6, yb + 0.03 * (hi - lo),
+                            f"{sm['label']}: prior training ({sm['prior'] / 1e6:.2f}M steps, not plotted)",
+                            ha="center", va="bottom", fontsize=8, color="#444444")
+    fig.legend(*axes[0][0].get_legend_handles_labels(), frameon=False, loc="outside lower center", ncol=3, fontsize=9)
     fig.savefig(os.path.join(out, "learning_curves.png"), dpi=120)
     plt.close(fig)
 

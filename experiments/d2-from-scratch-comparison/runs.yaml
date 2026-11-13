@@ -20,5 +20,7 @@ setups:
   d2-distilled:
     label: D2, distilled
     controller: decentral
+    prior_steps: 1381408   # the distilled teacher's PPO training: 01_reference 401,408 + stage 1 980,000 simulator
+                           # steps (distillation itself ran ~35k teacher steps + 1 DAgger round; not counted)
     seeds:
       1: runs/decentral-p1-d2                        # reused: the decentralized-control phase 1 D2 run
