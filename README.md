@@ -93,6 +93,8 @@ Why each value is what it is: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
 - **Start the ducks away from the box,** so they have to walk to it first. That's the next step
   toward the final goal.
 - **Make the reward ask for teamwork,** so one duck can't quit and leave the other to push alone.
+- **Give each duck its own controller.** Right now one controller decides for both ducks. Next, we
+  want two separate controllers, one per duck, each deciding from what that duck can see.
 
 ## Links
 
