@@ -19,6 +19,8 @@ for `steps` steps, counted from 0.
                  inherit central from configs/overnight.yaml). Decentral: each duck is its own SB3 entry
                  running the shared policy on its own view (copush.decentral); steps then count duck
                  entries (2 per sim step) and checks / videos run the policy once per duck
+    seeds        --seed N sets ppo.seed and trains into <out>-sN (a -s<M> suffix on out is replaced), so
+                 every seed of a setup shares one config
     gate         with `gate: [results.json, ...]` training starts only if at least one of those runs
                  ended its last (fixed-start) eval in success; otherwise exit code 3 (the queue marks
                  the run "gated")
@@ -33,6 +35,7 @@ import copy
 import json
 import math
 import os
+import re
 import sys
 import time
 
@@ -66,6 +69,8 @@ def main() -> int:
     p.add_argument("--config", required=True, help="experiments/<stage>/config.yaml")
     p.add_argument("--steps", type=int, default=None, help="override the stage's steps (smoke tests)")
     p.add_argument("--out", default=None, help="override the stage's out (smoke tests)")
+    p.add_argument("--seed", type=int, default=None,
+                   help="ppo.seed; out becomes the stage's out with its -s<N> suffix (if any) replaced by -s<seed>")
     args = p.parse_args()
 
     from stable_baselines3 import PPO
@@ -81,7 +86,12 @@ def main() -> int:
             print(f"gate failed: none of {stage['gate']} ended its last fixed-start eval in success; not training", flush=True)
             return 3
         print(f"gate passed: {passed}", flush=True)
-    out = repo_path(args.out or stage["out"])
+    if args.seed is not None:
+        cfg["ppo"]["seed"] = args.seed
+    out = args.out or stage["out"]
+    if args.seed is not None and not args.out:
+        out = re.sub(r"-s\d+$", "", out.rstrip("/")) + f"-s{args.seed}"
+    out = repo_path(out)
     os.makedirs(os.path.join(out, "checkpoints"), exist_ok=True)
     dump_config(cfg, os.path.join(out, "config.yaml"))
     pc, wd, es = cfg["ppo"], stage["widen"], stage["early_stop"]
@@ -211,7 +221,7 @@ def main() -> int:
         "steps": int(model.num_timesteps), "steps_planned": total, "wall_s": video.wall(),
         "early_stopped": widen.stopped_early, "final_level": widen.level, "levels": wd["levels"],
         "reached_full_at": widen.reached_full_at, "box_start": cfg["env"]["box_start"],
-        "check_set": stage.get("check_set"), "reward_version": cfg["reward"]["version"],
+        "check_set": stage.get("check_set"), "reward_version": cfg["reward"]["version"], "seed": pc["seed"],
         "controller": cfg["controller"], "gate": stage.get("gate"),
         "widen_history": widen.history, "eval_flags": sorted(k[5:] for k in video.seen if k.startswith("flag:")),
         "eval_endings": sorted(k[4:] for k in video.seen if k.startswith("end:")),

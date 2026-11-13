@@ -1,7 +1,7 @@
 # D2 distilled: D2 started from the copy of the centralized stage 1 policy (init: distilled). The only
 # difference from d2-scratch. Seed 1 is runs/decentral-p1-d2 (same settings, evals every 10k simulator steps).
 #
-#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-from-scratch-comparison/setups/d2-distilled/config.yaml
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-from-scratch-comparison/setups/d2-distilled/config.yaml --seed N
 #
 # Resolved config = base < reference block of `reference` (01_reference: reward v1.1, layout overnight,
 # seed 1, fixed in-contact start) < overrides. Each duck runs the shared policy on its own view plus the
@@ -12,7 +12,7 @@ base: configs/copush.yaml
 reference: configs/overnight.yaml
 init: distilled
 warm_start: runs/decentral-distill/d2.zip   # distilled from the centralized stage 1 policy
-out: runs/d2-from-scratch/d2-distilled-s2   # seed 1 is an existing run (runs.yaml)
+out: runs/d2-from-scratch/d2-distilled-s2   # --seed N -> d2-distilled-sN; seed 1 is an existing run (runs.yaml)
 results: experiments/d2-from-scratch-comparison/setups/d2-distilled/results
 test_set: experiments/test_sets/stage1.json
 

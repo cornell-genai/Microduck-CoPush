@@ -2,7 +2,7 @@
 # Seed 1 is 01_reference (runs/overnight-20261112/runs/01_reference, trained by scripts/rl/overnight.py with
 # these settings); this config trains further seeds the same way with scripts/rl/stage.py:
 #
-#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-from-scratch-comparison/setups/central-scratch/config.yaml
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-from-scratch-comparison/setups/central-scratch/config.yaml --seed N
 #
 # Resolved config = base < reference block of `reference` (01_reference: reward v1.1, layout overnight,
 # seed 1, fixed in-contact start, controller central) < overrides. Steps are simulator steps.
@@ -11,7 +11,7 @@ change: centralized, random initial weights, fixed start
 base: configs/copush.yaml
 reference: configs/overnight.yaml
 init: scratch
-out: runs/d2-from-scratch/central-scratch-s4   # seeds 1 to 3 are existing runs (runs.yaml)
+out: runs/d2-from-scratch/central-scratch-s4   # --seed N -> central-scratch-sN; seeds 1 to 3 are existing runs (runs.yaml)
 results: experiments/d2-from-scratch-comparison/setups/central-scratch/results
 test_set: experiments/test_sets/stage1.json
 

@@ -1,6 +1,6 @@
 # D2 from scratch: the d2-distilled setup with random initial weights (init: scratch). Nothing else differs.
 #
-#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-from-scratch-comparison/setups/d2-scratch/config.yaml
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-from-scratch-comparison/setups/d2-scratch/config.yaml --seed N
 #
 # Resolved config = base < reference block of `reference` (01_reference: reward v1.1, layout overnight,
 # seed 1, fixed in-contact start) < overrides. Each duck runs the shared policy on its own view plus the
@@ -10,7 +10,7 @@ change: decentralized, own view + partner (D2), random initial weights, fixed st
 base: configs/copush.yaml
 reference: configs/overnight.yaml
 init: scratch
-out: runs/d2-from-scratch/d2-scratch-s1
+out: runs/d2-from-scratch/d2-scratch-s1          # --seed N -> d2-scratch-sN
 results: experiments/d2-from-scratch-comparison/setups/d2-scratch/results
 test_set: experiments/test_sets/stage1.json
 
