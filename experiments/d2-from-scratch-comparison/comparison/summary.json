@@ -1,0 +1,97 @@
+{
+ "central-scratch": {
+  "label": "central, from scratch",
+  "seeds": {
+   "1": {
+    "run": "runs/overnight-20261112/runs/01_reference",
+    "first_success": 70000.0,
+    "final_reason": "success",
+    "final_return": 15.593551074988806,
+    "final_steps": 32,
+    "final_push_share_a": 0.489434124421076,
+    "end": 401408.0,
+    "test": {
+     "n": 50,
+     "success": 0.5,
+     "push_share_a": 0.4987071914417415,
+     "both_touch": 0.9799003747214112,
+     "lazy": 0
+    }
+   },
+   "2": {
+    "run": "runs/overnight-20261112/runs/06_seed2",
+    "first_success": 170000.0,
+    "final_reason": "success",
+    "final_return": 15.090551941943733,
+    "final_steps": 37,
+    "final_push_share_a": 0.44508849854487315,
+    "end": 401408.0,
+    "test": {
+     "n": 50,
+     "success": 0.28,
+     "push_share_a": 0.543753867968055,
+     "both_touch": 0.8801786165083333,
+     "lazy": 1
+    }
+   },
+   "3": {
+    "run": "runs/overnight-20261112/runs/07_seed3",
+    "first_success": 30000.0,
+    "final_reason": "success",
+    "final_return": 15.233512677310806,
+    "final_steps": 32,
+    "final_push_share_a": 0.4910402639573335,
+    "end": 401408.0,
+    "test": {
+     "n": 50,
+     "success": 0.44,
+     "push_share_a": 0.5330510142193069,
+     "both_touch": 0.9751310154562143,
+     "lazy": 0
+    }
+   }
+  }
+ },
+ "d2-scratch": {
+  "label": "D2, from scratch",
+  "seeds": {
+   "1": {
+    "run": "runs/d2-from-scratch/d2-scratch-s1",
+    "first_success": 75000.0,
+    "final_reason": "success",
+    "final_return": 15.336503877234541,
+    "final_steps": 35,
+    "final_push_share_a": 0.4607963746776294,
+    "end": 401408.0,
+    "test": {
+     "n": 50,
+     "success": 0.32,
+     "push_share_a": 0.5460998276451008,
+     "both_touch": 0.9165309043020194,
+     "lazy": 0
+    }
+   }
+  }
+ },
+ "d2-distilled": {
+  "label": "D2, distilled",
+  "seeds": {
+   "1": {
+    "run": "runs/decentral-p1-d2",
+    "first_success": 10000.0,
+    "final_reason": "success",
+    "final_return": 15.550230284888261,
+    "final_steps": 31,
+    "final_push_share_a": 0.4843824733283852,
+    "end": 401408.0,
+    "test": {
+     "n": 50,
+     "success": 0.48,
+     "push_share_a": 0.4963347490480515,
+     "both_touch": 0.9363601331013592,
+     "lazy": 0
+    }
+   }
+  }
+ }
+}

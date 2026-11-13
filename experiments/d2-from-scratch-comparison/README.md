@@ -1,6 +1,6 @@
 # D2 from scratch: does decentralized control need the copied start?
 
-**Status:** Part 1 (setup and smoke test), 2026-11-13. One seed of D2 from scratch so far.
+**Status:** Part 1 done (setup and smoke test), 2026-11-13. One seed of D2 from scratch; seeded runs not started.
 
 ## The question
 
@@ -54,6 +54,30 @@ folder names.
   push and the share of steps where both ducks touch the box, on the test set.
 - Table: [comparison/summary.md](comparison/summary.md).
 
-## Results so far
+## Results so far (smoke test: d2-scratch seed 1)
 
-(filled in after the smoke test)
+**D2 learns the fixed start from random weights, about as fast as central from scratch.** Its first
+fixed-start success comes at 75k simulator steps (central seeds: 30k, 70k, 170k). It wobbles until 150k
+(a timeout at 100k, a fall at 125k), then succeeds at every eval through 400k. The final episode takes 35
+steps (central 32 to 37, d2-distilled 31). One seed, so this is a smoke test, not a result.
+
+| setup | seeds | first fixed-start success (sim steps) | final fixed-start eval | test set success | duck A push share | both touching | lazy duck |
+|---|---|---|---|---|---|---|---|
+| central-scratch | 3 | 30k, 70k, 170k | success in all 3 (32 to 37 steps) | 41% (50, 28, 44) | 52% | 95% | 1/150 |
+| d2-scratch | 1 | 75k | success, 35 steps | 32% | 55% | 92% | 0/50 |
+| d2-distilled | 1 | 10k (first eval) | success, 31 steps | 48% | 50% | 94% | 0/50 |
+
+- **The test set is a side measure.** These policies trained only on the fixed start. D2 from scratch
+  generalizes to random box starts less well (32%) than central seed 1 (50%), but within the range of
+  the central seeds (28 to 50%).
+- **Cooperation is fine:** both ducks touch the box on 92% of test-set steps, duck A does 55% of the
+  pushing, and no episode has a lazy duck.
+- **What to watch:** D2 from scratch commands low forward speeds. On 43% of test-set steps both ducks
+  are commanded below 0.05 m/s (central 0 to 11%, d2-distilled 16%). On the fixed start, duck B
+  averages 0.05 m/s against duck A's 0.12, so A turns the box while B mostly holds. Central seed 2 does
+  the same (0.015 against 0.17). It also has the most test-set falls (4) and turns the box more on long-turn starts (64 deg
+  total turn against 55 needed). We have no direct measure of the ducks pushing against each other.
+  In the final video, both stay on the push policy and the box moves steadily into the target.
+- Final video: `runs/d2-from-scratch/d2-scratch-s1/videos/step_802816_final.mp4`.
+- Wall time: 27.0 min of training (01_reference 35.9, central seeds 2 and 3: 26). Test set for all 5
+  runs: 2.9 min.
