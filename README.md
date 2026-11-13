@@ -42,7 +42,7 @@ central controller.
 | D1: own view only | 60% | 1 | 92% of steps | 0 |
 | **D2: own view + partner (default)** | **74%** | **5** | **94% of steps** | **0** |
 
-Caveat: one seed each, D2 started by copying the central controller, and central with equal extra
+Caveat: one seed each, D2 started by copying the central controller, and central with similar extra
 training reached 72%.
 
 [![central (left) vs D2 (right), box turned +32 degrees](docs/media/decentral_stage1_vs_d2_hard_start.gif)](docs/media/decentral_stage1_vs_d2_hard_start.mp4)
