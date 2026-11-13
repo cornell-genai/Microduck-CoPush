@@ -1,0 +1,124 @@
+{
+  "release": "policies-v1",
+  "repo": "cornell-genai/Microduck-CoPush",
+  "date": "2026-11-13",
+  "notes": [
+    "training_steps are simulator steps; steps_counted is what SB3 counted (decentral runs count 2 duck entries per simulator step)",
+    "git_commit is the commit that recorded the run's results on its branch",
+    "running a policy also needs the frozen walk/push ONNX policies: sh scripts/fetch_policies.sh"
+  ],
+  "policies": [
+    {
+      "name": "stage1-central",
+      "run": "runs/stage1-random-box-pose",
+      "description": "Central controller (one network commands both ducks), stage 1: random box starts (up to 15 cm, 45 deg), warm-started from 01_reference.",
+      "use": "warm start for long-turn work on the stage 1 range",
+      "branch": "stage1-random-box-pose",
+      "pr": 6,
+      "git_commit": "88cf5b0",
+      "experiment_config": "experiments/stage1-random-box-pose/config.yaml",
+      "controller": {
+        "mode": "central"
+      },
+      "training_steps": 980000,
+      "steps_counted": 980000,
+      "warm_start": "runs/overnight-20261112/runs/01_reference/model.zip",
+      "reward_version": "v1.1",
+      "test_set": {
+        "file": "experiments/test_sets/stage1.json",
+        "n": 50,
+        "success": 0.6,
+        "note": "one deterministic episode per start, 50 random box starts (stage 1 range)"
+      },
+      "files": [
+        {
+          "asset": "stage1-central.zip",
+          "dest": "runs/stage1-random-box-pose/model.zip",
+          "bytes": 174516,
+          "sha256": "508a82b0a596c6034e18428999e98b365596ebbb5d6bd921366ed33ef7c1cda2"
+        },
+        {
+          "asset": "stage1-central.config.yaml",
+          "dest": "runs/stage1-random-box-pose/config.yaml",
+          "bytes": 2430,
+          "sha256": "052619c5672e1b48d0396316b389c198b63c8cb5fb4673bdf11d90874fe2534f"
+        }
+      ]
+    },
+    {
+      "name": "stage1-d2",
+      "run": "runs/decentral-p2-d2",
+      "description": "D2: each duck runs the same network on its own view plus the partner's position and heading; phase 2 on stage 1 random box starts.",
+      "use": "warm start for stage 2 (decentralized, partner in view)",
+      "branch": "decentralized-control",
+      "pr": 8,
+      "git_commit": "e5b4637",
+      "experiment_config": "experiments/decentralized-control/p2-d2/config.yaml",
+      "controller": {
+        "mode": "decentral",
+        "include_partner": true
+      },
+      "training_steps": 1001472,
+      "steps_counted": 2002944,
+      "warm_start": "runs/decentral-p1-d2/model.zip",
+      "reward_version": "v1.1",
+      "test_set": {
+        "file": "experiments/test_sets/stage1.json",
+        "n": 50,
+        "success": 0.74,
+        "note": "one deterministic episode per start, 50 random box starts (stage 1 range)"
+      },
+      "files": [
+        {
+          "asset": "stage1-d2.zip",
+          "dest": "runs/decentral-p2-d2/model.zip",
+          "bytes": 170516,
+          "sha256": "944fffa81e7bcaa1ad21faa7d7bab75c422c2d6af13541a2d1272139704f21d5"
+        },
+        {
+          "asset": "stage1-d2.config.yaml",
+          "dest": "runs/decentral-p2-d2/config.yaml",
+          "bytes": 2430,
+          "sha256": "03edcfc43c089eee490ad122acf7fcc5b8e357150dcd947a3adfbe7d06411b55"
+        }
+      ]
+    },
+    {
+      "name": "01_reference",
+      "run": "runs/overnight-20261112/runs/01_reference",
+      "description": "Central controller, fixed in-contact start (overnight layout: target 0.60 m ahead, 0.30 m right), seed 1.",
+      "use": "warm start for stage 1 runs; the central from-scratch baseline",
+      "branch": "feature/overnight",
+      "pr": 3,
+      "git_commit": "1027983",
+      "experiment_config": "configs/overnight.yaml (run 01_reference)",
+      "controller": {
+        "mode": "central"
+      },
+      "training_steps": 401408,
+      "steps_counted": 401408,
+      "warm_start": null,
+      "reward_version": "v1.1",
+      "test_set": {
+        "file": "experiments/test_sets/stage1.json",
+        "n": 50,
+        "success": 0.5,
+        "note": "one deterministic episode per start, 50 random box starts (stage 1 range)"
+      },
+      "files": [
+        {
+          "asset": "01_reference.zip",
+          "dest": "runs/overnight-20261112/runs/01_reference/model.zip",
+          "bytes": 174534,
+          "sha256": "9c169610130daae245da495c255552711bd052b122adb53e212f3a9655b59b98"
+        },
+        {
+          "asset": "01_reference.config.yaml",
+          "dest": "runs/overnight-20261112/runs/01_reference/config.yaml",
+          "bytes": 2343,
+          "sha256": "08416c939ac0656d6bf22a86f42a05967485085e3d2aa61731cdb50891af75f5"
+        }
+      ]
+    }
+  ]
+}

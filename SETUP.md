@@ -11,6 +11,7 @@ one-page version. This file links to them instead of repeating them.
 ## Contents
 
 - [Install](#install)
+- [Get the trained policies](#get-the-trained-policies)
 - [Run the two-duck simulator](#run-the-two-duck-simulator)
 - [RL: checks, baselines and training](#rl-checks-baselines-and-training)
 - [Tests](#tests)
@@ -48,6 +49,27 @@ What `setup.sh` does:
 - It installs our scene into microduck_rl as an untracked `scene_copush_box.xml`.
 
 More detail: [docs/SIM_GUIDE.md, Setup](docs/SIM_GUIDE.md#setup-once).
+
+## Get the trained policies
+
+To warm start from our trained controllers instead of training them again:
+
+```sh
+scripts/get_policies.sh     # needs gh, logged in (gh auth login)
+```
+
+It downloads the [policies-v1 release](https://github.com/cornell-genai/Microduck-CoPush/releases/tag/policies-v1),
+checks each file's SHA-256 and puts it where the experiment configs expect it:
+
+| policy | goes to | what it is | test set |
+|---|---|---|---|
+| stage1-central | `runs/stage1-random-box-pose/model.zip` | central controller, stage 1 random box starts | 60% |
+| stage1-d2 | `runs/decentral-p2-d2/model.zip` | D2 (each duck: own view plus partner), stage 1 random box starts | 74% |
+| 01_reference | `runs/overnight-20261112/runs/01_reference/model.zip` | central controller, fixed in-contact start | 50% |
+
+Each file's run, branch, commit, config, steps and checksum are in
+[policies/manifest.json](policies/manifest.json). The script never replaces a file of yours that
+differs from the release unless you add `--force`.
 
 ## Run the two-duck simulator
 
