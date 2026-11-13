@@ -1,0 +1,47 @@
+# Decentralized control, phase 2, D2 (own view + partner): stage 1's random box starts.
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/decentralized-control/p2-d2/config.yaml
+#   (or all four runs through the queue: configs/decentral.yaml)
+#
+# Stage 1's setup (reward v1.1, box up to +-0.15 m and +-45 deg, ducks against the box) for the
+# decentralized policy, warm-started from its phase 1 policy (as stage 1 started from 01_reference).
+# Steps count duck entries: 2 per simulator step.
+name: decentral-p2-d2
+change: decentralized, own view + partner; random box starts (stage 1 range), warm start from phase 1
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/decentral-p1-d2/model.zip
+decentral: {include_partner: true}
+gate:                                     # train only if a phase 1 variant succeeded on the fixed start
+  - runs/decentral-p1-d1/results.json
+  - runs/decentral-p1-d2/results.json
+out: runs/decentral-p2-d2
+results: experiments/decentralized-control/p2-d2/results
+test_set: experiments/test_sets/stage1.json
+check_set: experiments/test_sets/stage1_checks.json
+
+overrides:
+  rl: {eval_every: 20000}
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}   # stage 1's range
+
+steps: 2000000                            # duck entries = 1M simulator steps
+checkpoint_every: 200000
+max_videos: 12
+
+widen:                                    # no widening (full range); checks on the fixed check set
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 100000                      # duck entries = every 50k simulator steps
+  episodes: 50
+  seed0: 10050
+
+early_stop: {success: 0.80, evals: 3}     # check-set success, 3 checks in a row
+
+test:
+  n: 50
+  rng_seed: 20261112
+  controllers: []
+  policies:
+    stage1: runs/stage1-random-box-pose/model.zip
+    d2: {path: runs/decentral-p2-d2/model.zip, decentral: {include_partner: true}}

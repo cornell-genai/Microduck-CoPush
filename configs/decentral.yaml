@@ -1,0 +1,23 @@
+# Decentralized control queue: phase 1 (fixed start) D1, D2, then phase 2 (random box starts) D1, D2.
+#
+#   nohup scripts/rl/overnight.sh --config configs/decentral.yaml >> runs/decentral-20261112/queue.log 2>&1 &
+#
+# Each run is a stage config in experiments/decentralized-control/ trained by scripts/rl/stage.py.
+# Phase 2 runs have a gate: they train only if a phase 1 run succeeded on the fixed start
+# (otherwise they are marked "gated"). Restarting the queue skips finished runs and resumes.
+out: runs/decentral-20261112
+max_attempts: 2
+
+runs:
+  - name: p1-d1
+    change: decentralized own view, fixed start, from distilled
+    stage: experiments/decentralized-control/p1-d1/config.yaml
+  - name: p1-d2
+    change: decentralized own view + partner, fixed start, from distilled
+    stage: experiments/decentralized-control/p1-d2/config.yaml
+  - name: p2-d1
+    change: decentralized own view, random box starts, from p1-d1
+    stage: experiments/decentralized-control/p2-d1/config.yaml
+  - name: p2-d2
+    change: decentralized own view + partner, random box starts, from p1-d2
+    stage: experiments/decentralized-control/p2-d2/config.yaml
