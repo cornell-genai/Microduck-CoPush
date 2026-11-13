@@ -21,7 +21,8 @@ starting the queue again continues where it stopped.
 A run with `stage: experiments/<...>/config.yaml` is a generalization-plan stage instead: the child
 is scripts/rl/stage.py on that config (warm start, box range, check-set early stop, its own
 checkpoints and resume), writing to the stage's `out`; the queue keeps status.json and train.log in
-<out>/runs/<NAME>/ and lists the run in SUMMARY.md's stage table.
+<out>/runs/<NAME>/ and lists the run in SUMMARY.md's stage table. A stage child that exits with code 3
+failed its `gate` (stage.py): the run is marked "gated", not crashed, and the queue goes on.
 
 One run (child, --run-one NAME) writes <out>/runs/<NAME>/: config.yaml, train.log, status.json,
 state.json + checkpoints/ckpt_<step>.zip (every checkpoint_every steps, newest only), tb/, videos/
@@ -492,6 +493,9 @@ def run_queue(q: dict) -> int:
         if st.get("status") == "done" and os.path.exists(results_path(q, run)):
             log(f"{name}: already done, skipping")
             continue
+        if st.get("status") == "gated":
+            log(f"{name}: gated, skipping")
+            continue
         if st.get("status") == "crashed" and st.get("crashes", 0) >= q.get("max_attempts", 2):
             log(f"{name}: crashed {st['crashes']} times, skipping")
             continue
@@ -522,6 +526,9 @@ def run_queue(q: dict) -> int:
         if rc == 0 and os.path.exists(results_path(q, run)):
             st.update({"status": "done", "finished": f"{dt.datetime.now():%Y-%m-%d %H:%M:%S}", "returncode": 0})
             log(f"{name}: finished")
+        elif rc == 3 and run.get("stage"):
+            st.update({"status": "gated", "finished": f"{dt.datetime.now():%Y-%m-%d %H:%M:%S}", "returncode": 3})
+            log(f"{name}: GATED (its gate failed, see runs/{name}/train.log); not trained, continuing")
         else:
             st.update({"status": "crashed", "crashes": st.get("crashes", 0) + 1, "returncode": rc,
                        "finished": f"{dt.datetime.now():%Y-%m-%d %H:%M:%S}"})

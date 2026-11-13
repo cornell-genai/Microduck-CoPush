@@ -44,13 +44,22 @@ HIGHLIGHT = {"stage1": "#2a78d6", "01_reference": "#eb6834", "pivot_push": "#1ba
 MUTED = "#a3a29b"
 
 
-def make_act_factory(name: str, path: str = None):
-    """-> make_act(env, seed) for test_set_episodes."""
+def policy_path(spec) -> str:
+    return spec["path"] if isinstance(spec, dict) else spec
+
+
+def make_act_factory(name: str, path=None):
+    """-> make_act(env, seed) for test_set_episodes. path: a model.zip, or {path, decentral:
+    {include_partner}} for a decentralized policy (copush.decentral, run once per duck)."""
     from copush.env import baseline
     if path is None:
         return lambda env, seed: baseline(name, env, seed=seed)
     from stable_baselines3 import PPO
-    model = PPO.load(repo_path(path), device="cpu")
+    model = PPO.load(repo_path(policy_path(path)), device="cpu")
+    if isinstance(path, dict) and path.get("decentral") is not None:
+        from copush.decentral import decentral_action
+        ip = bool(path["decentral"].get("include_partner"))
+        return lambda env, seed: (lambda obs: decentral_action(model, env.state, ip))
     return lambda env, seed: (lambda obs: model.predict(obs, deterministic=True)[0])
 
 
@@ -175,7 +184,7 @@ def cmd_eval(stage: dict, cfg: dict, cfg_path: str) -> int:
     ts = load_test_set(stage["test_set"])
     jobs = [(cfg_path, c, None) for c in t["controllers"]]
     for name, path in (t.get("policies") or {}).items():
-        if os.path.exists(repo_path(path)):
+        if os.path.exists(repo_path(policy_path(path))):
             jobs.append((cfg_path, name, path))
         else:
             print(f"skipping {name}: {path} not found")
