@@ -17,6 +17,8 @@ setups:
     controller: decentral
     seeds:
       1: runs/d2-from-scratch/d2-scratch-s1
+      2: runs/d2-from-scratch/d2-scratch-s2
+      3: runs/d2-from-scratch/d2-scratch-s3
   d2-distilled:
     label: D2, distilled
     controller: decentral
@@ -24,3 +26,5 @@ setups:
                            # steps (distillation itself ran ~35k teacher steps + 1 DAgger round; not counted)
     seeds:
       1: runs/decentral-p1-d2                        # reused: the decentralized-control phase 1 D2 run
+      2: runs/d2-from-scratch/d2-distilled-s2
+      3: runs/d2-from-scratch/d2-distilled-s3        # 800,000 steps: resumed from its last checkpoint after a full disk
