@@ -19,9 +19,13 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
    Be honest about the gap: it fails almost every start where the box is turned more than 15 degrees
    one way (2 of 17). Play: [stage1_failure_positive_angle.mp4](media/stage1_failure_positive_angle.mp4)
    Show the plot: [difficulty.png](../experiments/stage1-random-box-pose/results/difficulty.png)
+   Two follow-up fixes raised the score to 72% (more practice on hard starts) and 68% (a smaller time
+   penalty), but the hard side is still 4 of 17 at best.
+   Play: [stage1b_stage1_vs_a_long_turn.mp4](media/stage1b_stage1_vs_a_long_turn.mp4) (stage 1 left, more practice right)
    **Then give each duck its own controller:** the same network runs separately on each duck's own view.
    With the partner's position in view, it succeeds on 74% of the same 50 starts (5 of 17 on the hard
-   side), and both ducks still share the push. One seed, so read it as "no worse than one central brain".
+   side), and both ducks still share the push. One seed, and central with the same extra training got
+   72%, so read it as "as good as one central brain".
    Play: [decentral_stage1_vs_d2_hard_start.mp4](media/decentral_stage1_vs_d2_hard_start.mp4)
    (central left, per-duck right, box turned +32 degrees)
 5. **What we learned about reward design (1 min):**
@@ -31,6 +35,9 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
    - A cooperation bonus raised the score without changing what the ducks did. Compare success
      rates, not scores.
    - Training checks said 80% but the exam said 60%: the 20 check starts happened to be easy. Test on
-     a fixed, evenly spread set.
-6. **Next (30 s):** a second seed for the per-duck controllers, separate weights per duck, then stage 2: the
-   ducks start away from the box.
+     a fixed, evenly spread set. With 50 evenly spread check starts, the checks matched the exam.
+   - Making waiting cheaper (time penalty 0.03 to 0.01) brought back standing still on hard starts.
+     Play: [stage1b_b_idle_drift.mp4](media/stage1b_b_idle_drift.mp4)
+6. **Next (30 s):** each duck now has its own controller by default. Next: a second seed, separate
+   weights per duck, and a fix for the hard side (a long turn, about 55 degrees, before pushing). Then
+   stage 2: the ducks start away from the box.

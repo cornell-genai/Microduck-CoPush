@@ -1,0 +1,52 @@
+# Stage 1b, experiment B: lower time penalty (reward v1.3: -0.01 per step instead of v1.1's -0.03).
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/stage1b-turn-direction-fix/b-lower-time-penalty/config.yaml
+#   (or both A and B through the queue: configs/stage1b.yaml)
+#
+# Resolved config = base < reference block of `reference` < overrides: stage 1's settings plus ONE change.
+name: stage1b-b-lower-time-penalty
+change: reward v1.3 (time penalty 0.03 -> 0.01 per step), stage 1's start mix, warm start from stage 1
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/stage1-random-box-pose/model.zip   # the stage 1 policy (980k steps)
+test_set: experiments/test_sets/stage1.json         # the stage 1 exam, unchanged
+check_set: experiments/test_sets/stage1_checks.json # training checks (early stop); never the exam
+out: runs/stage1b-b-lower-time-penalty
+results: experiments/stage1b-turn-direction-fix/b-lower-time-penalty/results
+
+overrides:
+  env:
+    box_start:                            # stage 1's range and mix, unchanged
+      enabled: true
+      dx: 0.15
+      dy: 0.15
+      dyaw: 45.0
+  reward:
+    version: v1.3                         # the one change
+
+steps: 1000000                            # 8 envs (ppo.n_envs), as stage 1
+checkpoint_every: 100000
+max_videos: 12                            # VideoEvalCallback, on rl.eval_seed with the full range
+
+widen:                                    # no widening: stage 1 already trains on the full range
+  levels: [1.0]
+  threshold: 0.70                         # unused with one level
+  eval_every: 50000                       # training steps between checks
+  episodes: 50                            # = the 50 check-set starts
+  seed0: 10050                            # check episode i uses seed 10050 + i (held out; the exam uses 10000 + i)
+
+early_stop:                               # success on the check set
+  success: 0.80
+  evals: 3                                # in a row
+
+check:                                    # experiments/test_sets/stage1_checks.json
+  n: 50
+  rng_seed: 20261113                      # used once by `test_set.py make --checks`; the file is then fixed
+
+test:
+  n: 50
+  rng_seed: 20261112
+  controllers: []                         # the scripts' numbers are in stage 1's results
+  policies:
+    stage1: runs/stage1-random-box-pose/model.zip
+    b_time_penalty: runs/stage1b-b-lower-time-penalty/model.zip
