@@ -1,0 +1,32 @@
+# D2 from scratch: the d2-distilled setup with random initial weights (init: scratch). Nothing else differs.
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-from-scratch-comparison/setups/d2-scratch/config.yaml
+#
+# Resolved config = base < reference block of `reference` (01_reference: reward v1.1, layout overnight,
+# seed 1, fixed in-contact start) < overrides. Each duck runs the shared policy on its own view plus the
+# partner (copush.decentral). Steps count duck entries: 2 per simulator step.
+name: d2-scratch
+change: decentralized, own view + partner (D2), random initial weights, fixed start
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+init: scratch
+out: runs/d2-from-scratch/d2-scratch-s1
+results: experiments/d2-from-scratch-comparison/setups/d2-scratch/results
+test_set: experiments/test_sets/stage1.json
+
+overrides:
+  controller: {mode: decentral, include_partner: true}
+  rl: {eval_every: 50000}                 # duck entries = an eval every 25k simulator steps
+
+steps: 800000                             # duck entries = 400k simulator steps, as 01_reference
+checkpoint_every: 200000
+max_videos: 12
+
+widen:                                    # fixed start: no range; the checks just log fixed-start success
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 50000
+  episodes: 3
+  seed0: 10001
+
+early_stop: {success: 0.80, evals: 0}     # never: always the full 400k simulator steps
