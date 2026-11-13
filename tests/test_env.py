@@ -324,3 +324,37 @@ def test_test_sets_are_deterministic_and_cover_the_full_range():
     assert all(s["x"] == pytest.approx(cfg["box"]["x"] + s["dx"]) for s in a)
     for k, m in (("dx", 0.15), ("dyaw", 45.0)):                     # one start per 1/50 slice of each axis
         assert sorted(int((s[k] + m) / (2 * m) * 50) for s in a) == list(range(50))
+
+
+def test_box_start_hard_frac_oversamples_the_long_turn_side_and_off_keeps_the_old_draws():
+    cfg = load_config()
+    cfg["env"]["box_start"].update(enabled=True, dx=0.15, dy=0.15, dyaw=45.0)
+    plain = CoPushEnv(cfg)
+    before = [plain.reset(seed=s)[1]["box"]["yaw"] for s in range(3)]
+    cfg0 = copy.deepcopy(cfg)
+    cfg0["env"]["box_start"]["hard_frac"] = 0.0                     # explicit off: same draws as before
+    assert [CoPushEnv(cfg0).reset(seed=s)[1]["box"]["yaw"] for s in range(3)] == before
+    cfg["env"]["box_start"].update(hard_frac=0.5, hard_min_dyaw=15.0)
+    env = CoPushEnv(cfg)
+    d = [env.reset(seed=s)[1]["box"]["yaw"] - env.box0["yaw"] for s in range(40)]
+    assert all(-45.0 - 1e-9 <= x <= 45.0 + 1e-9 for x in d)
+    hard = sum(x >= 15.0 for x in d)
+    assert 12 <= hard <= 28                                          # about half (uniform would give ~13)
+
+
+def test_reward_v13_is_v11_with_a_lower_time_penalty():
+    from copush.config import effective_reward
+    v11 = effective_reward(load_config(overrides={"reward": {"version": "v1.1"}}))
+    v13 = effective_reward(load_config(overrides={"reward": {"version": "v1.3"}}))
+    assert v11["time_penalty"] == 0.03 and v13["time_penalty"] == 0.01
+    assert {k: v for k, v in v13.items() if k not in ("time_penalty", "version")} == \
+        {k: v for k, v in v11.items() if k not in ("time_penalty", "version")}
+
+
+def test_stage1_check_set_is_separate_from_the_test_set():
+    from copush.experiments import load_test_set
+    pose = lambda s: (s["x"], s["y"], s["yaw"])                      # noqa: E731
+    test = load_test_set("experiments/test_sets/stage1.json")
+    checks = load_test_set("experiments/test_sets/stage1_checks.json")
+    assert len(checks["starts"]) == 50 and checks["rng_seed"] != test["rng_seed"]
+    assert not {pose(s) for s in checks["starts"]} & {pose(s) for s in test["starts"]}

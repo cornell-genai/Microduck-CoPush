@@ -30,7 +30,9 @@ tipped/lost). env.layout picks a start mode and target from `layouts`:
     hard: start_mode approach, the original scene (walk 0.35 m to the box, target 0.85 m away).
 Fixed box by default; env.randomize samples it from env.random using the env's np_random.
 env.box_start (off) instead offsets the box pose from box.x / box.y / box.yaw, uniform in +-scale x
-dx / dy / dyaw (mass fixed), with the ducks still placed in contact; set_box_range(scale) widens it
+dx / dy / dyaw (mass fixed), with the ducks still placed in contact; set_box_range(scale) widens it.
+With box_start.hard_frac > 0 that fraction of starts draws its yaw offset from [hard_min_dyaw, dyaw]
+(the long-turn side) and the rest from [-dyaw, hard_min_dyaw)
 (copush.rl_callbacks.BoxRangeCallback). reset(options={"box": {"x", "y", "yaw"}}) starts from an
 explicit box pose instead (test sets, scripts/rl/test_set.py). Seeds in
 env.heldout_seeds are refused with split="train" (keep them for eval). env.curriculum (off) moves
@@ -184,8 +186,14 @@ class CoPushEnv(gym.Env):
             self.sim.set_box_mass(self.box0["mass"])
         elif bs["enabled"]:
             u = lambda m: self.box_scale * float(self.np_random.uniform(-m, m))   # noqa: E731
-            box.update({"x": self.box0["x"] + u(bs["dx"]), "y": self.box0["y"] + u(bs["dy"]),
-                        "yaw": self.box0["yaw"] + u(bs["dyaw"])})
+            dx, dy = u(bs["dx"]), u(bs["dy"])
+            if bs.get("hard_frac", 0.0) > 0:
+                lo, hi = bs["hard_min_dyaw"], bs["dyaw"]
+                hard = self.np_random.uniform() < bs["hard_frac"]
+                dyaw = self.box_scale * float(self.np_random.uniform(lo, hi) if hard else self.np_random.uniform(-hi, lo))
+            else:
+                dyaw = u(bs["dyaw"])
+            box.update({"x": self.box0["x"] + dx, "y": self.box0["y"] + dy, "yaw": self.box0["yaw"] + dyaw})
             self.sim.set_box_mass(self.box0["mass"])
         elif self.ecfg["randomize"]:
             r = self.ecfg["random"]

@@ -1,0 +1,17 @@
+# Stage 1b queue: experiments A and B, one after another (scripts/rl/overnight.py, stage runs).
+#
+#   nohup scripts/rl/overnight.sh --config configs/stage1b.yaml >> runs/stage1b-20261112/queue.log 2>&1 &
+#
+# Each run is a stage config (experiments/stage1b-turn-direction-fix/<x>/config.yaml) trained by
+# scripts/rl/stage.py: warm start from stage 1, ONE change each, checks on the fixed check set.
+# Restarting the queue skips finished runs and resumes the interrupted one from its checkpoint.
+out: runs/stage1b-20261112
+max_attempts: 2               # a run that crashed this many times is skipped on restart
+
+runs:
+  - name: a-oversample-hard
+    change: half of training starts turned more than +15 deg
+    stage: experiments/stage1b-turn-direction-fix/a-oversample-hard/config.yaml
+  - name: b-lower-time-penalty
+    change: time penalty 0.03 -> 0.01 per step (reward v1.3)
+    stage: experiments/stage1b-turn-direction-fix/b-lower-time-penalty/config.yaml

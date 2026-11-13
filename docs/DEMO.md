@@ -19,6 +19,9 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
    Be honest about the gap: it fails almost every start where the box is turned more than 15 degrees
    one way (2 of 17). Play: [stage1_failure_positive_angle.mp4](media/stage1_failure_positive_angle.mp4)
    Show the plot: [difficulty.png](../experiments/stage1-random-box-pose/results/difficulty.png)
+   Two follow-up fixes raised the score to 72% (more practice on hard starts) and 68% (a smaller time
+   penalty), but the hard side is still 4 of 17 at best.
+   Play: [stage1b_stage1_vs_a_long_turn.mp4](media/stage1b_stage1_vs_a_long_turn.mp4) (stage 1 left, more practice right)
 5. **What we learned about reward design (1 min):**
    - When we let a duck stand still, it stopped helping: one duck pushed alone, because the reward
      never asks for two.
@@ -26,5 +29,9 @@ Current as of 2026-11-12. Clips are in [media/](media/) and play at 2x speed.
    - A cooperation bonus raised the score without changing what the ducks did. Compare success
      rates, not scores.
    - Training checks said 80% but the exam said 60%: the 20 check starts happened to be easy. Test on
-     a fixed, evenly spread set.
-6. **Next (30 s):** fix the one-direction blind spot, then stage 2: the ducks start away from the box.
+     a fixed, evenly spread set. With 50 evenly spread check starts, the checks matched the exam.
+   - Making waiting cheaper (time penalty 0.03 to 0.01) brought back standing still on hard starts.
+     Play: [stage1b_b_idle_drift.mp4](media/stage1b_b_idle_drift.mp4)
+6. **Next (30 s):** the hard side needs a long turn first (about 55 degrees), and the policy stops at about
+   40. Next we let the coordinator hold one duck still so it can pivot. Then stage 2: the ducks start away
+   from the box.

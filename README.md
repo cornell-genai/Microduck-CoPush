@@ -15,12 +15,16 @@ the box and push it into the target together.
 
 ## Current status (2026-11-12)
 
-- **Current stage: Stage 1, random box start.** The box starts in a random spot (up to 15 cm off in
+- **Current stage: Stage 1, random box start (and the 1b follow-up).** The box starts in a random spot (up to 15 cm off in
   each direction) and at a random angle (up to 45 degrees). The ducks still start touching it.
 - **Last finished result:** our learned controller gets the box into the target on 60% of 50 test
   starts it never trained on. The policy it started from gets 50%, and our best hand-written script
   gets 32%. It fails almost every start where the box is turned more than 15 degrees to one side
   (2 of 17). Details: [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md)
+- **Stage 1b, trying to fix that side:** training with half the starts on the hard side raises the
+  overall score to 72%, but the hard side is still only 4 of 17. A smaller time penalty gives 68% and
+  makes the ducks wait on hard starts. Details:
+  [experiments/stage1b-turn-direction-fix/](experiments/stage1b-turn-direction-fix/README.md)
 
 **How it works:** each duck walks and pushes with frozen, pretrained neural networks from Pollen
 Robotics. On top of that, our controller picks each duck's forward speed and turn rate every 0.2 s.
@@ -88,8 +92,8 @@ Why each value is what it is: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
 
 ## Next steps
 
-- **Fix the one-side blind spot from Stage 1:** the box turned more than 15 degrees to the positive
-  side succeeds only 2 of 17 times.
+- **Fix the one-side blind spot:** the box turned more than 15 degrees to the positive side still
+  succeeds only 4 of 17 times. Next ideas: let one duck hold still so the other can pivot the box.
 - **Start the ducks away from the box,** so they have to walk to it first. That's the next step
   toward the final goal.
 - **Make the reward ask for teamwork,** so one duck can't quit and leave the other to push alone.

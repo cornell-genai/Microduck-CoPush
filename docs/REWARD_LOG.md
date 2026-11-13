@@ -299,3 +299,34 @@ against the spread of three seeds of the reference.
 **Next:** Train the reference with the box randomized (`env.randomize: true`) and evaluate on 20 or
 more randomized episodes. The fixed-start eval is at its ceiling for every run, and the randomized
 eval is where all of them fail.
+
+## v1.3 (2026-11-12)
+
+**What changed from v1.1** (one change): the time penalty goes from −0.03 back to −0.01 per step. That's
+v1.1 with v1's time penalty. Everything else is unchanged.
+
+**Why:** On long-turn starts (box turned more than +15°) the stage 1 policy turns about 40° and then pushes,
+when aiming at the target needs about 55°. The question was whether −0.03 per step rushes it into pushing
+early.
+
+**Results:** stage 1b experiment B
+([experiments/stage1b-turn-direction-fix/b-lower-time-penalty/](../experiments/stage1b-turn-direction-fix/b-lower-time-penalty/README.md)).
+It warm-starts from the stage 1 policy and trains 1M steps, then is scored on stage 1's 50 fixed test starts.
+Success is compared, not return, because the rewards differ.
+
+| policy | reward | overall | < −15° | −15° to +15° | > +15° | turn before push (> +15°) | both ducks idle (> +15°) |
+|---|---|---|---|---|---|---|---|
+| stage 1 | v1.1 | 60% | 15/17 | 13/16 | 2/17 | 40° | 12% |
+| experiment B | v1.3 | 68% | 17/17 | 16/16 | 1/17 | 37° | 34% |
+| experiment A (for scale: v1.1, oversampled hard starts) | v1.1 | 72% | 16/17 | 16/16 | 4/17 | 44° | 15% |
+
+- **It didn't help the long turn.** B turns slightly less before pushing, and wins 1 of 17 long-turn starts.
+- The easy-side gain also shows up in experiment A, which kept v1.1, so it probably comes from the extra training,
+  not from v1.3.
+- **Standing still is partly back on hard starts.** Both ducks are idle for 34% of steps there, three times stage 1's
+  rate, and the box drifts away. That's the behavior v1.1's higher time penalty was added to stop. No episode leaves the box
+  where it started, and episodes aren't longer on average (54 against 57 steps).
+- **Verdict:** don't adopt v1.3. v1.1 stays the default.
+
+**Video:** `runs/stage1b-b-lower-time-penalty/videos/side_by_side/start44_stage1_vs_b_time_penalty.mp4`
+(stage 1 left, B right). Both get within about 0.3 m of the target, then the box drifts off while the ducks wait.

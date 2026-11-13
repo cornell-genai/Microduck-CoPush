@@ -18,6 +18,11 @@ its share is used up, so the queue ends on time even if the machine is slower th
 <out>/SUMMARY.md is rewritten. `kill $(cat <out>/queue.pid)` stops the queue and the running child;
 starting the queue again continues where it stopped.
 
+A run with `stage: experiments/<...>/config.yaml` is a generalization-plan stage instead: the child
+is scripts/rl/stage.py on that config (warm start, box range, check-set early stop, its own
+checkpoints and resume), writing to the stage's `out`; the queue keeps status.json and train.log in
+<out>/runs/<NAME>/ and lists the run in SUMMARY.md's stage table.
+
 One run (child, --run-one NAME) writes <out>/runs/<NAME>/: config.yaml, train.log, status.json,
 state.json + checkpoints/ckpt_<step>.zip (every checkpoint_every steps, newest only), tb/, videos/
 (VideoEvalCallback, capped at max_videos), model.zip, results.json.
@@ -67,6 +72,16 @@ def load_queue(path: str) -> dict:
 
 def run_dir(q: dict, name: str) -> str:
     return os.path.join(q["_out"], "runs", name)
+
+
+def stage_out(run: dict) -> str:
+    """A stage run's own output folder (the stage config's `out`)."""
+    with open(os.path.join(ROOT, run["stage"])) as f:
+        return os.path.join(ROOT, yaml.safe_load(f)["out"])
+
+
+def results_path(q: dict, run: dict) -> str:
+    return os.path.join(stage_out(run) if run.get("stage") else run_dir(q, run["name"]), "results.json")
 
 
 def run_cfg(q: dict, run: dict) -> dict:
@@ -299,25 +314,34 @@ def write_summary(q: dict) -> str:
           ""]
     ref = (q.get("reference") or {})
     try:
+        if all(r.get("stage") for r in q["runs"]):
+            raise LookupError("stage runs only: each stage config names its own reference")
         cfg = run_cfg(q, {})
         tg = cfg["layouts"][cfg["env"]["layout"]]["target"]
         md += [f"Reference: reward {cfg['reward']['version']}, layout `{cfg['env']['layout']}` (in-contact start, target "
                f"{tg['x'] - cfg['box']['x']:.2f} m ahead, {abs(tg['y'] - cfg['box']['y']):.2f} m to the "
                f"{'right' if tg['y'] < cfg['box']['y'] else 'left'}), seed {cfg['ppo']['seed']}, "
-               f"{q['steps_per_run']} steps per run. Each run differs from it by one thing.", ""]
+               f"{q.get('steps_per_run')} steps per run. Each run differs from it by one thing.", ""]
+    except LookupError as e:
+        md += [f"({e})", ""]
     except Exception as e:                                       # the summary must never stop the queue
         md += [f"(reference config could not be loaded: {e})", ""]
     del ref
+    stage_rows = []
+    t0 = len(md)
     md += ["| # | run | change | status | steps | final eval return (ending) | best eval return (step) | "
-           f"success, {q['eval_episodes']} randomized | falls | box lost | push share A / B | monitor flags | "
+           f"success, {q.get('eval_episodes')} randomized | falls | box lost | push share A / B | monitor flags | "
            "wall time | early stop | videos |", "|" + "---|" * 15]
     notes = []
     for i, run in enumerate(q["runs"], 1):
         name = run["name"]
         rd = run_dir(q, name)
         st = read_json(os.path.join(rd, "status.json"), {}) or {}
-        res = read_json(os.path.join(rd, "results.json")) if st.get("status") == "done" else None
         change = run.get("change", "")
+        if run.get("stage"):
+            stage_rows.append(_stage_row(i, run, st))
+            continue
+        res = read_json(os.path.join(rd, "results.json")) if st.get("status") == "done" else None
         if res:
             s = res["randomized"]
             n = s["n"]
@@ -349,6 +373,12 @@ def write_summary(q: dict) -> str:
            "falls, box lost, push share* are the final policy on episodes with the box randomized (position, yaw, mass; "
            "eval seeds), the same protocol as the reachability sweep. *monitor flags* are RewardMonitor flag kinds seen in "
            "any evaluation. *best* video = the saved video with the highest return (videos are only saved on a change).", ""]
+    if all(r.get("stage") for r in q["runs"]):
+        del md[t0:]                                              # no plain runs: only the stage table
+    if stage_rows:
+        md += ["## Stage runs (scripts/rl/stage.py)", "",
+               "| # | run | change | status | steps | last check success | check streak at stop | wall time | early stop | out |",
+               "|" + "---|" * 10] + stage_rows + [""]
     if notes:
         md += notes + [""]
     heat = os.path.join(out, "reachability", "heatmap.png")
@@ -364,6 +394,30 @@ def write_summary(q: dict) -> str:
         f.write("\n".join(md))
     os.replace(tmp, path)
     return path
+
+
+def _stage_row(i: int, run: dict, st: dict) -> str:
+    name, out = run["name"], stage_out(run)
+    rel = os.path.relpath(out, ROOT)
+    res = read_json(os.path.join(out, "results.json")) if st.get("status") == "done" else None
+    if res:
+        h = res.get("widen_history") or [{}]
+        last = h[-1].get("success_rate")
+        streak = 0
+        for e in reversed(h):
+            if e.get("success_rate", 0) < 0.8:
+                break
+            streak += 1
+        return (f"| {i} | {name} | {run.get('change', '')} | done | {res['steps']} | "
+                f"{'-' if last is None else f'{100 * last:.0f}%'} | {streak} | {res['wall_s'] / 60:.0f} min | "
+                f"{'YES' if res['early_stopped'] else 'no'} | `{rel}` |")
+    status = st.get("status", "pending")
+    if status == "running":
+        p = read_json(os.path.join(out, "state.json"), {}) or {}
+        status += f" (last checkpoint: step {p.get('step', 0)})"
+    elif status == "crashed":
+        status += f" x{st.get('crashes', 1)} (exit {st.get('returncode')}; see crashes.log)"
+    return f"| {i} | {name} | {run.get('change', '')} | {status} | - | - | - | - | - | `{rel}` |"
 
 
 # ── queue ────────────────────────────────────────────────────────────────────
@@ -419,7 +473,7 @@ def run_queue(q: dict) -> int:
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    log(f"queue start (pid {os.getpid()}): {len(q['runs'])} runs, {q['steps_per_run']} steps each, out {q['out']}, "
+    log(f"queue start (pid {os.getpid()}): {len(q['runs'])} runs, {q.get('steps_per_run', 'stage')} steps each, out {q['out']}, "
         f"deadline {q.get('deadline') or 'none'}")
     deadline = dt.datetime.strptime(str(q["deadline"]), "%Y-%m-%d %H:%M").timestamp() if q.get("deadline") else 0.0
 
@@ -435,7 +489,7 @@ def run_queue(q: dict) -> int:
         os.makedirs(rd, exist_ok=True)
         st_path = os.path.join(rd, "status.json")
         st = read_json(st_path, {}) or {}
-        if st.get("status") == "done" and os.path.exists(os.path.join(rd, "results.json")):
+        if st.get("status") == "done" and os.path.exists(results_path(q, run)):
             log(f"{name}: already done, skipping")
             continue
         if st.get("status") == "crashed" and st.get("crashes", 0) >= q.get("max_attempts", 2):
@@ -454,14 +508,18 @@ def run_queue(q: dict) -> int:
             else:
                 log(f"{name}: the deadline has passed, running without a time cap")
         with open(os.path.join(rd, "train.log"), "a") as lf:
-            p = subprocess.Popen([sys.executable, os.path.abspath(__file__), "--config", q["_path"], "--run-one", name,
-                                  "--until", str(until)],
-                                 stdout=lf, stderr=subprocess.STDOUT, start_new_session=True, cwd=ROOT)
+            if run.get("stage"):
+                cmd = [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "stage.py"),
+                       "--config", run["stage"]]
+            else:
+                cmd = [sys.executable, os.path.abspath(__file__), "--config", q["_path"], "--run-one", name,
+                       "--until", str(until)]
+            p = subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, start_new_session=True, cwd=ROOT)
             child["p"] = p
             log(f"{name}: started (pid {p.pid}), log runs/{name}/train.log")
             rc = p.wait()
             child["p"] = None
-        if rc == 0 and os.path.exists(os.path.join(rd, "results.json")):
+        if rc == 0 and os.path.exists(results_path(q, run)):
             st.update({"status": "done", "finished": f"{dt.datetime.now():%Y-%m-%d %H:%M:%S}", "returncode": 0})
             log(f"{name}: finished")
         else:
