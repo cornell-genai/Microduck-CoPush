@@ -36,7 +36,7 @@ def test_callback_on_a_tiny_ppo_run(tmp_path):
     from stable_baselines3 import PPO
     from copush.env import CoPushEnv
 
-    cfg = load_config()
+    cfg = load_config(overrides={"controller": {"mode": "central"}})   # a central PPO on CoPushEnv
     cfg["env"]["max_steps"] = 5                      # 1 s episodes: this tests plumbing, not learning
     env = CoPushEnv(cfg)
     model = PPO("MlpPolicy", env, n_steps=16, batch_size=16, n_epochs=1, seed=0, verbose=0)
@@ -63,7 +63,7 @@ def test_curriculum_callback_levels_up_the_training_envs(tmp_path):
     from stable_baselines3.common.vec_env import DummyVecEnv
     from copush.env import CoPushEnv
 
-    cfg = load_config()
+    cfg = load_config(overrides={"controller": {"mode": "central"}})   # a central PPO on CoPushEnv
     cfg["env"]["max_steps"] = 3
     cfg["env"]["curriculum"].update({"enabled": True, "success_threshold": 0.0, "eval_episodes": 1})
     vec = DummyVecEnv([lambda: CoPushEnv(cfg)])
