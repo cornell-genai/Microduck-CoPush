@@ -19,6 +19,11 @@ Action of one duck: [vx, vyaw] in [-1, 1], mapped exactly like that duck's half 
 DuckPairEnv is one simulation seen as two agents: observation (2, n), action (2, 2), so one
 SubprocVecEnv worker steps both ducks together. DuckVecEnv flattens N of them into 2N entries
 (duck A of sim i is entry 2i, duck B is 2i + 1) so Stable-Baselines3 trains one shared policy.
+
+The config's `controller` block picks the mode (default: decentral with the partner in view, D2):
+    partner_view(cfg)           None for a central controller, else include_partner
+    make_vec_env(cfg, n)        the training VecMonitor for that mode
+    policy_action(model, env, cfg, obs)   one deterministic action on a plain CoPushEnv
 """
 from __future__ import annotations
 
@@ -81,6 +86,34 @@ def decentral_action(model, st: dict, include_partner: bool) -> np.ndarray:
     return np.clip(np.asarray(a, dtype=np.float32), -1.0, 1.0).reshape(4)
 
 
+def partner_view(cfg: dict) -> Optional[bool]:
+    """None when cfg's controller is central, else whether each duck sees its partner."""
+    c = cfg.get("controller") or {"mode": "central"}
+    if c["mode"] == "central":
+        return None
+    if c["mode"] != "decentral":
+        raise ValueError(f"controller.mode must be central or decentral, not {c['mode']!r}")
+    return bool(c.get("include_partner"))
+
+
+def make_vec_env(cfg: dict, n_envs: int, split: str = "train"):
+    """VecMonitor over n_envs SubprocVecEnv simulations: n_envs entries (central) or 2 * n_envs (decentral)."""
+    from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
+    from copush.env import make_env
+    ip = partner_view(cfg)
+    if ip is None:
+        return VecMonitor(SubprocVecEnv([make_env(cfg, split=split) for _ in range(n_envs)]))
+    return VecMonitor(DuckVecEnv(SubprocVecEnv([make_pair_env(cfg, ip, split) for _ in range(n_envs)])))
+
+
+def policy_action(model, env, cfg: dict, obs) -> np.ndarray:
+    """The 4-vector action for a plain CoPushEnv: the central obs, or each duck's own view."""
+    ip = partner_view(cfg)
+    if ip is None:
+        return model.predict(obs, deterministic=True)[0]
+    return decentral_action(model, env.state, ip)
+
+
 class DuckPairEnv(gym.Env):
     """A CoPushEnv seen as two agents sharing a policy: observation (2, n), action (2, 2)."""
     metadata = {"render_modes": []}
@@ -103,6 +136,9 @@ class DuckPairEnv(gym.Env):
 
     def set_box_range(self, scale: float) -> float:
         return self.env.set_box_range(scale)
+
+    def set_curriculum_level(self, level: int):
+        return self.env.set_curriculum_level(level)
 
     def close(self):
         self.env.close()

@@ -14,7 +14,8 @@ held-out seed, env split "eval") and saves runs/<run_id>/videos/step_<n>_<reason
 
 Evaluation is deterministic (fixed seed, deterministic policy, exact env resets), so the episode
 is first run without rendering and re-run with the camera only when a video is due. Every
-evaluation is logged to SB3's logger (eval/*) and appended to videos/evals.jsonl.
+evaluation is logged to SB3's logger (eval/*) and appended to videos/evals.jsonl. Every callback
+acts the way cfg's `controller` says (copush.decentral.policy_action: central, or once per duck).
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ from typing import Optional, Set, Tuple
 
 from stable_baselines3.common.callbacks import BaseCallback
 
+from copush.decentral import policy_action
 from copush.env import CoPushEnv
 from copush.video import VideoLog
 
@@ -73,7 +75,7 @@ class VideoEvalCallback(BaseCallback):
         self.jsonl = os.path.join(self.vlog.dir, "evals.jsonl")
 
     def _act(self, obs):
-        return self.model.predict(obs, deterministic=True)[0]
+        return policy_action(self.model, self.env, self.cfg, obs)
 
     def _on_step(self) -> bool:
         if self.num_timesteps - self.last_eval >= self.every:
@@ -130,7 +132,7 @@ class CurriculumCallback(BaseCallback):
         self.env.set_curriculum_level(self.level)
 
     def _act(self, obs):
-        return self.model.predict(obs, deterministic=True)[0]
+        return policy_action(self.model, self.env, self.cfg, obs)
 
     def _on_step(self) -> bool:
         if self.num_timesteps - self.last_eval < self.every:
@@ -181,7 +183,7 @@ class BoxRangeCallback(BaseCallback):
         self.training_env.env_method("set_box_range", self.levels[self.level])
 
     def _act(self, obs):
-        return self.model.predict(obs, deterministic=True)[0]
+        return policy_action(self.model, self.env, self.cfg, obs)
 
     def _on_step(self) -> bool:
         if self.num_timesteps - self.last_eval < self.every:
