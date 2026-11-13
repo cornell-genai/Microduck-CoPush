@@ -4,7 +4,10 @@
     scripts/rl.sh scripts/rl/train.py --layout close --steps 100000 --name A
     scripts/rl.sh scripts/rl/train.py --layout steer --steps 300000 --name B
 
-Settings come from configs/copush.yaml (`ppo`, `rl`, `video`; reward = --version, default v1.1).
+Settings come from configs/copush.yaml (`ppo`, `rl`, `video`, `controller`; reward = --version,
+default v1.1). --controller picks who decides: d2 (the default in the YAML: each duck runs the shared
+policy on its own view plus its partner's position), d1 (own view only) or central (one policy for both).
+Decentral steps count duck entries, 2 per simulator step.
 Training envs: ppo.n_envs SubprocVecEnv workers (train split) wrapped in VecMonitor, so
 tensorboard gets rollout/ep_rew_mean and rollout/ep_len_mean. Every rl.eval_every steps
 VideoEvalCallback runs one deterministic episode on rl.eval_seed (the seed scripts/rl/baselines.py
@@ -29,7 +32,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, ROOT)
 
 from copush.config import dump_config, load_config, with_reward_version  # noqa: E402
-from copush.env import CoPushEnv, make_env  # noqa: E402
+from copush.decentral import make_vec_env, policy_action  # noqa: E402
+from copush.env import CoPushEnv  # noqa: E402
 from copush.rl_callbacks import CurriculumCallback, VideoEvalCallback  # noqa: E402
 from copush.rl_eval import run_episodes, summarize  # noqa: E402
 
@@ -41,14 +45,18 @@ def main() -> int:
     p.add_argument("--steps", type=int, default=None, help="default: ppo.total_steps")
     p.add_argument("--name", default="run")
     p.add_argument("--eval-episodes", type=int, default=5)
+    p.add_argument("--controller", choices=("central", "d1", "d2"), default=None,
+                   help="default: the YAML's controller (d2)")
     p.add_argument("--stand-still", action="store_true", help="env.stand_still.enabled: vx below the threshold = velstand")
     args = p.parse_args()
 
     from stable_baselines3 import PPO
     from stable_baselines3.common.callbacks import CallbackList
-    from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 
     cfg = with_reward_version(load_config(), args.version)
+    if args.controller:
+        cfg["controller"] = ({"mode": "central"} if args.controller == "central"
+                             else {"mode": "decentral", "include_partner": args.controller == "d2"})
     if args.layout:
         cfg["env"]["layout"] = args.layout
     if args.stand_still:
@@ -60,9 +68,10 @@ def main() -> int:
     run_dir = os.path.join(ROOT, "runs", run_id)
     os.makedirs(run_dir)
     dump_config(cfg, os.path.join(run_dir, "config.yaml"))
-    print(f"run dir: runs/{run_id}  ({layout}, reward {args.version}, {steps} steps, {pc['n_envs']} envs)", flush=True)
+    print(f"run dir: runs/{run_id}  ({layout}, reward {args.version}, {steps} steps, {pc['n_envs']} envs, "
+          f"controller {cfg['controller']})", flush=True)
 
-    vec = VecMonitor(SubprocVecEnv([make_env(cfg) for _ in range(pc["n_envs"])]))
+    vec = make_vec_env(cfg, pc["n_envs"])
     vec.seed(pc["seed"])
     model = PPO("MlpPolicy", vec, n_steps=pc["n_steps"], batch_size=pc["batch_size"], n_epochs=pc["n_epochs"],
                 learning_rate=pc["learning_rate"], gamma=pc["gamma"], gae_lambda=pc["gae_lambda"],
@@ -77,7 +86,7 @@ def main() -> int:
     model.save(os.path.join(run_dir, "model.zip"))
 
     env = CoPushEnv(cfg, split="eval")
-    act = lambda obs: model.predict(obs, deterministic=True)[0]          # noqa: E731
+    act = lambda obs: policy_action(model, env, cfg, obs)          # noqa: E731
     stats = run_episodes(env, lambda s: act, args.eval_episodes, seed0=cfg["rl"]["eval_seed"])
     summ = summarize(stats)
     evals = [json.loads(line) for line in open(os.path.join(video_cb.vlog.dir, "evals.jsonl"))]

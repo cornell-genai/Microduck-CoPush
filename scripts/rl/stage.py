@@ -14,9 +14,10 @@ for `steps` steps, counted from 0.
     videos       VideoEvalCallback on rl.eval_seed with the FULL range (one fixed start), capped at
                  max_videos including the final one
     checkpoints  every checkpoint_every steps, newest only, with state.json; a restart resumes there
-    decentral    with `decentral: {include_partner: bool}` each duck is its own SB3 entry running the
-                 shared policy on its own view (copush.decentral); steps then count duck entries (2 per
-                 sim step) and checks / videos run the policy once per duck
+    controller   the resolved config's `controller` (configs/copush.yaml; stages built on 01_reference
+                 inherit central from configs/overnight.yaml). Decentral: each duck is its own SB3 entry
+                 running the shared policy on its own view (copush.decentral); steps then count duck
+                 entries (2 per sim step) and checks / videos run the policy once per duck
     gate         with `gate: [results.json, ...]` training starts only if at least one of those runs
                  ended its last (fixed-start) eval in success; otherwise exit code 3 (the queue marks
                  the run "gated")
@@ -68,9 +69,8 @@ def main() -> int:
 
     from stable_baselines3 import PPO
     from stable_baselines3.common.callbacks import CallbackList
-    from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 
-    from copush.env import make_env
+    from copush.decentral import make_vec_env
     from copush.rl_callbacks import BoxRangeCallback, VideoEvalCallback, behaviors, decide, run_episode
 
     stage, cfg = load_stage(args.config)
@@ -80,8 +80,6 @@ def main() -> int:
             print(f"gate failed: none of {stage['gate']} ended its last fixed-start eval in success; not training", flush=True)
             return 3
         print(f"gate passed: {passed}", flush=True)
-    dc = stage.get("decentral")
-    ip = bool(dc and dc.get("include_partner"))
     out = repo_path(args.out or stage["out"])
     os.makedirs(os.path.join(out, "checkpoints"), exist_ok=True)
     dump_config(cfg, os.path.join(out, "config.yaml"))
@@ -99,11 +97,7 @@ def main() -> int:
     video_cfg = copy.deepcopy(cfg)
     video_cfg["env"]["box_start"]["scale"] = 1.0
     video_cfg["env"]["box_start"]["hard_frac"] = 0.0                # the same video start for every stage
-    if dc:
-        from copush.decentral import DuckVecEnv, decentral_action, make_pair_env
-        vec = VecMonitor(DuckVecEnv(SubprocVecEnv([make_pair_env(train_cfg, ip) for _ in range(pc["n_envs"])])))
-    else:
-        vec = VecMonitor(SubprocVecEnv([make_env(train_cfg) for _ in range(pc["n_envs"])]))
+    vec = make_vec_env(train_cfg, pc["n_envs"])
     tb = os.path.join(out, "tb")
     if ckpt:
         model = PPO.load(ckpt, env=vec, device="cpu", tensorboard_log=tb)
@@ -132,9 +126,6 @@ def main() -> int:
 
         def wall(self) -> float:
             return self.wall0 + time.perf_counter() - self.t0
-
-        def _act(self, obs):
-            return decentral_action(self.model, self.env.state, ip) if dc else super()._act(obs)
 
         def evaluate(self, final: bool = False):
             stats = run_episode(self.env, self._act, self.seed)
@@ -178,12 +169,8 @@ def main() -> int:
             return True
 
     checks = load_test_set(stage["check_set"])["starts"] if stage.get("check_set") else None
-    class StageRangeCallback(BoxRangeCallback):
-        def _act(self, obs):
-            return decentral_action(self.model, self.env.state, ip) if dc else super()._act(obs)
-
-    widen = StageRangeCallback(cfg, wd["levels"], wd["threshold"], wd["eval_every"], wd["episodes"], wd["seed0"],
-                               stop_success=es["success"], stop_evals=es["evals"], starts=checks, verbose=1)
+    widen = BoxRangeCallback(cfg, wd["levels"], wd["threshold"], wd["eval_every"], wd["episodes"], wd["seed0"],
+                             stop_success=es["success"], stop_evals=es["evals"], starts=checks, verbose=1)
     ws = state.get("widen", {})
     widen.level, widen.last_eval, widen.streak = level, ws.get("last_eval", 0), ws.get("streak", 0)
     widen.history, widen.reached_full_at = list(ws.get("history", [])), ws.get("reached_full_at")
@@ -213,7 +200,7 @@ def main() -> int:
         "early_stopped": widen.stopped_early, "final_level": widen.level, "levels": wd["levels"],
         "reached_full_at": widen.reached_full_at, "box_start": cfg["env"]["box_start"],
         "check_set": stage.get("check_set"), "reward_version": cfg["reward"]["version"],
-        "decentral": dc, "gate": stage.get("gate"),
+        "controller": cfg["controller"], "gate": stage.get("gate"),
         "widen_history": widen.history, "eval_flags": sorted(k[5:] for k in video.seen if k.startswith("flag:")),
         "eval_endings": sorted(k[4:] for k in video.seen if k.startswith("end:")),
         "eval_curve": [(e["step"], e["return"], e["reason"]) for e in evals],

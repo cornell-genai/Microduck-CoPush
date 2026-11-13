@@ -131,9 +131,9 @@ def _prune_after(videos_dir: str, step: int) -> None:
 def train_one(q: dict, run: dict, until: float = 0.0) -> int:
     from stable_baselines3 import PPO
     from stable_baselines3.common.callbacks import CallbackList
-    from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 
-    from copush.env import CoPushEnv, make_env
+    from copush.decentral import make_vec_env, policy_action
+    from copush.env import CoPushEnv
     from copush.rl_callbacks import CurriculumCallback, VideoEvalCallback, behaviors, decide, run_episode
     from copush.rl_eval import run_episodes, summarize
 
@@ -151,7 +151,7 @@ def train_one(q: dict, run: dict, until: float = 0.0) -> int:
         state, ckpt = {}, None
     parent = os.getppid()
 
-    vec = VecMonitor(SubprocVecEnv([make_env(cfg) for _ in range(pc["n_envs"])]))
+    vec = make_vec_env(cfg, pc["n_envs"])
     tb = os.path.join(rd, "tb")
     if ckpt:
         model = PPO.load(ckpt, env=vec, device="cpu", tensorboard_log=tb)
@@ -275,11 +275,11 @@ def train_one(q: dict, run: dict, until: float = 0.0) -> int:
     vec.close()
     model.save(os.path.join(rd, "model.zip"))
 
-    act = lambda obs: model.predict(obs, deterministic=True)[0]          # noqa: E731
     rand_cfg = copy.deepcopy(eval_cfg)
     rand_cfg["env"]["randomize"] = True
-    summ = summarize(run_episodes(CoPushEnv(rand_cfg, split="eval"), lambda s: act, q["eval_episodes"],
-                                  seed0=cfg["rl"]["eval_seed"]))
+    rand_env = CoPushEnv(rand_cfg, split="eval")
+    act = lambda obs: policy_action(model, rand_env, cfg, obs)          # noqa: E731
+    summ = summarize(run_episodes(rand_env, lambda s: act, q["eval_episodes"], seed0=cfg["rl"]["eval_seed"]))
     vdir = os.path.join(rd, "videos")
     evals = [json.loads(ln) for ln in open(os.path.join(vdir, "evals.jsonl")) if ln.strip()]
     vids = sorted(f for f in os.listdir(vdir) if f.endswith(".mp4"))
