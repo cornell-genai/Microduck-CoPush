@@ -1,4 +1,4 @@
-"""The shared state format and controller interface (docs/COPUSH_PLAN.md, "Shared interface").
+"""The shared state format and controller interface (docs/archive/COPUSH_PLAN.md, "Shared interface").
 
 Everything in CoPush speaks these two shapes, so the simulator client, the controllers and the
 evaluation code can be developed independently:

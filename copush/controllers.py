@@ -65,7 +65,7 @@ class SequenceController(Controller):
 DEMO_VX = 0.3
 # 1.2 rad/s *commanded* gives ~0.6 rad/s *achieved* turning in place. velstand does not turn in
 # place at all below ~0.95 rad/s commanded (measured: 0.6 -> 3 deg in 6 s, 0.9 -> 7 deg,
-# 1.0 -> 0.39 rad/s, 1.2 -> 0.62 rad/s, 1.5 -> 0.83 rad/s). See docs/WEEK1_STATUS.md.
+# 1.0 -> 0.39 rad/s, 1.2 -> 0.62 rad/s, 1.5 -> 0.83 rad/s). See docs/archive/WEEK1_STATUS.md.
 DEMO_VYAW = 1.2
 
 
@@ -87,7 +87,7 @@ class HeadingHoldPush(Controller):
     """Push a box along a straight line with ONE duck: constant vx, yaw rate from a PI heading loop.
 
     Built for the Shoe Push forward policy, whose yaw response while pushing is weak and biased
-    (docs/results/b0_single_duck_push.md, "Steering"): achieved yaw rate ~= 0.15 * (cmd - c0),
+    (docs/archive/b0/b0_single_duck_push.md, "Steering"): achieved yaw rate ~= 0.15 * (cmd - c0),
     with c0 ~= -0.6 rad/s (a +0.08..0.1 rad/s left drift at zero command), saturating near the
     +-1.5 rad/s the policies were driven with. Hence high proportional gain, and an integral term
     that finds the drift-cancelling bias by itself (`bias0` only seeds it).

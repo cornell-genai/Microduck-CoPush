@@ -121,8 +121,8 @@ video:                      # copush.video: episode videos (runs/<run_id>/videos
   speedup: 2                # 20 s episode -> 10 s video
 
 controller:                 # who picks the commands (copush.decentral); training, checks and videos follow it
-  mode: decentral           # decentral: each duck runs the shared policy on its own view; central: one policy for both
-  include_partner: true     # decentral only: the partner's position and heading in each duck's view (D2)
+  mode: central             # central: one policy for both ducks; decentral: each duck runs the shared policy on its own view
+  include_partner: true     # decentral only: the partner's position and heading in each duck's view (D2; false = D1)
 
 rl:                         # copush.rl_callbacks.VideoEvalCallback (PPO, later)
   eval_every: 10000         # training steps between evaluation episodes

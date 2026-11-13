@@ -20,7 +20,7 @@ DuckPairEnv is one simulation seen as two agents: observation (2, n), action (2,
 SubprocVecEnv worker steps both ducks together. DuckVecEnv flattens N of them into 2N entries
 (duck A of sim i is entry 2i, duck B is 2i + 1) so Stable-Baselines3 trains one shared policy.
 
-The config's `controller` block picks the mode (default: decentral with the partner in view, D2):
+The config's `controller` block picks the mode (default: central; decentral with the partner in view is D2):
     partner_view(cfg)           None for a central controller, else include_partner
     make_vec_env(cfg, n)        the training VecMonitor for that mode
     policy_action(model, env, cfg, obs)   one deterministic action on a plain CoPushEnv

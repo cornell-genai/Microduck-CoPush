@@ -1,6 +1,6 @@
 # B0: one duck pushing a box (Shoe Push)
 
-Baseline **B0** from `docs/COPUSH_PLAN.md`: one MicroDuck pushing the 28 × 10 × 9 cm Shoe Push box. It uses
+Baseline **B0** from `docs/archive/COPUSH_PLAN.md`: one MicroDuck pushing the 28 × 10 × 9 cm Shoe Push box. It uses
 the released pushing policies (`pisdeburra/robert-policies`) and Pollen's velstand walking policy. It also
 answers the three questions everything after Week 2 depends on:
 
@@ -23,7 +23,7 @@ marks the robot model instead. Hollow black diamonds are the model card's number
 | **Backward walking under robotd** (Test 2) | **The earlier finding was wrong, because of the robot model.** On duck-sim (real `robotd`, velstand v8, backlash robot), velstand walks backward from rest at −0.3 m/s (3 of 3 starts, about −0.08 m/s) but not at −0.2 or −0.25. Forward needs 0.15. The first report used the robot *without* backlash, where velstand barely walks at all; microduck's simulator doc warns about exactly this. |
 | **One duck, 1 m straight** (Test 3) | **Yes, mostly.** A 5 Hz heading hold (`copush.controllers.HeadingHoldPush`) brings the box to 1 m within 10 cm of the line in **6 of 10** trials on the backlash robot and **10 of 10** without backlash. Open loop manages 0 of 10, ending 0.6–0.8 m off the line. No falls and no lost boxes. On backlash it runs out of steering authority with light boxes. |
 | **B0 numbers** (backlash robot, CoPush's default) | Shoe Push **forward**: 0.65 m of box travel in 10 s vs 0.09 m for velstand v6, 0 falls, 91% of contact on the hips. Shoe Push **backward** fails on this robot: it turns around (mean abs heading 154°) and moves the box −0.13 m. On the no-backlash robot it works (0.57 m), so it was most likely trained without backlash. |
-| **Caveat: not yet the robotd path** | Tests 1 and 3 and the B0 table come from the infer_policy harness (BAM actuators). Under `robotd` in duck-sim, Shoe Push forward misbehaved in a teammate's run (`docs/WEEK1_STATUS.md` §3): it moved before any command, ran about 0.47 m/s at vx 0.15, and spun at zero command. Only velstand has been checked on both paths so far (§2, where they agree). Re-check Shoe Push under robotd before Week 3. |
+| **Caveat: not yet the robotd path** | Tests 1 and 3 and the B0 table come from the infer_policy harness (BAM actuators). Under `robotd` in duck-sim, Shoe Push forward misbehaved in a teammate's run (`docs/archive/WEEK1_STATUS.md` §3): it moved before any command, ran about 0.47 m/s at vx 0.15, and spun at zero command. Only velstand has been checked on both paths so far (§2, where they agree). Re-check Shoe Push under robotd before Week 3. |
 | **New hazards for CoPush** | (a) Without a box, Shoe Push forward **falls** on the backlash robot in most runs, so approach with velstand and switch to Shoe Push at contact. (b) Shoe Push backward **ignores the command sign** and walks backward for any command. |
 
 ## What changed since the first report
@@ -238,7 +238,7 @@ We can't separate the sim gap from their unpublished eval settings:
 4. **Robot model is a confound to fix project-wide.** duck-sim and `scene_box.xml` use the backlash robot.
    Shoe Push behaves better without it. Pick one per experiment and record it; the B0 scripts take
    `--robot`.
-5. **Re-run Tests 1 and 3 under robotd before building on them.** `WEEK1_STATUS.md` §3 found Shoe Push
+5. **Re-run Tests 1 and 3 under robotd before building on them.** `docs/archive/WEEK1_STATUS.md` §3 found Shoe Push
    under robotd moving without a command and spinning at zero command. The suspects are
    `stand = "none"` (the walk network also runs at zero command, which Shoe Push never trained on), a
    command/obs encoding difference, and the position-vs-BAM actuators. `scripts/b0/duck_sim_drive.py`
@@ -254,12 +254,12 @@ sh scripts/install_scene.sh          # scenes into microduck_rl (untracked)
 sh scripts/fetch_policies.sh         # policies into data/policies/ (gitignored)
 
 b0() { uv run --project ../microduck_rl python "$@"; }   # works in zsh and bash
-b0 scripts/b0/eval_push.py --robot backlash   --json docs/results/data/b0_eval_backlash.json     # ~15 s
-b0 scripts/b0/eval_push.py --robot nobacklash --json docs/results/data/b0_eval_nobacklash.json
+b0 scripts/b0/eval_push.py --robot backlash   --json docs/archive/b0/data/b0_eval_backlash.json     # ~15 s
+b0 scripts/b0/eval_push.py --robot nobacklash --json docs/archive/b0/data/b0_eval_nobacklash.json
 for rb in backlash nobacklash; do
-  b0 scripts/b0/steering.py --robot $rb --json docs/results/data/steering_$rb.json
-  b0 scripts/b0/steering.py --robot $rb --wz -1.5 -1.2 -1.0 -0.8 -0.6 0.0 0.8 1.2 1.5 --json docs/results/data/steering_wide_$rb.json
-  b0 scripts/b0/heading_hold.py --robot $rb --json docs/results/data/heading_hold_$rb.json
+  b0 scripts/b0/steering.py --robot $rb --json docs/archive/b0/data/steering_$rb.json
+  b0 scripts/b0/steering.py --robot $rb --wz -1.5 -1.2 -1.0 -0.8 -0.6 0.0 0.8 1.2 1.5 --json docs/archive/b0/data/steering_wide_$rb.json
+  b0 scripts/b0/heading_hold.py --robot $rb --json docs/archive/b0/data/heading_hold_$rb.json
 done
 b0 scripts/b0/make_plots.py                  # all figures, ~40 s
 
@@ -271,4 +271,4 @@ DUCK_SIM_STATE=~/.cache/duck-sim-b0 DUCK_SIM_PORT=7841 DUCK_SIM_RL=$PWD/../micro
 ```
 
 Everything in the harness is deterministic: reruns reproduce every number. duck-sim runs in wall-clock
-time, so its numbers vary by a few centimetres. Raw per-trial data is in `docs/results/data/`.
+time, so its numbers vary by a few centimetres. Raw per-trial data is in `docs/archive/b0/data/`.

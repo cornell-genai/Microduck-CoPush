@@ -14,7 +14,7 @@ through the box's start) or at the time limit. Success = box reached GOAL m, |bo
 
     uv run --project ../microduck_rl python scripts/b0/heading_hold.py                    # backlash robot
     uv run --project ../microduck_rl python scripts/b0/heading_hold.py --robot nobacklash
-    uv run --project ../microduck_rl python scripts/b0/heading_hold.py --json docs/results/data/heading_hold_backlash.json
+    uv run --project ../microduck_rl python scripts/b0/heading_hold.py --json docs/archive/b0/data/heading_hold_backlash.json
 """
 import argparse
 import json

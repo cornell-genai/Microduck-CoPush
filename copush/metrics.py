@@ -1,7 +1,7 @@
 """Evaluation metrics on logged runs (CSV from copush.recorder). No simulator needed.
 
 Week 1 uses displacement, yaw change and fall detection; the box-to-goal errors are the plan's
-core benchmark metrics (docs/COPUSH_PLAN.md section 5) for later weeks:
+core benchmark metrics (docs/archive/COPUSH_PLAN.md section 5) for later weeks:
 
     e_p     = || p_box - p_goal ||_2
     e_theta = | wrap(theta_box - theta_goal) |

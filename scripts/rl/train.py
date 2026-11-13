@@ -5,8 +5,8 @@
     scripts/rl.sh scripts/rl/train.py --layout steer --steps 300000 --name B
 
 Settings come from configs/copush.yaml (`ppo`, `rl`, `video`, `controller`; reward = --version,
-default v1.1). --controller picks who decides: d2 (the default in the YAML: each duck runs the shared
-policy on its own view plus its partner's position), d1 (own view only) or central (one policy for both).
+default v1.1). --controller picks who decides: central (the default in the YAML: one policy for both),
+d2 (each duck runs the shared policy on its own view plus its partner's position) or d1 (own view only).
 Decentral steps count duck entries, 2 per simulator step.
 Training envs: ppo.n_envs SubprocVecEnv workers (train split) wrapped in VecMonitor, so
 tensorboard gets rollout/ep_rew_mean and rollout/ep_len_mean. Every rl.eval_every steps
@@ -46,7 +46,7 @@ def main() -> int:
     p.add_argument("--name", default="run")
     p.add_argument("--eval-episodes", type=int, default=5)
     p.add_argument("--controller", choices=("central", "d1", "d2"), default=None,
-                   help="default: the YAML's controller (d2)")
+                   help="default: the YAML's controller (central)")
     p.add_argument("--stand-still", action="store_true", help="env.stand_still.enabled: vx below the threshold = velstand")
     args = p.parse_args()
 

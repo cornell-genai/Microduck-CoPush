@@ -7,7 +7,7 @@ heading over t in [2, 10] s, i.e. after it has reached the box) and whether it k
 
     uv run --project ../microduck_rl python scripts/b0/steering.py                     # backlash robot
     uv run --project ../microduck_rl python scripts/b0/steering.py --robot nobacklash
-    uv run --project ../microduck_rl python scripts/b0/steering.py --json docs/results/data/steering_backlash.json
+    uv run --project ../microduck_rl python scripts/b0/steering.py --json docs/archive/b0/data/steering_backlash.json
 
 Reported per command: achieved yaw rate mean (sd), steering gain (achieved - achieved at 0) / cmd,
 box lost, falls, box travel along the initial heading, and box yaw change.

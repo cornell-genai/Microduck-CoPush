@@ -41,7 +41,7 @@ macOS / Apple Silicon, MuJoCo 3.10.0.
 | Metrics | Displacement, unwrapped yaw change, falls, box-to-goal position and yaw error, object progress | `copush/metrics.py` |
 | Plots | x-y paths, yaw over time, trunk height over time, phases shaded | `scripts/plot_run.py` |
 | Tests | 22 tests on mock data, no simulator needed | `tests/`, `data/sample/mock_run.csv` |
-| B0 harness *(parallel workstream)* | Single-duck Shoe Push eval, steering sweep, heading-hold controller | `scripts/b0/`, `HeadingHoldPush`, `docs/results/` |
+| B0 harness *(parallel workstream)* | Single-duck Shoe Push eval, steering sweep, heading-hold controller | `scripts/b0/`, `HeadingHoldPush`, `docs/archive/b0/` |
 
 ## 2. What we tested
 
@@ -76,7 +76,7 @@ stand. The box pose is logged as `box_x, box_y, box_z, box_yaw`.
 
 ### B0: one duck pushing (parallel workstream)
 
-Full report: `docs/results/b0_single_duck_push.md`. It uses the policy harness (MuJoCo + BAM actuators,
+Full report: `docs/archive/b0/b0_single_duck_push.md`. It uses the policy harness (MuJoCo + BAM actuators,
 not `robotd`), with 10 paired trials of 10 s each.
 
 | Test | Backlash robot (duck-sim default) | No-backlash robot |
@@ -227,7 +227,7 @@ uv run pytest                                     # 22 tests, no simulator
 ```
 
 **More detail:**
-- `docs/WEEK1_STATUS.md`: M1 table per run, threshold rationale, all measurements
-- `docs/results/b0_single_duck_push.md`: B0 report
-- `docs/results/b0_runbook.md`: B0 runbook
-- `docs/COPUSH_PLAN.md`: the plan
+- `docs/archive/WEEK1_STATUS.md`: M1 table per run, threshold rationale, all measurements
+- `docs/archive/b0/b0_single_duck_push.md`: B0 report
+- `docs/archive/b0/b0_runbook.md`: B0 runbook
+- `docs/archive/COPUSH_PLAN.md`: the plan

@@ -15,7 +15,7 @@ walk policy, default `backlash` scene, headless unless stated.
 | P1 | Inspect the multi-duck simulator implementation | done | findings below; `body_server.build_world` / `Body.place` |
 | P1 | Run two independently controlled ducks | done | `scripts/check_m1.py`, M1 table |
 | P1 | Begin adding box geometry | done | `scenes/scene_box.xml`, box pose via `{"op":"objects"}` |
-| P2 | Reproduce single-duck pushing / run the released pushing ONNX | done (infer_policy); started under robotd | `docs/results/b0_single_duck_push.md`; robotd finding below |
+| P2 | Reproduce single-duck pushing / run the released pushing ONNX | done (infer_policy); started under robotd | `docs/archive/b0/b0_single_duck_push.md`; robotd finding below |
 | P2 | Understand the action and observation interfaces | done | 61-D obs → 14-D action for velstand and Shoe Push; `robot.move` {vx, vy, vyaw} body frame; command thresholds below |
 | P2 | Implement a simple dual-duck command sender | done | `copush/sim_client.py`, `copush/runner.py` |
 | P3 | Define the initial experiment metrics | done | `copush/metrics.py` |
@@ -120,7 +120,7 @@ and switching back is awkward.**
 - **Behaviour was not usable as-is:**
   - B moved ~1.4 m before any command was sent.
   - At vx 0.15 it covered 3.75 m in 8 s (~0.47 m/s), turning 95°. infer_policy gave
-    0.14–0.16 m/s (`docs/results/b0_single_duck_push.md` §2, no-backlash robot).
+    0.14–0.16 m/s (`docs/archive/b0/b0_single_duck_push.md` §2, no-backlash robot).
   - At zero command it spun 68° in 6 s.
   - A likely cause: duck-sim sets `stand = "none"`, so the walk network also runs at zero
     command, and Shoe Push was trained only on 0.1–0.3 m/s with no standing behaviour. An

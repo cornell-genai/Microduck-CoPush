@@ -2,7 +2,7 @@
 
 Same physics path as scripts/b0 (CPU MuJoCo, 200 Hz physics, 50 Hz ONNX policy, BAM M6 XL330
 actuators), with two ducks instead of one. Not duck-sim / robotd: that runs in wall-clock time,
-Shoe Push misbehaves under it, and its second duck is a different robot (WEEK1_STATUS.md §2-3).
+Shoe Push misbehaves under it, and its second duck is a different robot (docs/archive/WEEK1_STATUS.md §2-3).
 
 World (built with MjSpec, nothing installed into microduck_rl):
   * scenes/copush_base.xml: floor, light, visuals (as scenes/scene_box.xml)
@@ -13,7 +13,7 @@ World (built with MjSpec, nothing installed into microduck_rl):
 
 Ducks spawn in DEFAULT_POSE with the trunk at z 0.125 and the configured yaw, like
 b0lib.Rollout.reset: the heading is exact and there is no stand-up phase. (The SIT keyframe fix in
-WEEK1_STATUS.md is only needed on the duck-sim path.)
+docs/archive/WEEK1_STATUS.md is only needed on the duck-sim path.)
 
     sim = CoPushSim(load_config())
     sim.reset()

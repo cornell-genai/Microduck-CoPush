@@ -10,7 +10,7 @@ two-duck demo while `duck-sim realtime` samples the real-time factor, then judge
   real time      duck-sim realtime and the loop's own sim/wall ratio within 0.95..1.05
   health         `ctl health` says healthy for both ducks, before and after
 
-Thresholds and their justification: docs/WEEK1_STATUS.md, and copush/metrics.py for upright.
+Thresholds and their justification: docs/archive/WEEK1_STATUS.md, and copush/metrics.py for upright.
 
     uv run python scripts/check_m1.py               # launch, check, shut down
     uv run python scripts/check_m1.py --runs 3      # three fresh launches
