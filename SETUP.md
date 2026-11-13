@@ -1,15 +1,5 @@
 # Setup and commands
 
-Everything technical for running Microduck-CoPush: install, the two-duck simulator, RL checks,
-training, tests, the overnight queue, troubleshooting, and the older duck-sim / robotd path.
-Run all commands from the repo root unless a section says otherwise.
-
-For the simulator, [docs/SIM_GUIDE.md](docs/SIM_GUIDE.md) is the detailed guide (keys, start
-positions, the Python API, common problems) and [docs/CHEATSHEET.md](docs/CHEATSHEET.md) is a
-one-page version. This file links to them instead of repeating them.
-
-## Contents
-
 - [Install](#install)
 - [Get the trained policies](#get-the-trained-policies)
 - [Run the two-duck simulator](#run-the-two-duck-simulator)
@@ -21,6 +11,10 @@ one-page version. This file links to them instead of repeating them.
 - [Repo layout](#repo-layout)
 - [The shared controller interface](#the-shared-controller-interface)
 - [Week 1 path: duck-sim / robotd](#week-1-path-duck-sim--robotd)
+
+Every command for running Microduck-CoPush lives here. Run them from the repo root unless a
+section says otherwise. The plan is in [ROADMAP.md](ROADMAP.md); rules for AI agents are in
+[AGENTS.md](AGENTS.md).
 
 ## Install
 
@@ -48,7 +42,12 @@ What `setup.sh` does:
 - It builds the daemons.
 - It installs our scene into microduck_rl as an untracked `scene_copush_box.xml`.
 
-More detail: [docs/SIM_GUIDE.md, Setup](docs/SIM_GUIDE.md#setup-once).
+Check that the simulator's environment and policies are in place:
+
+```sh
+uv run --project ../microduck_rl python -c "import mujoco, onnxruntime, bam, yaml, mediapy"
+ls data/policies/velstand_v8/velstand.onnx data/policies/robert/shoe_push/forward/policy.onnx
+```
 
 ## Get the trained policies
 
@@ -73,17 +72,114 @@ differs from the release unless you add `--force`.
 
 ## Run the two-duck simulator
 
+Two MicroDucks and a 28 × 10 × 9 cm box in one MuJoCo world: CPU MuJoCo, 200 Hz physics, 50 Hz ONNX
+walking/pushing policies, BAM servo model. Headless it runs about 20× faster than real time.
+
 ```sh
 scripts/copush.sh --viewer                                        # watch + drive both ducks from the terminal
 scripts/copush.sh --headless --duration 15 --script push_forward  # scripted push -> runs/<timestamp>/
+scripts/copush.sh --headless --duration 15 --script push_forward --record   # + video.mp4
 scripts/copush.sh --duck-a 0,0.1,0 --box 0.4,0,90 --target 1.2,0,90 --box-mass 0.2   # custom start
 ```
 
-- **Keyboard controls** for driving the ducks in the viewer:
-  [docs/SIM_GUIDE.md, Launch](docs/SIM_GUIDE.md#launch) and
-  [docs/CHEATSHEET.md](docs/CHEATSHEET.md).
-- **Start positions:** [Setting positions](docs/SIM_GUIDE.md#setting-positions).
-- **Scripting from Python:** [Scripting in Python](docs/SIM_GUIDE.md#scripting-in-python).
+`copush.sh` runs `scripts/copush_sim.py` in microduck_rl's environment and switches to `mjpython`
+for `--viewer` on macOS.
+
+### Keys
+
+In `--viewer` mode, click the **terminal** and type there. The viewer window is only for watching;
+letters typed into it trigger MuJoCo's own shortcuts.
+
+| Key | Duck A | Duck B |
+|---|---|---|
+| forward / back (vx ± 0.05) | W / S | I / K |
+| turn left / right (vyaw ± 0.3) | A / D | J / L |
+| toggle policy velstand ↔ shoepush | 1 | 2 |
+| stop this duck | X | M |
+
+**Space** stops both ducks, **R** resets, **N** writes a note marker to events.log, **Q** quits. A
+movement key during `--script` takes over manually. Every 0.5 s a status line shows box→target
+distance, inside, each duck's policy, command and contact, and the reward.
+
+### Flags
+
+| Flag | Meaning |
+|---|---|
+| `--viewer` / `--headless` | window + keys, real time / no window, ~20× real time (default) |
+| `--duration S` | sim seconds (headless default 15; viewer runs until Q) |
+| `--script push_forward` | velstand vx 0.2 to the box, shoepush vx 0.2 from first contact |
+| `--script push_hold` | same, then steer with `HeadingHoldPush` toward the target |
+| `--record` | `video.mp4` with overlay (~0.8× real time headless; slows the viewer to ~0.4×) |
+| `--duck-a X,Y,YAW` `--duck-b ...` `--box ...` `--target ...` | start poses (m, m, deg; negative numbers are fine) |
+| `--box-mass KG` `--target-size L,W` | box mass, target rectangle |
+| `--policy-a` / `--policy-b velstand\|shoepush` | policy at reset |
+| `--config FILE` | another YAML (e.g. `runs/<ts>/config.yaml`) |
+| `--reward progress` · `--quiet` | reward function · no headless status lines |
+
+### Start positions
+
+Edit [configs/copush.yaml](configs/copush.yaml) (metres; yaw in degrees; 0 = facing +x), or use the
+flags above:
+
+```yaml
+duck_a: {x: 0.0, y: 0.10, yaw: 0, policy: velstand}
+box:    {x: 0.35, y: 0.0, yaw: 90, mass: 0.15}     # yaw 90 = long face toward the ducks
+target: {x: 1.20, y: 0.0, yaw: 90, size: [0.40, 0.20]}
+```
+
+Ducks spawn already standing in the policy's default pose at exactly the yaw you set; there is no
+stand-up phase.
+
+### Scripting in Python
+
+```python
+import sys; sys.path.insert(0, ".")          # run from the repo root
+from copush.config import load_config
+from copush.sim import CoPushSim
+
+sim = CoPushSim(load_config(overrides={"box": {"x": 0.40}}))   # configs/copush.yaml + a change
+state = sim.reset()
+while state["t"] < 10.0:
+    for duck in ("duck_a", "duck_b"):        # walk up on velstand, push with Shoe Push
+        if state[duck]["policy"] == "velstand" and state["contact"][duck]["in_contact"]:
+            sim.set_policy(duck, "shoepush")
+    state = sim.step({"A": (0.2, 0.0, 0.0), "B": (0.2, 0.0, 0.0)})   # one 0.02 s step
+print(f"box to target {state['box_to_target']:.2f} m, inside {state['inside']}, "
+      f"fallen {state['fallen']}, A contact {state['contact']['duck_a']['total_by_part']}")
+```
+
+Run it with `uv run --project ../microduck_rl python my_push.py`. `get_state()` keys are documented
+in `CoPushSim.get_state` ([copush/sim.py](copush/sim.py)). To try a different reward, write a
+`(prev_state, state) -> float` function and add it to `REWARDS` in
+[copush/rewards.py](copush/rewards.py).
+
+### Command recipes (measured in this sim)
+
+| To | Do | What happens |
+|---|---|---|
+| Approach the box | velstand, vx 0.2 | ~0.075 m/s; reaches a box 0.35 m ahead in ~3.4 s |
+| Push | switch to shoepush (1 / 2) at contact, vx 0.2 | pushes with the hips (90–95% of contact) |
+| Steer while pushing | vyaw −1.5 … +1.5 | drifts **left** at 0; over 7 s the box turned +21° (−1.5), +30° (0), +75° (+1.5): right turns are weak |
+| Turn in place | velstand, vyaw ≥ 1.2 | 1.2 → 1.26 rad/s (here it already turns from ~0.5) |
+| Back up | velstand, vx −0.3 | ~0.07 m/s backward; −0.2 does not move |
+| Avoid | shoepush with no box ahead | fell in 5 of 6 tries, after 3–8.5 s |
+
+### Record a trial and check for reward hacking
+
+1. `scripts/copush.sh --headless --duration 15 --script push_forward --record` (or `--viewer` and
+   drive, pressing **N** whenever something odd happens).
+2. Open `runs/<ts>/video.mp4` and `runs/<ts>/notes.md`. The Outcome section is already filled in.
+3. In `events.log`, read the `SUSPECT` lines:
+   - `contact_share`: one duck does more than 80% of the pushing
+   - `bad_part_*`: the duck pushes with its trunk or head more than its hips
+   - `spin`: the box turns but doesn't move
+   - `reward_vs_dist`: the reward rises but the box gets no closer
+   - `fall_*`: a duck fell
+   - `edge`: the box keeps crossing the target edge
+4. In `state.csv`, plot `cum_reward` against `box_to_target` and `inside`. Gaming looks like reward
+   going up while the distance does not go down.
+5. Answer the three questions in notes.md: what the ducks did, whether that was expected, and
+   whether the reward was gamed. Describe each NOTE marker.
 
 ## RL: checks, baselines and training
 
@@ -104,13 +200,14 @@ Baseline controllers are `stand`, `random`, `push_forward`, `push_steer`, and `p
 
 ### Who decides: the controller setting
 
-By default each duck runs its own copy of the learned controller from its own view, with its partner's
-position in view (D2). That's `controller` in `configs/copush.yaml`:
+By default one learned controller sees the whole scene and picks the commands for both ducks
+(central). The decentralized mode gives each duck its own copy of the controller, run on its own
+view, with its partner's position in view (D2). That's `controller` in `configs/copush.yaml`:
 
 ```yaml
 controller:
-  mode: decentral           # or central: one controller for both ducks
-  include_partner: true     # decentral only; false is D1 (own view only)
+  mode: central             # or decentral: each duck runs the shared controller on its own view
+  include_partner: true     # decentral only; true is D2, false is D1 (own view only)
 ```
 
 `train.py` takes `--controller central`, `d1` or `d2` to override it. A stage config sets it under
@@ -119,8 +216,8 @@ decentral controller, PPO counts each duck as its own environment, so `--steps` 
 2 per simulator step. Code: `copush/decentral.py`.
 
 ```sh
-scripts/rl.sh scripts/rl/train.py --layout steer --steps 100000 --name D2                       # default: D2
-scripts/rl.sh scripts/rl/train.py --layout steer --steps 100000 --name C --controller central   # one controller
+scripts/rl.sh scripts/rl/train.py --layout steer --steps 100000 --name C                  # default: central
+scripts/rl.sh scripts/rl/train.py --layout steer --steps 100000 --name D2 --controller d2   # each duck its own copy
 ```
 
 ## Tests
@@ -131,7 +228,7 @@ scripts/rl.sh -m pytest
 
 Use `scripts/rl.sh -m pytest`, not plain `uv run pytest`. The plain version skips the simulation
 tests, because that environment has no MuJoCo, so it can look like everything passed when the sim
-tests never ran. More: [docs/SIM_GUIDE.md, Tests](docs/SIM_GUIDE.md#tests).
+tests never ran.
 
 ## Overnight queue
 
@@ -169,13 +266,15 @@ How it behaves:
 
 ## Outputs and settings
 
-Every run writes `runs/<run_id>/`, which is git-ignored. It holds:
-- the config
-- CSV logs and events
-- short videos with an `index.md`
-- for PPO, the TensorBoard logs and `model.zip`
+Every run writes `runs/<run_id>/`, which is git-ignored. A simulator run holds:
+- `config.yaml`: the resolved settings; rerun with `--config runs/<ts>/config.yaml`
+- `state.csv`: one row per duck every 0.02 s, with reward next to box_to_target / inside
+- `events.log`: policy switches, falls, resets, `SUSPECT` reward flags, `NOTE` markers
+- `notes.md`: an automatic outcome summary plus questions for you to answer
+- `video.mp4`: only with `--record`
 
-More: [docs/SIM_GUIDE.md, Where output goes](docs/SIM_GUIDE.md#where-output-goes).
+A PPO run also holds TensorBoard logs, checkpoints, short videos with an `index.md`, `model.zip` and
+`results.json`.
 
 Settings live in [configs/copush.yaml](configs/copush.yaml):
 - the start layout: `close`, `steer` or `hard`, plus `overnight` in `configs/overnight.yaml`
@@ -185,13 +284,19 @@ Settings live in [configs/copush.yaml](configs/copush.yaml):
 
 ## Troubleshooting
 
-- **Tests "pass" but the sim tests didn't run:** use `scripts/rl.sh -m pytest` (see [Tests](#tests)).
-- **Simulator problems** (policies missing, viewer, start positions):
-  [docs/SIM_GUIDE.md, Common problems](docs/SIM_GUIDE.md#common-problems).
+| Symptom | Fix |
+|---|---|
+| `No module named 'yaml'` / `'mujoco'` | You ran this repo's venv (`uv run python ...`). Use `scripts/copush.sh`, or `uv run --project ../microduck_rl python ...`. |
+| `` `launch_passive` requires ... `mjpython` on macOS `` | Launch the viewer with `scripts/copush.sh --viewer`, not plain `python`. |
+| Keys do nothing / `stdin is not a TTY` | Type in the terminal that launched the sim, not the viewer window, and don't pipe its input. |
+| `policy file(s) missing` | `sh scripts/fetch_policies.sh` |
+| A duck falls soon after switching to shoepush | Shoe Push needs the box in front of it (it fell in 5 of 6 box-less tries). Switch back with 1 / 2 and walk up on velstand. |
+| `No module named pytest`, or tests "pass" with many skipped | Run them with `scripts/rl.sh -m pytest` (adds pytest, gymnasium and stable-baselines3 on top of microduck_rl's environment). |
+
 - **Overnight queue stopped:** read the end of `queue.log`, then run the same launch command again
   to resume.
 - **Don't use `scripts/sim.sh drive` for duck B** on the Week 1 path. Upstream `drive` always
-  commands and reads duck A ([docs/WEEK1_STATUS.md](docs/WEEK1_STATUS.md)). Use
+  commands and reads duck A ([docs/archive/WEEK1_STATUS.md](docs/archive/WEEK1_STATUS.md)). Use
   `copush.sim_client` instead.
 
 ## Repo layout
@@ -205,7 +310,9 @@ scripts/        copush.sh / copush_sim.py (sim), rl.sh + rl/ (checks, baselines,
                 b0/ (B0 harness), sim.sh, check_m1.py, two_duck_demo.py (Week 1 duck-sim path)
 scenes/         copush_base.xml (floor/lights for the two-duck world), B0 and Week 1 scenes
 tests/          pytest; simulator tests skip outside microduck_rl's environment
-docs/           guides, results, media/ (README GIFs + mp4s, < 1 MB each)
+docs/           REWARD_LOG.md, TIMELINE.md, DEMO.md, media/ (README GIFs + mp4s, < 1 MB each),
+                archive/ (the October plan, week 1 and B0 reports, kept for reference)
+policies/       manifest.json for the trained-policies release (scripts/get_policies.sh)
 .claude/skills/ copush-progress (keeps the timeline, demo, README and reward log current)
 ```
 
@@ -233,7 +340,7 @@ duck as a real `robotd` driving a MuJoCo body:
 - Its state was read back from the simulator's body port.
 
 The two-duck sim above replaced it for CoPush experiments. It runs faster than real time, and Shoe
-Push misbehaves under robotd ([docs/WEEK1_STATUS.md](docs/WEEK1_STATUS.md)).
+Push misbehaves under robotd ([docs/archive/WEEK1_STATUS.md](docs/archive/WEEK1_STATUS.md)).
 
 | repo | role | pinned in |
 |---|---|---|
