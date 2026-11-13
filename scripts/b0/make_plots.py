@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Figures for docs/results/b0_single_duck_push.md. Deterministic.
+"""Figures for docs/archive/b0/b0_single_duck_push.md. Deterministic.
 
-Reads docs/results/data/*.json (written by eval_push.py, steering.py, heading_hold.py) and re-runs
-the cheap rollouts it needs (trajectories, the no-box speed sweep). Writes docs/results/figures/.
+Reads docs/archive/b0/data/*.json (written by eval_push.py, steering.py, heading_hold.py) and re-runs
+the cheap rollouts it needs (trajectories, the no-box speed sweep). Writes docs/archive/b0/figures/.
 
     uv run --project ../microduck_rl python scripts/b0/make_plots.py        # all figures, both robots
 """
@@ -19,7 +19,7 @@ import numpy as np
 
 import b0lib as L
 
-RES = os.path.join(L.ROOT, "docs/results")
+RES = os.path.join(L.ROOT, "docs/archive/b0")
 DATA = os.path.join(RES, "data")
 FIG = os.path.join(RES, "figures")
 os.makedirs(FIG, exist_ok=True)

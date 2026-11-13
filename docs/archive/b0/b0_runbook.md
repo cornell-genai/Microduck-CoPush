@@ -80,7 +80,7 @@ b0() { uv run --project ../microduck_rl python "$@"; }   # works in zsh and bash
 b0 scripts/b0/eval_push.py [--robot backlash|nobacklash] [--quick] [--json out.json]   # B0 table
 b0 scripts/b0/steering.py  [--robot ...] [--wz -0.5 0 0.5]          # yaw response while pushing
 b0 scripts/b0/heading_hold.py [--robot ...]                          # 1 m straight push, PI heading hold
-b0 scripts/b0/make_plots.py                                          # docs/results/figures/
+b0 scripts/b0/make_plots.py                                          # docs/archive/b0/figures/
 python3 scripts/b0/duck_sim_drive.py --state <DUCK_SIM_STATE> --port <port> -- vx vyaw [...]   # signed duck-sim drive
 ```
 

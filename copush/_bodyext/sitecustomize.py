@@ -22,7 +22,7 @@ Optional, also opt-in: `COPUSH_PLACE="x,y,yaw_deg;x,y,yaw_deg"` moves duck 0, 1,
 spawn poses before their ports open (upstream spaces ducks a fixed 0.5 m apart along y). Leave an
 entry empty to keep upstream's placement, e.g. `COPUSH_PLACE=";0,0.25,0"` moves only duck B.
 
-The upstream fix this stands in for is ~15 lines in `Handler.dispatch` (see docs/WEEK1_STATUS.md).
+The upstream fix this stands in for is ~15 lines in `Handler.dispatch` (see docs/archive/WEEK1_STATUS.md).
 """
 from __future__ import annotations
 
