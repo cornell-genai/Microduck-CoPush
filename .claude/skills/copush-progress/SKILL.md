@@ -17,7 +17,8 @@ or reward settings while using it.
 | `docs/REWARD_LOG.md` | One entry per reward version (already exists) | yes |
 | `docs/DEMO.md` | 5-minute demo outline, always current | yes |
 | `docs/media/` | A few short "hero" videos, each under 1 MB | yes |
-| `README.md` | Status line and video table at the top | yes |
+| `README.md` | Short project page: goal, status, progress GIFs, reward function, next steps (template below) | yes |
+| `SETUP.md` | Every terminal command: install, sim, training, tests, queue, troubleshooting | yes |
 | `notes/progress_blog.md` | Personal blog ideas and findings | no (git-ignored) |
 
 Create any missing file using the templates below.
@@ -36,7 +37,16 @@ Create any missing file using the templates below.
 5. **Make a side-by-side video** when comparing two controllers on the same start
    (for example script vs PPO). These are the most convincing demo material.
 6. **Update DEMO.md** so it shows the current best story.
-7. **Update the README status line** with the latest headline result.
+7. **Refresh the README on every round and every PR.** Update these sections to match
+   the README template below:
+   - **Current status:** current stage, headline result in plain words, date.
+   - **Progress:** add the new hero GIF in order, with a one-line caption of the milestone.
+   - **Reward function:** regenerate the formula and the value table from the current
+     config (`configs/copush.yaml`: `reward` with `reward_versions[reward.version]` applied
+     on top; or `copush.config.effective_reward`), and the episode endings from
+     `copush/rewards.py` and `copush/env.py`. Never fill in values from memory.
+   - **Next steps:** 2 to 4 bullets.
+   Any new command goes in SETUP.md, never in the README.
 8. **Append to notes/progress_blog.md:** surprising findings, reward hacking examples,
    bugs, and lessons, each with key numbers and a link.
 9. **Commit** the docs changes (see Git rules).
@@ -56,6 +66,11 @@ Create any missing file using the templates below.
 - **Flag reward hacking or odd behavior** (one duck doing all the work, standing still,
   losing the box on purpose, monitor flags) even when success is high.
 
+## README rule
+
+The README never contains terminal commands. Commands, install steps and
+troubleshooting go in SETUP.md, and the README links to it.
+
 ## Writing style
 
 - Plain words a new club member understands. Explain any acronym the first time.
@@ -73,6 +88,52 @@ Create any missing file using the templates below.
 | Date | Stage | One change | Result (plain words) | Eval size | Video |
 |---|---|---|---|---|---|
 | 2026-11-12 | In contact, off-axis target | First PPO training on this layout | PPO succeeds 60 to 80% across 3 seeds; ties the script with random starts, beats it from the fixed start | 5 randomized | [video](media/...) |
+```
+
+### README.md
+
+```markdown
+# Microduck-CoPush
+
+<one-line description>
+
+<best hero GIF, linked to its mp4>
+
+**📈 [See the full progress timeline, with clips →](docs/TIMELINE.md)**
+
+## Final goal
+
+<2-3 sentences: two ducks starting anywhere within a set radius of the target, at any
+angle, with the box anywhere and at any angle, learn to push it into the target together>
+
+## Current status (<date>)
+
+- **Current stage:** <stage, in plain words>
+- **Last finished result:** <headline result in plain words, with eval size>
+
+## Progress
+
+<GIFs in order, each with a one-line caption of the milestone; include notable bugs>
+
+## The reward function
+
+<formula with variable names>
+
+| Symbol | Meaning | Current value |
+|---|---|---|
+| ... | ... | <from the current config> |
+
+**What ends an episode:** <success, falls, box tipped / lost, timeout, with thresholds>
+
+Why each value is what it is: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
+
+## Next steps
+
+<2-4 bullets>
+
+## Links
+
+SETUP.md · docs/REWARD_LOG.md · docs/TIMELINE.md · experiments/README.md · docs/DEMO.md
 ```
 
 ### DEMO.md
@@ -107,7 +168,7 @@ Check the size with `ls -lh docs/media/`.
 
 ## Git rules
 
-- Commit only docs, README, and docs/media on the current branch.
+- Commit only docs, README, SETUP.md, and docs/media on the current branch.
 - Use the user's git identity. No Claude co-author lines, no "Generated with" lines.
 - Don't push or merge unless the user asks.
 - notes/ and runs/ stay git-ignored.
