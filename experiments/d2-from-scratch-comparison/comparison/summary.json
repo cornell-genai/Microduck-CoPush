@@ -262,6 +262,22 @@
      "both_touch": 0.9022645436800498,
      "lazy": 0
     }
+   },
+   "9": {
+    "run": "runs/d2-from-scratch/d2-scratch-s9",
+    "first_success": 150000.0,
+    "final_reason": "success",
+    "final_return": 15.466441330991888,
+    "final_steps": 31,
+    "final_push_share_a": 0.5323852160679147,
+    "end": 401408.0,
+    "test": {
+     "n": 50,
+     "success": 0.38,
+     "push_share_a": 0.5452849490870534,
+     "both_touch": 0.9452974109046605,
+     "lazy": 0
+    }
    }
   }
  },
