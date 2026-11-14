@@ -15,6 +15,7 @@ One deterministic episode per start, env from `experiments/stage1-random-box-pos
 | s7 | 40% (20/50) | 8/17 | 10/16 | 2/17 |
 | s8 | 28% (14/50) | 5/17 | 9/16 | 0/17 |
 | s9 | 38% (19/50) | 6/17 | 12/16 | 1/17 |
+| s10 | 48% (24/50) | 12/17 | 12/16 | 0/17 |
 
 ## Long-turn starts (> +15 deg): turning
 
@@ -31,6 +32,7 @@ Turn before push = rotation toward the needed direction before the box has made 
 | s7 | 55 | 66 (9 to 173) | 136 | 15/17 | 2/17 |
 | s8 | 55 | 82 (20 to 184) | 137 | 11/17 | 0/17 |
 | s9 | 55 | 55 (8 to 140) | 123 | 14/17 | 1/17 |
+| s10 | 55 | 64 (8 to 139) | 69 | 10/17 | 0/17 |
 
 ## Failure modes and idling (all 50 starts)
 
@@ -49,3 +51,4 @@ Both touch = steps where both ducks touch the box. Lazy = episodes where one duc
 | s7 | 3/50 | 0/50 | 20/50 | 27/50 | 53% | 93% | 0/50 | 26.1% | 1.48 | 0/50 | 71 | bad_part_duck_a 5, bad_part_duck_b 3, contact_share 15, fall_duck_a 4, fall_duck_b 1, reward_vs_dist 3 |
 | s8 | 2/50 | 0/50 | 24/50 | 34/50 | 50% | 90% | 0/50 | 47.2% | 1.52 | 0/50 | 82 | bad_part_duck_a 5, bad_part_duck_b 1, contact_share 23, fall_duck_a 7, fall_duck_b 1, reward_vs_dist 4 |
 | s9 | 1/50 | 0/50 | 30/50 | 30/50 | 55% | 95% | 0/50 | 11.0% | 1.66 | 0/50 | 74 | bad_part_duck_a 4, bad_part_duck_b 1, contact_share 10, fall_duck_a 4, reward_vs_dist 3 |
+| s10 | 1/50 | 0/50 | 22/50 | 25/50 | 51% | 97% | 1/50 | 20.4% | 1.32 | 0/50 | 67 | bad_part_duck_a 1, bad_part_duck_b 2, contact_share 4, fall_duck_a 1, fall_duck_b 1, reward_vs_dist 4, spin 1 |
