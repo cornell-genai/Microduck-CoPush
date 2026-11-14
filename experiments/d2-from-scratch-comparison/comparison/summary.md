@@ -15,6 +15,7 @@ from each run's deterministic eval episodes (videos/evals.jsonl); test-set numbe
 | central, from scratch | 7 | 25,000 | success, 32 steps, return +15.4 | 50% | 54% | 54% | 87% | 4/50 |
 | central, from scratch | 8 | 50,000 | success, 33 steps, return +14.7 | 49% | 52% | 54% | 89% | 2/50 |
 | central, from scratch | 9 | 25,000 | success, 32 steps, return +15.3 | 52% | 64% | 52% | 97% | 0/50 |
+| central, from scratch | 10 | 200,000 | success, 31 steps, return +15.2 | 50% | 44% | 52% | 97% | 0/50 |
 | D2, from scratch | 1 | 75,000 | success, 35 steps, return +15.3 | 46% | 32% | 55% | 92% | 0/50 |
 | D2, from scratch | 2 | 50,000 | success, 34 steps, return +14.8 | 53% | 28% | 54% | 94% | 0/50 |
 | D2, from scratch | 3 | 150,000 | success, 32 steps, return +15.3 | 56% | 38% | 55% | 93% | 0/50 |
