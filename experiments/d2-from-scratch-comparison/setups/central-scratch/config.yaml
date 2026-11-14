@@ -1,0 +1,32 @@
+# Central from scratch: one controller sees the whole scene and commands both ducks, random initial weights.
+# Seed 1 is 01_reference (runs/overnight-20261112/runs/01_reference, trained by scripts/rl/overnight.py with
+# these settings); this config trains further seeds the same way with scripts/rl/stage.py:
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-from-scratch-comparison/setups/central-scratch/config.yaml --seed N
+#
+# Resolved config = base < reference block of `reference` (01_reference: reward v1.1, layout overnight,
+# seed 1, fixed in-contact start, controller central) < overrides. Steps are simulator steps.
+name: central-scratch
+change: centralized, random initial weights, fixed start
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+init: scratch
+out: runs/d2-from-scratch/central-scratch-s4   # --seed N -> central-scratch-sN; seeds 1 to 3 are existing runs (runs.yaml)
+results: experiments/d2-from-scratch-comparison/setups/central-scratch/results
+test_set: experiments/test_sets/stage1.json
+
+overrides:
+  rl: {eval_every: 25000}                 # an eval every 25k simulator steps
+
+steps: 400000                             # simulator steps
+checkpoint_every: 100000
+max_videos: 12
+
+widen:                                    # fixed start: no range; the checks just log fixed-start success
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 25000
+  episodes: 3
+  seed0: 10001
+
+early_stop: {success: 0.80, evals: 0}     # never: always the full 400k simulator steps

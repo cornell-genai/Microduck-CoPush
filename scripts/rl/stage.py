@@ -4,7 +4,8 @@
     nohup scripts/rl.sh scripts/rl/stage.py --config experiments/stage1-random-box-pose/config.yaml \
         >> runs/stage1-random-box-pose/train.log 2>&1 &
 
-PPO is loaded from the stage's `warm_start` (its hyperparameters come with it; seed ppo.seed) and
+PPO is loaded from the stage's `warm_start` (its hyperparameters come with it; seed ppo.seed), or with
+`init: scratch` built with random weights from the config's ppo block (as scripts/rl/overnight.py does), and
 trained on the resolved config (copush.experiments.load_stage) with ppo.n_envs SubprocVecEnv workers
 for `steps` steps, counted from 0.
     widen        BoxRangeCallback: the box start range starts at widen.levels[0] of env.box_start and
@@ -18,6 +19,8 @@ for `steps` steps, counted from 0.
                  inherit central from configs/overnight.yaml). Decentral: each duck is its own SB3 entry
                  running the shared policy on its own view (copush.decentral); steps then count duck
                  entries (2 per sim step) and checks / videos run the policy once per duck
+    seeds        --seed N sets ppo.seed and trains into <out>-sN (a -s<M> suffix on out is replaced), so
+                 every seed of a setup shares one config
     gate         with `gate: [results.json, ...]` training starts only if at least one of those runs
                  ended its last (fixed-start) eval in success; otherwise exit code 3 (the queue marks
                  the run "gated")
@@ -32,6 +35,7 @@ import copy
 import json
 import math
 import os
+import re
 import sys
 import time
 
@@ -65,6 +69,8 @@ def main() -> int:
     p.add_argument("--config", required=True, help="experiments/<stage>/config.yaml")
     p.add_argument("--steps", type=int, default=None, help="override the stage's steps (smoke tests)")
     p.add_argument("--out", default=None, help="override the stage's out (smoke tests)")
+    p.add_argument("--seed", type=int, default=None,
+                   help="ppo.seed; out becomes the stage's out with its -s<N> suffix (if any) replaced by -s<seed>")
     args = p.parse_args()
 
     from stable_baselines3 import PPO
@@ -80,11 +86,19 @@ def main() -> int:
             print(f"gate failed: none of {stage['gate']} ended its last fixed-start eval in success; not training", flush=True)
             return 3
         print(f"gate passed: {passed}", flush=True)
-    out = repo_path(args.out or stage["out"])
+    if args.seed is not None:
+        cfg["ppo"]["seed"] = args.seed
+    out = args.out or stage["out"]
+    if args.seed is not None and not args.out:
+        out = re.sub(r"-s\d+$", "", out.rstrip("/")) + f"-s{args.seed}"
+    out = repo_path(out)
     os.makedirs(os.path.join(out, "checkpoints"), exist_ok=True)
     dump_config(cfg, os.path.join(out, "config.yaml"))
     pc, wd, es = cfg["ppo"], stage["widen"], stage["early_stop"]
     total = int(args.steps or stage["steps"])
+    init = stage.get("init", "distilled")
+    if init not in ("scratch", "distilled"):
+        raise ValueError(f"init must be scratch or distilled, not {init!r}")
     state_path = os.path.join(out, "state.json")
     state = read_json(state_path, {}) or {}
     ckpt = state.get("checkpoint") and os.path.join(out, state["checkpoint"])
@@ -105,11 +119,18 @@ def main() -> int:
         _prune_after(os.path.join(out, "videos"), model.num_timesteps)
         print(f"resuming from {state['checkpoint']} (step {model.num_timesteps} of {total}, widen level {level})", flush=True)
     else:
-        model = PPO.load(repo_path(stage["warm_start"]), env=vec, device="cpu", tensorboard_log=tb)
-        model.set_random_seed(pc["seed"])
+        if init == "scratch":                                   # random weights, the same PPO as overnight.py
+            model = PPO("MlpPolicy", vec, n_steps=pc["n_steps"], batch_size=pc["batch_size"], n_epochs=pc["n_epochs"],
+                        learning_rate=pc["learning_rate"], gamma=pc["gamma"], gae_lambda=pc["gae_lambda"],
+                        clip_range=pc["clip_range"], ent_coef=pc["ent_coef"], seed=pc["seed"], device="cpu",
+                        tensorboard_log=tb, verbose=0)
+        else:
+            model = PPO.load(repo_path(stage["warm_start"]), env=vec, device="cpu", tensorboard_log=tb)
+            model.set_random_seed(pc["seed"])
         vec.seed(pc["seed"])
         _prune_after(os.path.join(out, "videos"), -1)          # a fresh start: no stale evals
-        print(f"warm start from {stage['warm_start']} ({model.num_timesteps} steps there); training {total} steps, "
+        print(f"{'scratch (random weights)' if init == 'scratch' else 'warm start from ' + stage['warm_start']} "
+              f"({model.num_timesteps} steps there); training {total} steps, "
               f"{pc['n_envs']} envs, reward {cfg['reward']['version']}, layout {cfg['env']['layout']}, "
               f"box_start {cfg['env']['box_start']}", flush=True)
 
@@ -195,11 +216,12 @@ def main() -> int:
     pick = lambda e: e and next((f for f in vids if f.startswith(f"step_{e['step']}_")), None)   # noqa: E731
     best_v = max((e for e in evals if e["video"]), key=lambda e: e["return"], default=None)
     write_json(os.path.join(out, "results.json"), {
-        "name": stage["name"], "change": stage.get("change", ""), "warm_start": stage["warm_start"],
+        "name": stage["name"], "change": stage.get("change", ""), "init": init,
+        "warm_start": stage.get("warm_start") if init == "distilled" else None,
         "steps": int(model.num_timesteps), "steps_planned": total, "wall_s": video.wall(),
         "early_stopped": widen.stopped_early, "final_level": widen.level, "levels": wd["levels"],
         "reached_full_at": widen.reached_full_at, "box_start": cfg["env"]["box_start"],
-        "check_set": stage.get("check_set"), "reward_version": cfg["reward"]["version"],
+        "check_set": stage.get("check_set"), "reward_version": cfg["reward"]["version"], "seed": pc["seed"],
         "controller": cfg["controller"], "gate": stage.get("gate"),
         "widen_history": widen.history, "eval_flags": sorted(k[5:] for k in video.seen if k.startswith("flag:")),
         "eval_endings": sorted(k[4:] for k in video.seen if k.startswith("end:")),
