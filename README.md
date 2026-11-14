@@ -50,6 +50,10 @@ training reached 72%.
 Box turned +32 degrees: central (left) runs out of time, D2 (right) finishes in 41 steps. Full
 results: [experiments/decentralized-control/](experiments/decentralized-control/README.md).
 
+**Trained from scratch** (no copying), D2 matches a central controller trained the same way: 40% against
+46% on the test starts over 10 seeds each, no measurable difference. Its style differs: more idling and
+over-turning, and fewer lazy-duck episodes. Details: [experiments/d2-from-scratch-comparison/](experiments/d2-from-scratch-comparison/README.md).
+
 ## Progress
 
 Clips play at 2x speed. Click one for the sharper video.
@@ -115,7 +119,8 @@ The full plan, per track, is in [ROADMAP.md](ROADMAP.md).
 - **Steering:** win the hard side (box turned more than 15 degrees the positive way, 5 of 17 at best),
   then widen the box angle range.
 - **Rendezvous:** start the ducks away from the box, so they walk to it and push together.
-- **Decentralized:** check whether D2 trained from scratch matches the copied D2 (3 seeds each).
+- **Decentralized:** D2 from scratch matches central (10 seeds each); next, the same comparison on harder
+  starts (random box starts, ducks starting apart).
 
 ## Links
 

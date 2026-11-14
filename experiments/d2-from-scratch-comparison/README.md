@@ -1,6 +1,7 @@
 # D2 from scratch: does decentralized control need the copied start?
 
-**Status:** 3 seeds per setup done, 2026-11-13. Fixed-start comparison only; harder setups not started.
+**Status:** 10 seeds each for central and D2 from scratch, 3 for distilled, done 2026-11-14. Fixed-start
+comparison only; harder setups not started.
 
 ## The question
 
@@ -11,7 +12,7 @@ random weights, and how fast compared with a centralized controller that also st
 ## The 3 setups
 
 All three use the same fixed in-contact start (overnight layout: target 0.60 m ahead and 0.30 m to the
-right, so the box must turn), reward v1.1, PPO seed 1 for seed 1, and 400k simulator steps of training.
+right, so the box must turn), reward v1.1, PPO seed N for seed N, and 400k simulator steps of training.
 
 | setup | controller | starts from | seed 1 |
 |---|---|---|---|
@@ -54,35 +55,49 @@ folder names.
   push and the share of steps where both ducks touch the box, on the test set.
 - Table: [comparison/summary.md](comparison/summary.md).
 
-## Results (3 seeds per setup)
+## Results (10 seeds for central and D2 from scratch, 3 for distilled)
 
-**D2 learns the fixed start from random weights as reliably as central does: 3 of 3 seeds, at a
-similar speed.** It generalizes a bit worse to random box starts, and it has a consistent habit of
-commanding low speeds and over-turning the box. Copying the central controller first (distilled)
-gives the best policies, but that setup had 1.38M steps of prior training.
+**With 10 seeds each, D2 from scratch matches central from scratch: 40% against 46% on the test set,
+no measurable difference.** The 8-point gap at 3 seeds (33% against 41%) was mostly seed luck. D2 gets
+there with a different style: more idling, more over-turning, and fewer lazy-duck episodes. Copying the
+central controller first (distilled) still gives the best mean, 51%, but with 3 seeds and 1.38M steps
+of prior training.
 
-| setup | seeds solving the fixed start | first fixed-start success (sim steps) | test set success (seeds) | long-turn wins (of 17, seeds) |
+| setup | seeds solving the fixed start | first fixed-start success (sim steps) | test set success | long-turn wins (of 17 per seed) |
 |---|---|---|---|---|
-| central-scratch | 3 / 3 | 30k, 70k, 170k | **41%** (50, 28, 44) | 1, 0, 1 |
-| d2-scratch | 3 / 3 | 75k, 50k, 150k | **33%** (32, 28, 38) | 0, 1, 2 |
-| d2-distilled | 3 / 3 | at the first eval (10k, 25k, 25k) | **51%** (48, 48, 58) | 1, 3, 3 |
+| central-scratch | 10 / 10 | median 60k (25k to 200k) | **46%** (28 to 64%) | 6 of 170 |
+| d2-scratch | 10 / 10 | median 75k (25k to 150k) | **40%** (28 to 60%) | 9 of 170 |
+| d2-distilled | 3 / 3 | at the first eval (10k, 25k, 25k) | **51%** (48, 48, 58%) | 7 of 51 |
 
-- **Learning speed: no measurable difference** between D2 and central from scratch. Their
-  first-success steps overlap (50k to 150k against 30k to 170k), and both end with every seed
-  succeeding in 32 to 37 steps.
-- **Test set: D2 from scratch is lower on average (33% against 41%), but the ranges overlap** (28 to 38%
-  against 28 to 50%). With 3 seeds that is a hint, not a result. Distilled D2 (48 to 58%) is above both,
-  with its head start.
-- **Cooperation is fine everywhere:** both ducks touch the box on 88 to 98% of test-set steps, duck A
-  does 50 to 55% of the pushing, and there is 1 lazy-duck episode in 450 (central seed 2).
-- **D2 from scratch moves slowly, on every seed:** both ducks are commanded below 0.05 m/s on 43%, 26%
-  and 31% of test-set steps (central 1%, 11%, 0%; distilled 16%, 1%, 7%). It also over-turns the box
-  on long-turn starts: 64, 145 and 136 deg of total turn where 55 are needed (central 14 to 28,
-  distilled 17 to 56). Falls are similar (D2 from scratch 4, 0, 3; central 0, 4, 0).
-- **What it means:** decentralized control does not need the central teacher to learn this start,
-  but from scratch it finds a slower, more turn-happy way of pushing that transfers less well to
-  random box starts. That supports the plan: improve the central controller, then distill it into
-  per-duck controllers.
+Per seed, first fixed-start success / test set:
+
+| seed | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| central-scratch | 70k / 50% | 170k / 28% | 30k / 44% | 200k / 40% | 100k / 32% | 50k / 48% | 25k / 54% | 50k / 52% | 25k / 64% | 200k / 44% |
+| d2-scratch | 75k / 32% | 50k / 28% | 150k / 38% | 50k / 50% | 25k / 34% | 125k / 60% | 125k / 40% | 75k / 28% | 150k / 38% | 50k / 48% |
+
+- **Test set: no measurable difference.** The means differ by 6 points, the ranges nearly coincide
+  (28 to 64% against 28 to 60%), and a permutation test on the 10 + 10 seed scores gives p = 0.23.
+  Distilled D2 (48 to 58%) is above both means but inside central's range.
+- **Learning speed: no measurable difference.** Every seed of both setups solves the fixed start,
+  and the first-success steps overlap. Central seeds 1 to 3 (the overnight runs) logged an eval
+  every 10k steps, the rest every 25k, so first-success steps are only that precise.
+- **The hard side stays unsolved by all setups:** 0 to 3 of the 17 long-turn starts per seed. The
+  differences come from the other 33 starts.
+- **D2 idles, on every seed:** both ducks are commanded below 0.05 m/s on 11 to 47% of test-set steps
+  (mean 29%). Central mostly does not (mean 9%, 0 to 11% on 8 seeds), but 2 central seeds also idle
+  (42% and 23%), and the second of them is central's best seed (64%). So idling is D2's usual style,
+  not by itself the reason for failing.
+- **D2 over-turns the box on long-turn starts, on every seed:** 56 to 145 deg of total turn where 55
+  are needed. Central under-turns (-2 to 46 deg).
+- **Cooperation is fine everywhere, and D2 shares more evenly:** both ducks touch the box on 87 to 98%
+  of test-set steps and duck A does 50 to 55% of the pushing in both setups, but lazy-duck episodes are
+  1 in 500 for D2 against 7 in 500 for central (4 of them central seed 7). Falls: D2 15 in 500,
+  central 20 in 500; box lost: D2 5, central 11.
+- **What it means:** decentralized control does not need the central teacher to learn this start, and
+  with enough seeds it is no worse than central from scratch on random box starts. Distillation stays
+  the plan for the end (it gives the best policies, and the final central controller will know more
+  than this fixed start), but D2 from scratch is a real alternative, not a weaker one.
 
 Per-seed table: [comparison/summary.md](comparison/summary.md). Per-setup test-set details:
 `setups/<setup>/results/test_set/comparison.md`.
@@ -104,3 +119,9 @@ Per-seed table: [comparison/summary.md](comparison/summary.md). Per-setup test-s
 - d2-distilled seed 3 trained 800,000 duck entries, not 802,816: the disk filled while it wrote its
   final video, and it was resumed from its last checkpoint (one PPO update short, 0.35%).
 - Seeds 2 and 3 ran with `scripts/rl/stage.py --seed N` from `runs/d2-from-scratch/seeds_2_3.sh`.
+- Seeds 4 to 10 (central and D2 from scratch, interleaved) ran overnight from
+  `runs/d2-from-scratch/seeds_4_10.sh`: 24 to 36 min per run, all 14 finished, intermediate
+  checkpoints deleted after each run (final policies and videos kept). Central seeds 4 to 10 are the
+  first central runs through `scripts/rl/stage.py`; their resolved config matches 01_reference's
+  except for the seed and the 25k eval interval.
+- The GIFs show seed 1 of each setup.
