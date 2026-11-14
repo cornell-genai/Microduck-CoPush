@@ -97,6 +97,22 @@
      "both_touch": 0.9464816768441955,
      "lazy": 0
     }
+   },
+   "7": {
+    "run": "runs/d2-from-scratch/central-scratch-s7",
+    "first_success": 25000.0,
+    "final_reason": "success",
+    "final_return": 15.434031600110826,
+    "final_steps": 32,
+    "final_push_share_a": 0.5024504751406556,
+    "end": 401408.0,
+    "test": {
+     "n": 50,
+     "success": 0.54,
+     "push_share_a": 0.5424352560353758,
+     "both_touch": 0.8714610293034276,
+     "lazy": 4
+    }
    }
   }
  },
