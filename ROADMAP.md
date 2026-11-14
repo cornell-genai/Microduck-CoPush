@@ -47,12 +47,12 @@ walk to the box and push it into the target together.
 
 - **Controller:** D2. **Branch:** `d2-from-scratch`. **Folder:**
   `experiments/d2-from-scratch-comparison/`.
-- **Status:** in progress. D2 copied from the central controller reached 74% on the stage 1 test set
-  (central 60%). The comparison of D2 from scratch with central from scratch and distilled D2 on the
-  fixed start is set up and running, 3 seeds each.
+- **Status:** fixed-start comparison done. D2 copied from the central controller reached 74% on the
+  stage 1 test set (central 60%). Trained from scratch on the fixed start, D2 matches central from
+  scratch on the test set (40% against 46%, 10 seeds each, no measurable difference), with more idling
+  and over-turning; distilled D2 reaches 51% (3 seeds).
 - **Next steps:**
-  1. Finish the 3-seed from-scratch comparison and write it up.
-  2. Later: rerun it on harder setups (random box starts, ducks starting apart).
+  1. Rerun the comparison on harder setups (random box starts, ducks starting apart).
 
 ## Decisions so far
 
@@ -64,6 +64,7 @@ walk to the box and push it into the target together.
   solves the full task.
 - 2026-11-13: Anmol and Winston work on the central controller; Ashwin on decentralized.
 - 2026-11-13: The default controller in `configs/copush.yaml` is central again; D2 stays selectable.
+- 2026-11-14: 10 seeds: D2 from scratch matches central; distillation still planned for the end.
 
 ## Open questions
 
