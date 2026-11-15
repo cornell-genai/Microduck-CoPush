@@ -220,6 +220,26 @@ scripts/rl.sh scripts/rl/train.py --layout steer --steps 100000 --name C        
 scripts/rl.sh scripts/rl/train.py --layout steer --steps 100000 --name D2 --controller d2   # each duck its own copy
 ```
 
+### Run a stage experiment
+
+Each folder under `experiments/` is one stage (see [experiments/README.md](experiments/README.md)). Set
+`C` to the stage's config file, then:
+
+```sh
+C=experiments/<stage>/config.yaml
+scripts/rl.sh scripts/rl/test_set.py make --config $C            # once: the test set
+scripts/rl.sh scripts/rl/stage.py --config $C                    # train (resumes from its last checkpoint)
+scripts/rl.sh scripts/rl/test_set.py eval --config $C            # every controller on the test set
+scripts/rl.sh scripts/rl/test_set.py side-by-side --config $C --left pivot_push --right stage1
+```
+
+The labeled thumbnail clips in `experiments/README.md` come from the side-by-side videos in
+`docs/media/`:
+
+```sh
+scripts/make_stage_thumbs.sh
+```
+
 ## Tests
 
 ```sh

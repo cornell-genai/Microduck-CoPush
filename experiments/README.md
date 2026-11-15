@@ -1,36 +1,36 @@
-# Experiments: the generalization plan
+# Experiments
 
-One folder per stage, each changing ONE thing from the stage before. Every stage is tested on
-fixed held-out starts in [test_sets/](test_sets/), so any policy can be scored on any earlier
-stage's exam.
+One folder per stage, each changing ONE thing from the stage before. Every stage is tested on a fixed
+set of 50 starts the policy never trained on ([test_sets/](test_sets/)), so any policy can be scored on
+any earlier stage's test.
 
-| Stage | One change | Status | Headline result |
-|---|---|---|---|
-| [stage1-random-box-pose](stage1-random-box-pose/) | Random box starts (offset up to 0.15 m, angle up to 45 deg), ducks still against the box | done | 60% on its 50-start test set (01_reference 50%, pivot_push 32%); full range by step 80k, early stop at 980k; blind spot: box turned to positive angles (2/17) |
-| [stage1b-turn-direction-fix](stage1b-turn-direction-fix/) | Diagnose the positive-angle blind spot, then two one-change experiments | done | Diagnosis UNCLEAR (pivot turns about equally fast both ways; long-turn starts need 55 deg). A (oversample hard starts) 72% and B (time penalty 0.01) 68%, against stage 1's 60%, but the long-turn side is only 4/17 and 1/17 (stage 1: 2/17). Keep A |
-| [decentralized-control](decentralized-control/) | Each duck runs the same network on its own view (D1: own view; D2: plus partner), distilled from stage 1 then PPO | done | D2 74% on stage 1's test set (5/17 long-turn), D1 60%, centralized stage 1 60%; no lazy duck |
+The project overview is the [main README](../README.md). How the stages build on each other:
+[curriculum ladder](../docs/DIAGRAMS.md#3-the-curriculum-ladder-from-easy-starts-to-the-full-task). What
+the score means: the [reward function table](../README.md#the-reward-function).
 
-## Layout
+## Finished stages
 
-```
-experiments/
-  README.md                  this index: one line per stage
-  test_sets/<stage>.json     the fixed held-out starts ("exam"), written once, never trained on
-  <stage>/
-    README.md                goal, the one change, status, results, videos, next step
-    config.yaml              the stage's settings, on top of the shared configs it names
-    results/                 small committed outputs: test-set table, per-episode JSON, plots
-```
+Click a clip to open the stage's folder. In each clip, the label under a panel says which controller it shows.
 
-Large outputs (checkpoints, all videos, logs, tensorboard) go to the git-ignored
-`runs/<stage>/`, and the stage README links to them.
+| clip | stage and the one change | result, in plain words |
+|---|---|---|
+| <a href="stage1-random-box-pose/"><img src="../docs/media/stage1_pivot_push_vs_ppo_hard_start_thumb.gif" width="260" alt="Hard start: the script on the left, the learned controller on the right"></a> | **[Stage 1: random box pose](stage1-random-box-pose/).** The box starts up to 0.15 m off and up to 45 degrees turned; the ducks still start against it. | Wins **60%** of its 50 test starts (the policy it started from: 50%, the best script: 32%). Blind spot: a box turned more than 15 degrees the positive way (2 of 17 won). |
+| <a href="stage1b-turn-direction-fix/"><img src="../docs/media/stage1b_stage1_vs_a_long_turn_thumb.gif" width="260" alt="Long-turn start: stage 1 on the left, fix A on the right"></a> | **[Stage 1b: the positive-angle blind spot](stage1b-turn-direction-fix/).** Find out why, then try two one-change fixes. | Not a physical limit: the hard starts need about 55 degrees of turning before the push. Fix A (practice more hard starts) wins **72%** and fix B (a smaller time penalty) **68%**, against 60%, but the long-turn side is still only 4 of 17 and 1 of 17 (stage 1: 2 of 17). We keep A. |
+| <a href="decentralized-control/"><img src="../docs/media/decentral_stage1_vs_d2_hard_start_thumb.gif" width="260" alt="Long-turn start: central on the left, decentralized D2 on the right"></a> | **[Decentralized control](decentralized-control/).** Each duck runs the same network on its own view (D1), or its own view plus where its partner is (D2). Copied from the stage 1 controller, then trained further. | D2 wins **74%** (5 of 17 on the hard side), D1 **60%**, the central controller **60%**; no lazy duck. One seed each, and central with similar extra training reached 72%. |
+| <a href="d2-from-scratch-comparison/"><img src="../docs/media/central_vs_decentral_thumb.gif" width="260" alt="The same start with three controllers: central, D2 from scratch, D2 distilled"></a> | **[D2 from scratch vs central](d2-from-scratch-comparison/).** Central and decentralized (D2) both start from random weights and train on the same fixed start. 10 seeds each (distilled D2: 3). | Central wins **46%** of the 50 test starts, decentralized **40%**: **no measurable difference** (seed ranges 28% to 64% and 28% to 60%). The style differs: decentralized ducks idle more and over-turn the box, but share the pushing more evenly. |
 
-## Commands
+## What is in this folder, in plain words
 
-```sh
-C=experiments/<stage>/config.yaml
-scripts/rl.sh scripts/rl/test_set.py make --config $C            # once: the exam
-scripts/rl.sh scripts/rl/stage.py --config $C                    # train (resumes from its last checkpoint)
-scripts/rl.sh scripts/rl/test_set.py eval --config $C            # every controller on the exam
-scripts/rl.sh scripts/rl/test_set.py side-by-side --config $C --left pivot_push --right stage1
-```
+- **This file** is the index: one row per stage.
+- **test_sets/** holds each stage's fixed starts (the "test"). They are written once and never trained on.
+- **Each stage folder** has a README (the goal, the one change, status, results, videos and the next
+  step), a config file (the stage's settings, on top of the shared ones it names) and a results folder
+  with the small outputs we commit: test-set tables, per-episode data and plots.
+- **Large outputs** (checkpoints, all videos, logs) stay in the git-ignored runs folder, and each
+  stage README links to them.
+
+How to run a stage: [SETUP.md](../SETUP.md#run-a-stage-experiment).
+
+## Next
+
+The plan for the next stages, per track, is in [ROADMAP.md](../ROADMAP.md).
