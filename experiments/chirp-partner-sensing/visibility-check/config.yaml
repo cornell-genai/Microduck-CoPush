@@ -1,0 +1,9 @@
+# Visibility check, no training (run.sh runs exactly this with scripts/rl/visibility_check.py).
+test_config: experiments/stage1-random-box-pose/config.yaml
+test_set: experiments/test_sets/stage1.json        # 50 random box starts
+policy: runs/decentral-p2-d2/model.zip             # D2 stage 1 (exact partner info, 74% on this test set)
+vision: {fov_deg: 120, range_m: 0.8}               # PLACEHOLDERS until measured on the real camera
+runs:
+  exact: D2 acts on exact partner info; visibility is only measured on its trajectories (with and without the box blocking)
+  vision: vision on, chirps (2 s, 30 deg, heading zero) when the partner is out of view, box does not block
+  vision+box: the same, and the box blocks the view
