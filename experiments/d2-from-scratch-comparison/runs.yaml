@@ -12,6 +12,13 @@ setups:
       1: runs/overnight-20261112/runs/01_reference   # reused: trained with exactly these settings
       2: runs/overnight-20261112/runs/06_seed2       # reused: same settings, seed 2
       3: runs/overnight-20261112/runs/07_seed3       # reused: same settings, seed 3
+      4: runs/d2-from-scratch/central-scratch-s4   # setups/central-scratch/config.yaml --seed 4
+      5: runs/d2-from-scratch/central-scratch-s5   # setups/central-scratch/config.yaml --seed 5
+      6: runs/d2-from-scratch/central-scratch-s6   # setups/central-scratch/config.yaml --seed 6
+      7: runs/d2-from-scratch/central-scratch-s7   # setups/central-scratch/config.yaml --seed 7
+      8: runs/d2-from-scratch/central-scratch-s8   # setups/central-scratch/config.yaml --seed 8
+      9: runs/d2-from-scratch/central-scratch-s9   # setups/central-scratch/config.yaml --seed 9
+      10: runs/d2-from-scratch/central-scratch-s10   # setups/central-scratch/config.yaml --seed 10
   d2-scratch:
     label: D2, from scratch
     controller: decentral
@@ -19,6 +26,13 @@ setups:
       1: runs/d2-from-scratch/d2-scratch-s1
       2: runs/d2-from-scratch/d2-scratch-s2
       3: runs/d2-from-scratch/d2-scratch-s3
+      4: runs/d2-from-scratch/d2-scratch-s4
+      5: runs/d2-from-scratch/d2-scratch-s5
+      6: runs/d2-from-scratch/d2-scratch-s6
+      7: runs/d2-from-scratch/d2-scratch-s7
+      8: runs/d2-from-scratch/d2-scratch-s8
+      9: runs/d2-from-scratch/d2-scratch-s9
+      10: runs/d2-from-scratch/d2-scratch-s10
   d2-distilled:
     label: D2, distilled
     controller: decentral

@@ -9,6 +9,13 @@ One deterministic episode per start, env from `experiments/stage1-random-box-pos
 | s1 | 50% (25/50) | 10/17 | 14/16 | 1/17 |
 | s2 | 28% (14/50) | 3/17 | 11/16 | 0/17 |
 | s3 | 44% (22/50) | 10/17 | 11/16 | 1/17 |
+| s4 | 40% (20/50) | 7/17 | 12/16 | 1/17 |
+| s5 | 32% (16/50) | 6/17 | 10/16 | 0/17 |
+| s6 | 48% (24/50) | 13/17 | 11/16 | 0/17 |
+| s7 | 54% (27/50) | 13/17 | 14/16 | 0/17 |
+| s8 | 52% (26/50) | 13/17 | 13/16 | 0/17 |
+| s9 | 64% (32/50) | 14/17 | 16/16 | 2/17 |
+| s10 | 44% (22/50) | 7/17 | 14/16 | 1/17 |
 
 ## Long-turn starts (> +15 deg): turning
 
@@ -19,6 +26,13 @@ Turn before push = rotation toward the needed direction before the box has made 
 | s1 | 55 | 25 (3 to 35) | 14 | 9/17 | 1/17 |
 | s2 | 55 | 6 (-68 to 111) | 14 | 5/17 | 0/17 |
 | s3 | 55 | 34 (17 to 55) | 28 | 14/17 | 1/17 |
+| s4 | 55 | 39 (5 to 107) | 46 | 13/17 | 1/17 |
+| s5 | 55 | 29 (-6 to 66) | 22 | 14/17 | 0/17 |
+| s6 | 55 | 16 (-42 to 124) | 9 | 10/17 | 0/17 |
+| s7 | 55 | -5 (-191 to 134) | -2 | 4/17 | 0/17 |
+| s8 | 55 | 32 (-42 to 179) | 19 | 6/17 | 0/17 |
+| s9 | 55 | 29 (15 to 45) | 26 | 14/17 | 2/17 |
+| s10 | 55 | 35 (18 to 56) | 40 | 12/17 | 1/17 |
 
 ## Failure modes and idling (all 50 starts)
 
@@ -31,3 +45,10 @@ Both touch = steps where both ducks touch the box. Lazy = episodes where one duc
 | s1 | 0/50 | 1/50 | 24/50 | 24/50 | 50% | 98% | 0/50 | 1.3% | 1.37 | 0/50 | 65 | reward_vs_dist 2 |
 | s2 | 4/50 | 4/50 | 31/50 | 28/50 | 54% | 88% | 1/50 | 11.2% | 1.42 | 0/50 | 76 | bad_part_duck_a 7, bad_part_duck_b 8, contact_share 25, fall_duck_a 2, fall_duck_b 5, reward_vs_dist 4 |
 | s3 | 0/50 | 0/50 | 28/50 | 28/50 | 53% | 98% | 0/50 | 0.0% | 1.50 | 0/50 | 70 | contact_share 3, reward_vs_dist 3 |
+| s4 | 0/50 | 0/50 | 27/50 | 30/50 | 54% | 93% | 0/50 | 42.2% | 1.31 | 0/50 | 76 | bad_part_duck_a 2, bad_part_duck_b 1, contact_share 17, fall_duck_a 1, fall_duck_b 1, reward_vs_dist 2 |
+| s5 | 2/50 | 0/50 | 31/50 | 32/50 | 53% | 94% | 0/50 | 4.3% | 1.59 | 0/50 | 76 | bad_part_duck_a 5, contact_share 9, edge 1, fall_duck_a 5, reward_vs_dist 16 |
+| s6 | 3/50 | 3/50 | 23/50 | 20/50 | 52% | 95% | 0/50 | 0.0% | 1.39 | 0/50 | 63 | bad_part_duck_a 1, bad_part_duck_b 4, contact_share 13, fall_duck_a 2, fall_duck_b 2 |
+| s7 | 6/50 | 1/50 | 15/50 | 16/50 | 54% | 87% | 4/50 | 0.0% | 1.13 | 0/50 | 56 | bad_part_duck_a 6, bad_part_duck_b 6, contact_share 21, fall_duck_a 5, fall_duck_b 3, reward_vs_dist 3 |
+| s8 | 5/50 | 2/50 | 20/50 | 17/50 | 54% | 89% | 2/50 | 0.5% | 1.24 | 0/50 | 59 | bad_part_duck_a 3, bad_part_duck_b 6, contact_share 21, fall_duck_a 3, fall_duck_b 6 |
+| s9 | 0/50 | 0/50 | 18/50 | 18/50 | 52% | 97% | 0/50 | 22.9% | 1.16 | 0/50 | 58 | bad_part_duck_a 2, contact_share 13, fall_duck_a 1, reward_vs_dist 1 |
+| s10 | 0/50 | 0/50 | 28/50 | 28/50 | 52% | 97% | 0/50 | 5.1% | 1.43 | 0/50 | 70 | contact_share 6, fall_duck_b 1 |
