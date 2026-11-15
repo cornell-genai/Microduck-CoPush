@@ -19,6 +19,7 @@ box:                        # 28 x 10 x 9 cm, free joint (the Shoe Push box)
   y: 0.0
   yaw: 90                   # 90 = long 28 cm face toward ducks that face +x
   mass: 0.15                # kg
+  mass_range: null          # [lo, hi] kg: each episode draws the box mass uniformly from it (off when null). PLACEHOLDER, e.g. [0.10, 0.25]; set from the real box
 
 target:                     # flat, visual only (no collision)
   x: 1.20

@@ -111,6 +111,10 @@ class CoPushEnv(gym.Env):
         self.task = TaskReward(self.rcfg)
         self.sim = CoPushSim(self.cfg)                       # shares self.cfg (randomize edits its box)
         self.box0 = dict(self.cfg["box"])
+        mr = self.cfg["box"].get("mass_range")                # randomized box mass (each reset), or None
+        self.mass_range = None if mr is None else (float(mr[0]), float(mr[1]))
+        if self.mass_range and not 0 < self.mass_range[0] <= self.mass_range[1]:
+            raise ValueError(f"box.mass_range must be [lo, hi] with 0 < lo <= hi, got {mr!r}")
         self.target0 = dict(self.cfg["target"])
         self.curriculum_level = 0
         self.box_scale = float(self.ecfg["box_start"]["scale"])
@@ -206,6 +210,8 @@ class CoPushEnv(gym.Env):
         else:
             box.update({k: self.box0[k] for k in ("x", "y", "yaw")})
             self.sim.set_box_mass(self.box0["mass"])
+        if self.mass_range:                               # a different box mass every episode (seeded by reset)
+            self.sim.set_box_mass(float(self.np_random.uniform(*self.mass_range)))
         if self.start_mode == "in_contact":
             self._place_in_contact()
             self.sim.reset()

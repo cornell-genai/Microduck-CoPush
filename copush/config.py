@@ -27,7 +27,7 @@ POLICY_NAMES = ("velstand", "shoepush")
 DEFAULTS = {
     "duck_a": {"x": 0.0, "y": 0.10, "yaw": 0.0, "policy": "velstand"},
     "duck_b": {"x": 0.0, "y": -0.10, "yaw": 0.0, "policy": "velstand"},
-    "box": {"x": 0.35, "y": 0.0, "yaw": 90.0, "mass": 0.15},
+    "box": {"x": 0.35, "y": 0.0, "yaw": 90.0, "mass": 0.15, "mass_range": None},
     "target": {"x": 1.20, "y": 0.0, "yaw": 90.0, "size": [0.40, 0.20]},
     "policies": {"velstand": "data/policies/velstand_v8/velstand.onnx",
                  "shoepush": "data/policies/robert/shoe_push/forward/policy.onnx"},
