@@ -39,6 +39,35 @@ How it works:
   first 0.2 s control step at or after its time.
 - The noise comes from the env's seeded random generator, so evaluation with the same seeds repeats.
 
+## The order of work (decentralized track)
+
+1. **Retrain with chirps (Part 2, in progress):** the baseline for realistic sensing.
+2. **Missed chirps and front-back direction flips:** the same sense, more realistic.
+3. **Randomize the box mass within a range:** stops the policy memorizing push timing; it sees a short
+   history of recent observations so it can sense the mass.
+4. **Harder setup** (ducks start slightly apart, reusing the rendezvous settings when available): test
+   chirps until performance fails.
+5. **Add vision:** partner info only when it is inside the front camera's field of view and range. Mix
+   about 30% earlier starts into training to avoid forgetting.
+6. **Final:** distill the combined central controller (from steering and rendezvous) into these
+   realistic-sensing ducks.
+
+The idea behind it: the central controller (the privileged teacher) sees everything, and the decentralized
+ducks (the students) only get what a real duck could sense. Steps 2, 3 and 5 are built as settings but
+**not run yet** (all off by default, with tests):
+
+| setting | default | what it does | value |
+|---|---|---|---|
+| `chirp.miss_prob` | 0 | chance that a chirp is lost (the duck keeps its last one) | placeholder |
+| `chirp.front_back_flip_prob` | 0 | chance that a heard direction is mirrored front to back | placeholder |
+| `box.mass_range` | null | the box mass is drawn from [lo, hi] kg each episode | placeholder |
+| `obs.history_steps` | 1 | stack the last N observations, newest first (1 = just the current one) | N = 1 keeps the old behavior |
+| `vision.enabled`, `vision.fov_deg`, `vision.range_m` | off, 120, 0.8 | partner info only while in the front camera's view and range; otherwise the last chirp (needs chirps on) | placeholders |
+
+All "placeholder" values are made up until measured on the real ducks. Code: `copush/chirp.py`,
+`copush/vision.py`, `copush/env.py`, `copush/decentral.py`; tests: `tests/test_chirp.py`,
+`tests/test_realistic_sensing.py`.
+
 ## Runs
 
 | run | what | status |
