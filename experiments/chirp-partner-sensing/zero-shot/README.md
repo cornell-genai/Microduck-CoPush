@@ -37,3 +37,34 @@ stage 1 test-set result, so this pipeline reproduces it.
 - **The failure looks like overshooting:** 17 to 27 of 50 episodes end with the box farther from the
   target than it started (D2 exact: 1), and 21 to 30 time out (D2 exact: 6). Cooperation holds: both
   ducks touch the box on 84 to 93% of steps, and push share is about even.
+
+## Diagnostic: the same settings with the true partner heading filled in
+
+Not something a duck could hear: [run_true_heading.sh](run_true_heading.sh), results in
+[results-true-heading/](results-true-heading/comparison.md). Same four chirp settings, same noisy
+direction, but the partner's exact heading is given at every step instead of zeros. It isolates what the
+missing heading costs.
+
+| chirp setting | heading zeroed (the real case) | true heading filled in | long-turn side (> +15 deg), true heading | falls / box lost, true heading |
+|---|---|---|---|---|
+| every 2 s, 30 deg | 34% | **62%** | 0/17 | 4 / 0 |
+| every 2 s, 10 deg | 42% | **66%** | 3/17 | 5 / 2 |
+| every 0.5 s, 30 deg | 38% | **70%** | 3/17 | 2 / 0 |
+| every 4 s, 60 deg | 30% | **50%** | 2/17 | 3 / 0 |
+| control: no noise, every step | 36% | **74%** | 5/17 | 5 / 2 |
+| D2, exact info (reference) | 74% | 74% | 5/17 | 5 / 2 |
+
+The control row (no noise, true heading) is D2 with exact information, and it reproduces D2's 74%
+(37 of 50, the same episodes), so the diagnostic is wired correctly.
+
+- **Restoring the heading brings back 20 to 32 points** (62%, 66%, 70% and 50% against 34%, 42%, 38% and
+  30%). Dropping the heading is the larger part of the zero-shot loss, as suspected.
+- **With the heading, the noise shows a trend:** the milder the chirps, the better (0.5 s and 30 deg:
+  70%; 2 s and 10 deg: 66%; 2 s and 30 deg: 62%; 4 s and 60 deg: 50%). The top three are within the
+  7-point error of each other; 4 s and 60 deg is clearly lower. So noise alone costs 4 to 24 points
+  here, less than the missing heading did.
+- **The long-turn side suffers most from noise:** at 2 s and 30 deg it wins 0 of 17 (D2 exact: 5 of 17),
+  and the time-outs rise (15 of 50 against 6).
+- **What this means for Part 2:** with the heading removed, the policy has to be fine-tuned to cope.
+  Of the zero-shot loss, about 12 points (2 s, 30 deg) are noise and about 28 more are the missing
+  heading, so the fine-tuned policy has a lot to recover, and the heading may be the harder part.

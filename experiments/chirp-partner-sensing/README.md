@@ -1,7 +1,8 @@
 # Chirp partner sensing: can two ducks cooperate when they only hear each other?
 
 **Status:** Part 1 done (2026-11-15): the chirp observation is built and tested, and the trained D2
-policy was checked zero-shot. Parts 2 (fine-tune with chirps) and 3 (sweep) not started.
+policy was checked zero-shot, with the heading zeroed and (as a diagnostic) with the true heading.
+Part 2 (fine-tune with chirps) is training. Part 3 (sweep) not started.
 
 ## The question
 
@@ -24,6 +25,7 @@ default (so every earlier config behaves as before).
 | `distance` | false | on: each chirp also carries a rough distance |
 | `distance_noise` | 0.3 | standard deviation of the relative distance error |
 | `nominal_distance_m` | 0.20 | the vector length when distance is off (not asked for; needed to keep the size) |
+| `heading` | zero | zero: the partner's heading is not heard (0 in the observation); true: the exact heading is filled in (diagnostic only) |
 
 How it works:
 - **Same size as D2 (19 numbers),** so the trained D2 policy is reused directly with no warm-start
@@ -41,10 +43,21 @@ How it works:
 
 | run | what | status |
 |---|---|---|
-| [zero-shot/](zero-shot/) | trained D2 with chirps, no training, stage 1 test set | done |
+| [zero-shot/](zero-shot/) | trained D2 with chirps, no training, stage 1 test set; plus a diagnostic with the true heading | done |
+| [finetune-2s-30deg/](finetune-2s-30deg/) | Part 2: fine-tune D2 with chirps every 2 s, 30 deg, heading removed, stage 1 random box starts, up to 1M steps | training (started 2026-11-15 13:40) |
 
 ## Results so far
 
 Zero-shot, 50 test starts: **D2 74% with exact info, D1 60%, D2 with chirps 30 to 42% across four
 settings.** Most of that drop comes from the zeroed heading, not the noise: with no noise at all but the
-heading zeroed it is 36%. Details and table: [zero-shot/README.md](zero-shot/README.md).
+heading zeroed it is 36%. With the true heading filled in (a diagnostic), the same four settings give
+50 to 70% (62% at 2 s and 30 deg). Details and tables: [zero-shot/README.md](zero-shot/README.md).
+
+## Ideas (not started)
+
+The partner heading cannot be heard, and zero-shot it was the larger part of the loss. Two ways to get it
+back without cheating:
+- **Estimate the partner's heading from how its heard position changes between chirps.** A walking duck
+  moves along its heading, so two chirps give a direction of travel.
+- **Encode the heading in the chirp itself:** each chirp carries a coarse heading (a few bits, for
+  example 8 compass directions) along with the direction.
