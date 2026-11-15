@@ -30,3 +30,16 @@ ffmpeg -v error -y -i "${VIDEOS[0]}" -i "${VIDEOS[1]}" -i "${VIDEOS[2]}" -filter
   -loop 0 "$OUT/final_side_by_side.gif"
 
 ls -l "$OUT"/*.gif | awk '{printf "%7.0f KB  %s\n", $5 / 1024, $9}'
+
+# The README's top clip: the same three videos with larger labels at the bottom, as a GIF and an mp4 (each under 1 MB).
+HERO=docs/media/central_vs_decentral
+HL=("Central, from scratch" "Decentralized (D2), from scratch" "Decentralized (D2), distilled")
+top() {     # $1 label: scale to 280 px, label at the bottom in a dark box, hold the last frame 1.5 s
+  echo "hqdn3d=4:3:6:6,scale=280:-2,drawtext=fontfile=$FONT:text='$1':x=(w-tw)/2:y=h-th-8:fontsize=15:fontcolor=white:box=1:boxcolor=black@0.7:boxborderw=5,tpad=stop_mode=clone:stop_duration=1.5,fps=$FPS"
+}
+IN=(-i "${VIDEOS[0]}" -i "${VIDEOS[1]}" -i "${VIDEOS[2]}")
+GRAPH="[0:v]$(top "${HL[0]}")[a];[1:v]$(top "${HL[1]}")[b];[2:v]$(top "${HL[2]}")[c];[a][b][c]hstack=inputs=3"
+ffmpeg -v error -y "${IN[@]}" -filter_complex "$GRAPH,split[x][y];[x]palettegen=max_colors=32:stats_mode=diff[p];[y][p]paletteuse=dither=none:diff_mode=rectangle" \
+  -loop 0 $HERO.gif
+ffmpeg -v error -y "${IN[@]}" -filter_complex "$GRAPH" -c:v libx264 -pix_fmt yuv420p -crf 30 -preset veryfast -an $HERO.mp4
+ls -l $HERO.gif $HERO.mp4 | awk '{printf "%7.0f KB  %s\n", $5 / 1024, $9}'
