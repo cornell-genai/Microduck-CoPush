@@ -143,6 +143,7 @@ vision:                     # copush.vision: partner info only while the partner
   enabled: false            # in view: the exact partner position and heading; out of view: the last chirp
   fov_deg: 120.0            # PLACEHOLDER until measured on the real camera: full field of view, centered on the duck's heading
   range_m: 0.8              # PLACEHOLDER until measured on the real camera: how far the camera sees the partner
+  occlusion: false          # on: the box also blocks the view (the partner is hidden when the line of sight crosses the box); needs enabled
 
 rl:                         # copush.rl_callbacks.VideoEvalCallback (PPO, later)
   eval_every: 10000         # training steps between evaluation episodes

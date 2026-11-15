@@ -67,7 +67,7 @@ DEFAULTS = {
               "distance_noise": 0.3, "nominal_distance_m": 0.20, "heading": "zero",
               "miss_prob": 0.0, "front_back_flip_prob": 0.0},
     "obs": {"history_steps": 1},
-    "vision": {"enabled": False, "fov_deg": 120.0, "range_m": 0.8},
+    "vision": {"enabled": False, "fov_deg": 120.0, "range_m": 0.8, "occlusion": False},
 }
 FALL_MODES = ("terminate", "continuous")
 COOPERATION_MODES = ("none", "gated_balanced")

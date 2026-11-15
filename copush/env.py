@@ -67,7 +67,7 @@ from gymnasium import spaces
 from copush.chirp import ChirpSensor
 from copush.config import effective_reward, load_config
 from copush.rewards import TERMS, RewardMonitor, StepSummary, TaskReward, balance
-from copush.sim import CONTROL_DT, DUCKS, CoPushSim
+from copush.sim import BOX_HALF, CONTROL_DT, DUCKS, CoPushSim
 from copush.state import wrap_angle
 from copush.vision import visible
 
@@ -143,7 +143,10 @@ class CoPushEnv(gym.Env):
             self._events = open(os.path.join(log_dir, "events.log"), "w")
         self.chirp = ChirpSensor(self.cfg["chirp"], self.dt) if self.cfg.get("chirp", {}).get("enabled") else None
         vis = self.cfg.get("vision") or {}
-        self.vision = (float(vis["fov_deg"]), float(vis["range_m"])) if vis.get("enabled") else None
+        if vis.get("occlusion") and not vis.get("enabled"):
+            raise ValueError("vision.occlusion needs vision.enabled")
+        self.vision = ((float(vis["fov_deg"]), float(vis["range_m"]), BOX_HALF[:2] if vis.get("occlusion") else None)
+                       if vis.get("enabled") else None)
         if self.vision and not self.chirp:
             raise ValueError("vision.enabled needs chirp.enabled: out of view, a duck falls back to its last chirp")
         self.state = None
