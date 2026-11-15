@@ -1,0 +1,52 @@
+{
+ "policy": "runs/decentral-p2-d2/model.zip",
+ "fov_deg": 120.0,
+ "range_m": 0.8,
+ "runs": {
+  "exact": {
+   "episodes": 50,
+   "states": 2258,
+   "success": 37,
+   "no_box": {
+    "duck_a": 6.5,
+    "duck_b": 5.1,
+    "both": 0.1
+   },
+   "box": {
+    "duck_a": 6.3,
+    "duck_b": 2.7,
+    "both": 0.0
+   }
+  },
+  "vision": {
+   "episodes": 50,
+   "states": 3734,
+   "success": 17,
+   "no_box": {
+    "duck_a": 2.5,
+    "duck_b": 3.3,
+    "both": 0.0
+   },
+   "box": {
+    "duck_a": 2.4,
+    "duck_b": 2.4,
+    "both": 0.0
+   }
+  },
+  "vision+box": {
+   "episodes": 50,
+   "states": 3757,
+   "success": 17,
+   "no_box": {
+    "duck_a": 2.5,
+    "duck_b": 2.9,
+    "both": 0.1
+   },
+   "box": {
+    "duck_a": 2.4,
+    "duck_b": 2.2,
+    "both": 0.0
+   }
+  }
+ }
+}
