@@ -131,6 +131,8 @@ chirp:                      # copush.chirp: partner sensing by chirps (decentral
   distance: false           # on: each chirp also carries a rough distance; off: no distance is heard
   distance_noise: 0.3       # standard deviation of the relative distance error (0.3 = 30%)
   nominal_distance_m: 0.20  # the length of the partner vector when distance is off (the ducks start 0.20 m apart)
+  miss_prob: 0.0            # chance a scheduled chirp is lost (the duck keeps its last one). PLACEHOLDER until measured on real ducks; 0 = never
+  front_back_flip_prob: 0.0 # chance a heard chirp's direction is mirrored front to back. PLACEHOLDER until measured on real ducks; 0 = never
   heading: zero             # zero: the partner's heading is not heard (0 in the observation); true: the exact heading is filled in (diagnostic only)
 
 rl:                         # copush.rl_callbacks.VideoEvalCallback (PPO, later)

@@ -39,7 +39,7 @@ def test_off_by_default():
 
 def test_bad_settings_are_rejected():
     for bad in ({"interval_s": 0}, {"direction_noise_deg": -1}, {"distance_noise": -0.1}, {"nominal_distance_m": 0},
-                {"heading": "mostly"}):
+                {"heading": "mostly"}, {"miss_prob": 1.1}, {"miss_prob": -0.1}, {"front_back_flip_prob": 2}):
         with pytest.raises(ValueError):
             ChirpSensor(_ccfg(**bad), DT)
 
@@ -123,6 +123,65 @@ def test_without_distance_the_vector_has_the_nominal_length():
     for _ in range(20):
         for d, v in s.update(st, rng).items():
             assert math.isclose(math.hypot(*v), 0.25, rel_tol=1e-9)
+
+
+def test_missed_chirps_and_flips_are_off_by_default():
+    c = load_config()["chirp"]
+    assert c["miss_prob"] == 0.0 and c["front_back_flip_prob"] == 0.0
+
+
+def _ahead_state():
+    """Duck B 0.2 m straight ahead of duck A and 0.1 m to its left (A faces +x), so A hears x = 0.2 > 0."""
+    return _fake_state(a=(0.0, 0.0, 0.0), b=(0.2, 0.1, 0.0))
+
+
+def test_a_lost_chirp_keeps_the_last_value_but_the_first_chirp_is_always_heard():
+    st = _ahead_state()
+    s = ChirpSensor(_ccfg(interval_s=0.2, direction_noise_deg=0, distance=True, distance_noise=0, miss_prob=1.0), DT)
+    rng = np.random.default_rng(6)
+    first = s.reset(st, rng)
+    assert np.allclose(first["duck_a"], _true_vec(st, "duck_a"), atol=1e-9)      # heard at t = 0 even with miss_prob 1
+    st["duck_b"]["position"] = (0.5, -0.3)
+    for _ in range(20):
+        assert s.update(st, rng) == first                    # every scheduled chirp lost: nothing changes
+
+
+def test_the_share_of_lost_chirps_matches_miss_prob():
+    st = _ahead_state()
+    s = ChirpSensor(_ccfg(interval_s=0.2, direction_noise_deg=30, miss_prob=0.3), DT)
+    rng = np.random.default_rng(7)
+    prev, heard, n = s.reset(st, rng), 0, 4000
+    for _ in range(n):
+        now = s.update(st, rng)
+        heard += now["duck_a"] != prev["duck_a"]
+        prev = now
+    assert abs(heard / n - 0.7) < 0.03, heard / n
+
+
+def test_front_back_flip_mirrors_x_and_keeps_y():
+    st = _ahead_state()
+    tx, ty = _true_vec(st, "duck_a")
+    rng = np.random.default_rng(8)
+    always = ChirpSensor(_ccfg(interval_s=0.2, direction_noise_deg=0, distance=True, distance_noise=0,
+                               front_back_flip_prob=1.0), DT)
+    x, y = always.reset(st, rng)["duck_a"]
+    assert math.isclose(x, -tx, abs_tol=1e-9) and math.isclose(y, ty, abs_tol=1e-9)
+    some = ChirpSensor(_ccfg(interval_s=0.2, direction_noise_deg=0, distance=True, distance_noise=0,
+                             front_back_flip_prob=0.25), DT)
+    some.reset(st, rng)
+    flipped = sum(some.update(st, rng)["duck_a"][0] < 0 for _ in range(4000))
+    assert abs(flipped / 4000 - 0.25) < 0.03, flipped / 4000
+
+
+def test_zero_probabilities_draw_no_extra_random_numbers():
+    """Off means off: the noise stream is the same as before these settings existed."""
+    st = _ahead_state()
+    a = ChirpSensor(_ccfg(interval_s=0.2, direction_noise_deg=30), DT)
+    b = ChirpSensor(_ccfg(interval_s=0.2, direction_noise_deg=30, miss_prob=0.0, front_back_flip_prob=0.0), DT)
+    ra, rb = np.random.default_rng(9), np.random.default_rng(9)
+    a.reset(st, ra), b.reset(st, rb)
+    for _ in range(50):
+        assert a.update(st, ra) == b.update(st, rb)
 
 
 # ── in the env (needs mujoco and the walking policies) ─────────────────────────────────────────────────────────
