@@ -43,12 +43,15 @@ How it works:
 
 1. **Retrain with chirps (Part 2, in progress):** the baseline for realistic sensing.
 2. **Missed chirps and front-back direction flips:** the same sense, more realistic.
-3. **Randomize the box mass within a range:** stops the policy memorizing push timing; it sees a short
-   history of recent observations so it can sense the mass.
-4. **Harder setup** (ducks start slightly apart, reusing the rendezvous settings when available): test
-   chirps until performance fails.
-5. **Add vision:** partner info only when it is inside the front camera's field of view and range. Mix
-   about 30% earlier starts into training to avoid forgetting.
+3. **Randomize the box mass, with observation history:** stops the policy memorizing push timing, and
+   the history lets it sense the mass.
+4. **Ducks start apart** (reusing the rendezvous settings when available): test chirps until
+   performance fails.
+5. **Vision, and the box blocking the view:** partner info only when the partner is inside the front
+   camera's field of view, within range, and not hidden behind the box. Mix about 30% earlier starts
+   into training to avoid forgetting. Vision comes after step 4 because, side by side, the partner is
+   about 90 degrees to the side, outside a front camera's view, so vision only matters once the ducks
+   start apart.
 6. **Final:** distill the combined central controller (from steering and rendezvous) into these
    realistic-sensing ducks.
 
@@ -63,6 +66,7 @@ ducks (the students) only get what a real duck could sense. Steps 2, 3 and 5 are
 | `box.mass_range` | null | the box mass is drawn from [lo, hi] kg each episode | placeholder |
 | `obs.history_steps` | 1 | stack the last N observations, newest first (1 = just the current one) | N = 1 keeps the old behavior |
 | `vision.enabled`, `vision.fov_deg`, `vision.range_m` | off, 120, 0.8 | partner info only while in the front camera's view and range; otherwise the last chirp (needs chirps on) | placeholders |
+| `vision.occlusion` | off | the box blocks the view: the partner is hidden when the line of sight crosses the box (needs vision on) | the box is the real size, 28 by 10 cm |
 
 All "placeholder" values are made up until measured on the real ducks. Code: `copush/chirp.py`,
 `copush/vision.py`, `copush/env.py`, `copush/decentral.py`; tests: `tests/test_chirp.py`,
