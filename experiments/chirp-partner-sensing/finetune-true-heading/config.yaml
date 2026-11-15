@@ -1,0 +1,42 @@
+# DIAGNOSTIC, not a realistic setting: Part 2 with the partner's TRUE heading filled in at each chirp (held until the
+# next chirp, like the direction). Question: does the heading close the gap from 60% to D2's 74%?
+# Chirp partner sensing, Part 2: fine-tune the trained D2 stage 1 policy with chirps on.
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/chirp-partner-sensing/finetune-true-heading/config.yaml
+#   (the queue script runs/chirp-partner-sensing/part2.sh does this, then the test-set comparison)
+#
+# The one change from the D2 stage 1 run (experiments/decentralized-control/p2-d2): each duck hears a noisy
+# direction to its partner every 2 s (30 deg standard deviation, no distance) instead of the partner's exact
+# position and heading. UNLIKE Part 2 the partner's true heading is also given (heard at each chirp, held until the
+# next one): a diagnostic, since sound cannot provide it.
+# Same observation size as D2, so the D2 stage 1 policy is the warm start. Stage 1's random box starts.
+# Steps count duck entries: 2 per simulator step.
+name: chirp-finetune-2s-30deg-trueheading
+change: DIAGNOSTIC, chirps on (2 s, 30 deg, no distance) plus the true partner heading at each chirp, warm start from D2 stage 1
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/decentral-p2-d2/model.zip     # D2 stage 1 (74% on the stage 1 test set)
+out: runs/chirp-partner-sensing/finetune-true-heading
+results: experiments/chirp-partner-sensing/finetune-true-heading/results
+test_set: experiments/test_sets/stage1.json
+check_set: experiments/test_sets/stage1_checks.json
+
+overrides:
+  controller: {mode: decentral, include_partner: true}
+  chirp: {enabled: true, interval_s: 2.0, direction_noise_deg: 30.0, distance: false, heading: true_held}
+  rl: {eval_every: 20000}
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}   # stage 1's range
+
+steps: 2000000                            # duck entries = 1M simulator steps ("up to"; early stop below)
+checkpoint_every: 200000
+max_videos: 12
+
+widen:                                    # no widening (full range); checks on the fixed check set
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 100000                      # duck entries = every 50k simulator steps
+  episodes: 50
+  seed0: 10050
+
+early_stop: {success: 0.80, evals: 3}     # check-set success, 3 checks in a row
