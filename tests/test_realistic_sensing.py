@@ -58,3 +58,60 @@ def test_bad_mass_range_is_rejected():
     for bad in ([0.2, 0.1], [0.0, 0.2], [-0.1, 0.2]):
         with pytest.raises(ValueError):
             _env(box={"mass_range": bad})
+
+
+# ── obs.history_steps ──────────────────────────────────────────────────────────────────────────────────────────
+def test_history_is_off_by_default_and_changes_nothing():
+    from copush.decentral import DuckPairEnv, local_names
+    from copush.env import OBS_NAMES
+    assert load_config()["obs"]["history_steps"] == 1
+    env = _env(central=True)
+    obs, _ = env.reset(seed=1)
+    assert obs.shape == (len(OBS_NAMES),) and env.observation_space.shape == (len(OBS_NAMES),) and "history" not in env.state
+    pair = DuckPairEnv(load_config(overrides={"env": {"layout": "steer"}}), True)
+    assert pair.observation_space.shape == (2, len(local_names(True)))
+
+
+def test_central_observation_is_stacked_newest_first():
+    from copush.env import OBS_NAMES
+    n = len(OBS_NAMES)
+    env = _env(central=True, obs={"history_steps": 3})
+    assert env.observation_space.shape == (3 * n,)
+    obs0, _ = env.reset(seed=2)
+    assert obs0.shape == (3 * n,)
+    assert np.array_equal(obs0[:n], obs0[n:2 * n]) and np.array_equal(obs0[:n], obs0[2 * n:])     # padded with the first
+    rng = np.random.default_rng(0)
+    seen = [obs0[:n]]
+    for _ in range(4):
+        obs, *_ = env.step(rng.uniform(-1, 1, 4).astype(np.float32))
+        seen.append(obs[:n])
+        assert np.array_equal(obs[n:2 * n], seen[-2])                                           # the step before
+        if len(seen) >= 3:
+            assert np.array_equal(obs[2 * n:], seen[-3])                                        # two steps before
+
+
+def test_decentral_views_are_stacked_newest_first():
+    from copush.decentral import DuckPairEnv, local_names, local_obs
+    n = len(local_names(True))
+    cfg = load_config(overrides={"env": {"layout": "steer"}, "controller": {"mode": "decentral", "include_partner": True}})
+    cfg["obs"]["history_steps"] = 3
+    pair = DuckPairEnv(cfg, True)
+    assert pair.observation_space.shape == (2, 3 * n)
+    obs, _ = pair.reset(seed=3)
+    assert obs.shape == (2, 3 * n) and np.array_equal(obs[0, :n], obs[0, 2 * n:])
+    rng = np.random.default_rng(1)
+    singles = [obs[:, :n]]
+    for _ in range(4):
+        obs, *_ = pair.step(rng.uniform(-1, 1, (2, 2)).astype(np.float32))
+        singles.append(obs[:, :n])
+        assert np.array_equal(obs[:, n:2 * n], singles[-2])
+        if len(singles) >= 3:
+            assert np.array_equal(obs[:, 2 * n:], singles[-3])
+    st = pair.env.state                                                                          # eval path: env.state
+    assert np.array_equal(local_obs(st, "duck_b", True), obs[1])
+    assert "history" not in st["history"][0]                                                    # no chain of histories
+
+
+def test_history_must_be_at_least_one():
+    with pytest.raises(ValueError):
+        _env(obs={"history_steps": 0})

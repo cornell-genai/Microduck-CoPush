@@ -136,6 +136,9 @@ chirp:                      # copush.chirp: partner sensing by chirps (decentral
   front_back_flip_prob: 0.0 # chance a heard chirp's direction is mirrored front to back. PLACEHOLDER until measured on real ducks; 0 = never
   heading: zero             # zero: the partner's heading is not heard (0 in the observation); true: the exact heading is filled in (diagnostic only)
 
+obs:                        # what the controller sees (copush.env, copush.decentral)
+  history_steps: 1          # stack the last N observations, newest first (1 = just the current one: the old behavior)
+
 rl:                         # copush.rl_callbacks.VideoEvalCallback (PPO, later)
   eval_every: 10000         # training steps between evaluation episodes
   eval_seed: 10000          # a held-out seed (env.heldout_seeds)

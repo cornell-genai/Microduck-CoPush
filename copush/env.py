@@ -125,7 +125,11 @@ class CoPushEnv(gym.Env):
         self.split = split
         self.heldout = tuple(self.ecfg["heldout_seeds"])
         self.action_space = spaces.Box(-1.0, 1.0, shape=(4,), dtype=np.float32)
-        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(len(OBS_NAMES),), dtype=np.float32)
+        self.history_steps = int((self.cfg.get("obs") or {}).get("history_steps", 1))   # observations stacked, newest first
+        if self.history_steps < 1:
+            raise ValueError(f"obs.history_steps must be at least 1, got {self.history_steps}")
+        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(len(OBS_NAMES) * self.history_steps,),
+                                            dtype=np.float32)
         self.monitor = RewardMonitor()
         self.episode = 0
         self.log_dir = log_dir
@@ -222,9 +226,7 @@ class CoPushEnv(gym.Env):
         else:
             st = self.sim.reset()
         self.state = st
-        if self.chirp:                                    # what each duck hears of its partner (copush.chirp)
-            st["chirp"] = self.chirp.reset(st, self.np_random)
-            st["chirp_heading"] = self.chirp.heading
+        self._sense(st, None)
         self.sim.pop_events()
         self.monitor.reset()
         self._close_switches(only_done=False)             # windows cut short by the reset
@@ -243,7 +245,7 @@ class CoPushEnv(gym.Env):
                       "min_dist": st["box_to_target"], "start_dist": st["box_to_target"], "flags": []}
         self._event(0.0, "reset", f"episode {self.episode} box=({box['x']:.3f},{box['y']:.3f},"
                                   f"{box['yaw']:.1f}deg,{box['mass']:.3f}kg) seed={seed}")
-        return self._obs(st), {"box": dict(box), "target": dict(self.cfg["target"])}
+        return self._stacked_obs(st), {"box": dict(box), "target": dict(self.cfg["target"])}
 
     def set_hold(self, duck: str, on: bool) -> None:
         """on: keep `duck` on velstand (switching now if needed); off: automatic switching again."""
@@ -355,9 +357,7 @@ class CoPushEnv(gym.Env):
         if truncated:
             reason = "timeout"
         self.state = st
-        if self.chirp:
-            st["chirp"] = self.chirp.update(st, self.np_random)
-            st["chirp_heading"] = self.chirp.heading
+        self._sense(st, st0)
         b = balance(push["duck_a"], push["duck_b"])
 
         s = self.stats
@@ -390,9 +390,32 @@ class CoPushEnv(gym.Env):
                 "final_dist": st["box_to_target"], "min_dist": s["min_dist"],
                 "final_yaw_deg": math.degrees(st["yaw_error"]), "flags": list(s["flags"])}
         self._log_row(action, terms, reward, st, b, push, force, ctime, reason, flags)
-        return self._obs(st), reward, terminated, truncated, info
+        return self._stacked_obs(st), reward, terminated, truncated, info
 
     # ── observation ─────────────────────────────────────────────────────────
+    def _sense(self, st: dict, prev) -> None:
+        """What the controller senses beyond the exact state, added to the state dict (the decentral observations
+        read it from there): chirps (copush.chirp) and, with obs.history_steps > 1, the last steps' states
+        (st["history"], newest first, without their own history). prev is the previous step's state, None at reset."""
+        if self.chirp:                                    # what each duck hears of its partner
+            st["chirp"] = self.chirp.reset(st, self.np_random) if prev is None else self.chirp.update(st, self.np_random)
+            st["chirp_heading"] = self.chirp.heading
+        if self.history_steps > 1:
+            if prev is None:
+                self._past = []
+            else:
+                self._past = ([{k: v for k, v in prev.items() if k != "history"}] + self._past)[: self.history_steps - 1]
+            st["history"] = list(self._past)
+            st["history_n"] = self.history_steps
+
+    def _stacked_obs(self, st: dict) -> np.ndarray:
+        """The central observation, stacked over obs.history_steps (newest first; the oldest repeats at the start)."""
+        if self.history_steps == 1:
+            return self._obs(st)
+        past = st.get("history", [])
+        states = [st] + past + [past[-1] if past else st] * (self.history_steps - 1 - len(past))
+        return np.concatenate([self._obs(s) for s in states])
+
     def _obs(self, st: dict) -> np.ndarray:
         g = st["goal"]
         gx, gy = g["position"]

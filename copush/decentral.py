@@ -52,7 +52,18 @@ def local_names(include_partner: bool) -> list:
 
 
 def local_obs(st: dict, duck: str, include_partner: bool) -> np.ndarray:
-    """One duck's view of the state dict (CoPushEnv.state), in its own frame."""
+    """One duck's view of the state dict (CoPushEnv.state), in its own frame. With obs.history_steps > 1 the env
+    puts the last steps' states in st["history"], and the views of the last N steps are stacked, newest first
+    (the oldest repeats at the start of an episode)."""
+    n = st.get("history_n", 1)
+    if n == 1:
+        return _one_view(st, duck, include_partner)
+    past = st.get("history", [])
+    states = [st] + past + [past[-1] if past else st] * (n - 1 - len(past))
+    return np.concatenate([_one_view(s, duck, include_partner) for s in states])
+
+
+def _one_view(st: dict, duck: str, include_partner: bool) -> np.ndarray:
     me = st[duck]
     h = me["yaw"]
     c, s = math.cos(h), math.sin(h)
@@ -128,7 +139,7 @@ class DuckPairEnv(gym.Env):
         super().__init__()
         self.env = CoPushEnv(cfg, split=split)
         self.include_partner = include_partner
-        n = len(local_names(include_partner))
+        n = len(local_names(include_partner)) * self.env.history_steps
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(2, n), dtype=np.float32)
         self.action_space = spaces.Box(-1.0, 1.0, shape=(2, 2), dtype=np.float32)
 
