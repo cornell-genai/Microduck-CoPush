@@ -14,7 +14,9 @@ its heading, y to its left):
     partner (include_partner): partner position relative to this duck (2), partner heading
     relative to this duck's as sin/cos (2)
     with chirps on (config chirp.enabled, copush.chirp) the partner position is the last chirp's noisy
-    direction and distance instead, and the heading entries are 0: same size, so a D2 policy can be reused
+    direction and distance instead, and the heading entries are 0: same size, so a D2 policy can be reused;
+    with vision on (copush.vision) the exact entries are used while the partner is in the duck's camera view
+    obs.history_steps = N stacks the views of the last N steps, newest first
 Action of one duck: [vx, vyaw] in [-1, 1], mapped exactly like that duck's half of the central action
 (copush.env.action_to_cmd). Both ducks get the team reward and the same episode endings.
 
@@ -82,10 +84,10 @@ def _one_view(st: dict, duck: str, include_partner: bool) -> np.ndarray:
          *tf(*me["velocity"]), float(st["contact"][duck]["in_contact"]), float(me["policy"] == "shoepush")]
     if include_partner:
         mate = st[DUCK_ORDER[1 - DUCK_ORDER.index(duck)]]
-        if st.get("chirp"):                              # partner sensing by chirps (copush.chirp): what this duck last
+        if st.get("chirp") and not (st.get("vision") or {}).get(duck):   # chirps (copush.chirp): what this duck last
             dh = wrap_angle(mate["yaw"] - h)             # heard, in its own frame; the heading is 0 (not heard), or
             o += [*st["chirp"][duck], *((math.sin(dh), math.cos(dh)) if st.get("chirp_heading") == "true" else (0.0, 0.0))]
-        else:
+        else:                                            # exact: no chirps, or the partner is in view (copush.vision)
             px, py = mate["position"]
             dh = wrap_angle(mate["yaw"] - h)
             o += [*tf(px - mx, py - my), math.sin(dh), math.cos(dh)]

@@ -2,6 +2,7 @@
 The config and unit tests need only numpy; the env tests need the RL overlay and the walking policies."""
 from __future__ import annotations
 
+import math
 import os
 
 import numpy as np
@@ -115,3 +116,48 @@ def test_decentral_views_are_stacked_newest_first():
 def test_history_must_be_at_least_one():
     with pytest.raises(ValueError):
         _env(obs={"history_steps": 0})
+
+
+# ── vision ─────────────────────────────────────────────────────────────────────────────────────────────────────
+def _ducks(a=(0.0, 0.0, 0.0), b=(0.3, 0.0, 0.0)):
+    return {"duck_a": {"position": a[:2], "yaw": a[2]}, "duck_b": {"position": b[:2], "yaw": b[2]}}
+
+
+def test_vision_is_off_by_default():
+    v = load_config()["vision"]
+    assert v["enabled"] is False and v["fov_deg"] == 120.0 and v["range_m"] == 0.8      # fov and range: placeholders
+
+
+def test_visible_needs_the_partner_in_front_and_in_range():
+    from copush.vision import visible
+    assert visible(_ducks(), "duck_a", 120.0, 0.8)                                       # straight ahead, 0.3 m
+    assert not visible(_ducks(b=(-0.3, 0.0, 0.0)), "duck_a", 120.0, 0.8)                # behind
+    assert not visible(_ducks(b=(1.2, 0.0, 0.0)), "duck_a", 120.0, 0.8)                  # too far
+    assert visible(_ducks(b=(0.3, 0.3, 0.0)), "duck_a", 120.0, 0.8)                     # 45 deg to the left: inside 60
+    assert not visible(_ducks(b=(-0.05, 0.3, 0.0)), "duck_a", 120.0, 0.8)               # just past 90 deg: outside 60
+    assert not visible(_ducks(b=(0.3, 0.3, 0.0)), "duck_a", 60.0, 0.8)                  # 45 deg > half of 60 = 30
+    assert visible(_ducks(a=(0, 0, math.pi)), "duck_a", 120.0, 0.8) is False             # facing away from B
+    assert visible(_ducks(a=(0, 0, math.pi), b=(-0.3, 0.0, 0.0)), "duck_a", 120.0, 0.8)  # now B is ahead
+    assert visible(_ducks(b=(0.0, 0.0, 0.0)), "duck_a", 120.0, 0.8)                      # on top of each other
+
+
+def test_vision_needs_chirps_on():
+    with pytest.raises(ValueError):
+        _env(vision={"enabled": True})
+
+
+def test_in_view_the_exact_partner_info_is_used_out_of_view_the_last_chirp():
+    from copush.decentral import local_names, local_obs
+    env = _env(chirp={"enabled": True, "interval_s": 4.0, "direction_noise_deg": 30.0},
+               vision={"enabled": True, "fov_deg": 120.0, "range_m": 0.8})
+    env.reset(seed=4)
+    st = env.state
+    assert set(st["vision"]) == {"duck_a", "duck_b"}
+    exact = local_obs(dict(st, chirp=None, vision=None), "duck_a", True)                  # D2 with exact info
+    heard = local_obs(dict(st, vision={"duck_a": False, "duck_b": False}), "duck_a", True)
+    seen = local_obs(dict(st, vision={"duck_a": True, "duck_b": True}), "duck_a", True)
+    assert seen.shape == heard.shape == exact.shape == (len(local_names(True)),)
+    assert np.array_equal(seen, exact)                                                    # in view: exact position and heading
+    assert np.allclose(heard[-4:-2], st["chirp"]["duck_a"]) and np.allclose(heard[-2:], 0.0)   # out of view: last chirp
+    assert np.array_equal(heard[:-4], exact[:-4])
+    assert np.array_equal(local_obs(st, "duck_a", True), seen if st["vision"]["duck_a"] else heard)

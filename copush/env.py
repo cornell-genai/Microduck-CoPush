@@ -69,6 +69,7 @@ from copush.config import effective_reward, load_config
 from copush.rewards import TERMS, RewardMonitor, StepSummary, TaskReward, balance
 from copush.sim import CONTROL_DT, DUCKS, CoPushSim
 from copush.state import wrap_angle
+from copush.vision import visible
 
 VX_MAX, VYAW_MAX = 0.3, 1.5
 SWITCH_WINDOW_S = 1.0
@@ -141,6 +142,10 @@ class CoPushEnv(gym.Env):
             self._csv.writeheader()
             self._events = open(os.path.join(log_dir, "events.log"), "w")
         self.chirp = ChirpSensor(self.cfg["chirp"], self.dt) if self.cfg.get("chirp", {}).get("enabled") else None
+        vis = self.cfg.get("vision") or {}
+        self.vision = (float(vis["fov_deg"]), float(vis["range_m"])) if vis.get("enabled") else None
+        if self.vision and not self.chirp:
+            raise ValueError("vision.enabled needs chirp.enabled: out of view, a duck falls back to its last chirp")
         self.state = None
         self.frame_hook = None          # callable(state, return_so_far) after every control step (videos)
         self.hold = {d: False for d in DUCKS}
@@ -395,11 +400,13 @@ class CoPushEnv(gym.Env):
     # ── observation ─────────────────────────────────────────────────────────
     def _sense(self, st: dict, prev) -> None:
         """What the controller senses beyond the exact state, added to the state dict (the decentral observations
-        read it from there): chirps (copush.chirp) and, with obs.history_steps > 1, the last steps' states
+        read it from there): chirps (copush.chirp), vision (copush.vision) and, with obs.history_steps > 1, the last steps' states
         (st["history"], newest first, without their own history). prev is the previous step's state, None at reset."""
         if self.chirp:                                    # what each duck hears of its partner
             st["chirp"] = self.chirp.reset(st, self.np_random) if prev is None else self.chirp.update(st, self.np_random)
             st["chirp_heading"] = self.chirp.heading
+        if self.vision:                                   # who sees their partner right now (copush.vision)
+            st["vision"] = {d: visible(st, d, *self.vision) for d in DUCKS}
         if self.history_steps > 1:
             if prev is None:
                 self._past = []
