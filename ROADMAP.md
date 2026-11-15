@@ -53,6 +53,9 @@ walk to the box and push it into the target together.
   and over-turning; distilled D2 reaches 51% (3 seeds).
 - **Next steps:**
   1. Rerun the comparison on harder setups (random box starts, ducks starting apart).
+  2. Partner sensing by chirps (planned): each duck hears a noisy direction to its partner every few
+     seconds instead of its exact position and heading. First checks are on the
+     `chirp-partner-sensing` branch.
 
 ## Decisions so far
 

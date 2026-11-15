@@ -57,8 +57,11 @@ angle, and the ducks walk to the box and push it into the target together.
 
 - Results only in your own `experiments/<track>/` folder. Large outputs (checkpoints, videos,
   logs) go in the git-ignored `runs/`, linked from your README.
-- Edit only your own track section of [ROADMAP.md](ROADMAP.md).
-- README.md, docs/TIMELINE.md and docs/DEMO.md change only when merging to main.
+- Your track's PR also updates two things, and only those: your track's row in the README's
+  "Behaviors we're teaching" table, and your track's section of [ROADMAP.md](ROADMAP.md). Write them in
+  plain language and link your experiment folder.
+- Everything else in README.md, and docs/TIMELINE.md, docs/DEMO.md and docs/DIAGRAMS.md, is updated
+  by the lead when merging to main.
 - Keep the number of .md files small: add to an existing file rather than starting a new one.
 
 ## Git
