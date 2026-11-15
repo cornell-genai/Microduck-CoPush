@@ -9,6 +9,9 @@
 Every policy runs one deterministic episode per start under the --config env (its reward only
 changes the returns, which this script does not compare). A policy spec ending in @own or @partner is
 decentralized (copush.decentral: the shared policy once per duck, without / with the partner in view).
+After @partner, @chirp:<interval_s>:<direction_noise_deg>[:<distance_noise>] turns on chirps for that
+policy only (copush.chirp; the distance is heard when the third number is given), for example
+    --policy d2_chirp=runs/decentral-p2-d2/model.zip@partner@chirp:2:30
 Per episode:
     turn before push   box rotation (deg, > 0 the way the start needs: toward aiming the push face
                        at the target) done before the box has made PUSH_M of progress toward the target
@@ -33,6 +36,7 @@ import argparse
 import json
 import math
 import os
+import re
 import sys
 import time
 from multiprocessing import Pool
@@ -61,6 +65,9 @@ def _run(job):
     from copush.state import wrap_angle
     from diagnose_turn import needed
     _, cfg = load_stage(cfg_path)
+    ch = spec["decentral"].get("chirp") if isinstance(spec, dict) and spec.get("decentral") else None
+    if ch:
+        cfg["chirp"] = {**cfg["chirp"], "enabled": True, **ch}
     starts = load_test_set(ts_path)["starts"]
     need = {n["id"]: n for n in needed(cfg, starts)}
     make_act = make_act_factory(name, spec)
@@ -126,9 +133,17 @@ def main() -> int:
     for spec in args.policy:
         name, path = spec.split("=", 1)
         dc = None
+        chirp = re.search(r"@chirp:([\d.]+):([\d.]+)(?::([\d.]+))?$", path)
+        if chirp:
+            path = path[: chirp.start()]
         for tag in ("@own", "@partner"):
             if path.endswith(tag):
                 path, dc = path[: -len(tag)], {"include_partner": tag == "@partner"}
+        if chirp:
+            if not (dc and dc["include_partner"]):
+                p.error(f"{name}: @chirp needs @partner")
+            dc["chirp"] = {"interval_s": float(chirp[1]), "direction_noise_deg": float(chirp[2]),
+                           "distance": chirp[3] is not None, **({"distance_noise": float(chirp[3])} if chirp[3] else {})}
         if os.path.exists(repo_path(path)):
             jobs.append((args.config, args.test_set, name, {"path": path, "decentral": dc} if dc else path))
         else:
