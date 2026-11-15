@@ -1,11 +1,15 @@
 # Microduck-CoPush
 
 Two simulated robot ducks learn to push a box into a target together (Cornell Generative AI
-club, fall 2026).
+club, fall 2026). Here we compare one brain for both ducks with a separate brain in each duck.
 
-[![PPO: both ducks push the box into the target](docs/media/overnight_ppo_success.gif)](docs/media/overnight_ppo_success.mp4)
+[![Three controllers on the same start: central from scratch, decentralized from scratch, decentralized distilled](docs/media/central_vs_decentral.gif)](docs/media/central_vs_decentral.mp4)
 
-**📈 [See the full progress timeline, with clips →](docs/TIMELINE.md)**
+Same start, three controllers (click for the sharper video). All three push the box into the green
+target; the differences show up across many starts, in the results below.
+
+**How it works: see the diagrams → [docs/DIAGRAMS.md](docs/DIAGRAMS.md)** ·
+**📈 [Progress timeline, with clips →](docs/TIMELINE.md)**
 
 ## Final goal
 
@@ -13,28 +17,75 @@ Two ducks start anywhere within a set distance of the target, facing any directi
 be anywhere, at any angle. Without a script telling them what to do, the ducks learn to walk to
 the box and push it into the target together.
 
-## Current status (2026-11-13)
+## Current status (2026-11-15)
 
 - **Current stage: Stage 1, random box start.** The box starts in a random spot (up to 15 cm off in
   each direction) and at a random angle (up to 45 degrees). The ducks still start touching it.
-- **Last finished result:** each duck ran its own controller, and with its partner in view it got
-  the box in on 74% of 50 test starts (one central controller for both: 60%). The central controller
-  stays the default while we improve it; see [Decentralized control](#decentralized-control).
+- **Last finished result:** trained from scratch, ducks that each decide for themselves do as well as
+  one central controller (40% against 46% of 50 test starts, 10 training runs each). See
+  [Central vs decentralized](#central-vs-decentralized).
 - **Still unsolved:** starts where the box is turned more than 15 degrees to the positive side (5 of
   17 at best). Earlier tries are in [stage 1](experiments/stage1-random-box-pose/README.md) and
   [stage 1b](experiments/stage1b-turn-direction-fix/README.md).
 
-**How it works:** each duck walks and pushes with frozen, pretrained neural networks from Pollen
-Robotics. On top of that, a small controller picks each duck's forward speed and turn rate every
-0.2 s. By default one controller decides for both ducks; in decentralized mode (D2) each duck runs
-its own copy, using what it sees: the box, the target and its partner. It's trained with reinforcement learning (RL): it tries things in a physics simulator
-(MuJoCo) and learns from a score called the reward. The method is PPO (Proximal Policy
+## How it works
+
+Each duck walks and pushes with frozen, pretrained neural networks from Pollen Robotics. On top of
+them, a small network (the coordinator, the only part we train) picks each duck's forward speed and
+turn rate every 0.2 s. It is trained with reinforcement learning (RL): it tries things in a physics
+simulator (MuJoCo) and learns from a score called the reward. The method is PPO (Proximal Policy
 Optimization), a standard RL algorithm.
 
-## Decentralized control
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+flowchart LR
+  OBS["What the ducks see<br/>(box, target, partner)"] --> NET["Coordinator network<br/>(the part we train)"]
+  NET --> CMD["Speed and turn<br/>for each duck<br/>(every 0.2 s)"]
+  CMD --> WALK["Frozen walking and<br/>pushing policies"]
+  WALK --> SIM["MuJoCo physics<br/>simulator"]
+  SIM --> OBS
+  SIM --> REW["Reward<br/>(box closer, box turned right)"]
+  REW --> PPO["PPO update"]
+  PPO -.->|"changes the weights"| NET
+```
 
-Each duck runs its own controller from its own view, and with the partner in view it matches the
-central controller.
+## Central vs decentralized
+
+- **Central:** one brain sees the whole scene and commands both ducks.
+- **Decentralized (D2):** each duck decides from its own view of the box and target, plus where its
+  partner is and which way it faces. Both ducks run the same network. (D1 is the same without the
+  partner.)
+- **Distilled:** decentralized ducks that first copy the central brain by imitating its choices, then
+  keep training.
+
+### Main result: trained from scratch, 10 seeds each
+
+Both start from random weights and train on the same fixed start. A seed is one training run with a
+different random start. Each is then tested on 50 random box starts it never trained on.
+
+| setup | test starts won (mean) | range across the 10 seeds |
+|---|---|---|
+| central, from scratch | **46%** | 28% to 64% |
+| decentralized (D2), from scratch | **40%** | 28% to 60% |
+
+**No measurable difference:** the 6-point gap is much smaller than the spread between seeds of the same
+setup. The style differs: decentralized ducks idle more (29% of steps against 9%) and over-turn the
+box, but share the pushing more evenly (1 lazy-duck episode in 500, against 7).
+
+[![Learning curves: fixed-start success against training steps, central and decentralized from scratch](experiments/d2-from-scratch-comparison/comparison/learning_curves.png)](experiments/d2-from-scratch-comparison/comparison/learning_curves.png)
+
+Learning curves: success on the fixed start while training. The two from-scratch setups learn at a
+similar pace (lines are the mean, shaded bands the min to max over seeds). Details, per-seed table and
+plots: [experiments/d2-from-scratch-comparison/](experiments/d2-from-scratch-comparison/README.md).
+
+### Earlier result: decentralized ducks that copied the central brain
+
+Distillation (copying the central brain first) got **74%** on the same 50 test starts, against 60% for
+the central controller. We plan to use distillation again at the end of the project.
 
 | controller | success (50 test starts) | hard-side wins (of 17) | both ducks pushing | lazy-duck episodes |
 |---|---|---|---|---|
@@ -42,17 +93,38 @@ central controller.
 | D1: own view only | 60% | 1 | 92% of steps | 0 |
 | **D2: own view + partner** | **74%** | **5** | **94% of steps** | **0** |
 
+**Seeing the partner matters:** D1, without the partner in view, gets 60%, like the central controller.
+
 Caveat: one seed each, D2 started by copying the central controller, and central with similar extra
-training reached 72%.
+training reached 72%, so this says "no worse than central", not "better".
 
 [![central (left) vs D2 (right), box turned +32 degrees](docs/media/decentral_stage1_vs_d2_hard_start.gif)](docs/media/decentral_stage1_vs_d2_hard_start.mp4)
 
 Box turned +32 degrees: central (left) runs out of time, D2 (right) finishes in 41 steps. Full
 results: [experiments/decentralized-control/](experiments/decentralized-control/README.md).
 
-**Trained from scratch** (no copying), D2 matches a central controller trained the same way: 40% against
-46% on the test starts over 10 seeds each, no measurable difference. Its style differs: more idling and
-over-turning, and fewer lazy-duck episodes. Details: [experiments/d2-from-scratch-comparison/](experiments/d2-from-scratch-comparison/README.md).
+## Behaviors we're teaching
+
+One row per track. Each track updates its own row (rules in [AGENTS.md](AGENTS.md)).
+
+| behavior | status | where |
+|---|---|---|
+| **Stage 1: random box pose.** Push a box that starts at a random spot and angle. | done: central 60%, decentralized 74% (copied) | [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md) |
+| **Steering.** Turn the box on hard starts, then at wider angles. | in progress: the long-turn side is still mostly lost | [ROADMAP.md](ROADMAP.md#steering-anmol), [stage 1b](experiments/stage1b-turn-direction-fix/README.md) |
+| **Rendezvous.** The ducks start apart and meet at the box. | starting | [ROADMAP.md](ROADMAP.md#rendezvous-winston) |
+| **Partner sensing by chirps.** Each duck hears a rough direction to its partner now and then, instead of knowing its exact position. | planned | [ROADMAP.md](ROADMAP.md#decentralized-ashwin) |
+
+## Next steps
+
+The full plan, per track, is in [ROADMAP.md](ROADMAP.md).
+
+- **Steering:** win the hard side (box turned more than 15 degrees the positive way, 5 of 17 at best),
+  then widen the box angle range.
+- **Rendezvous:** start the ducks away from the box, so they walk to it and push together.
+- **Decentralized:** repeat the from-scratch comparison on harder starts (random box starts, ducks
+  starting apart).
+- **Partner sensing by chirps (planned):** ducks hear a noisy direction to their partner every
+  few seconds instead of seeing it exactly.
 
 ## Progress
 
@@ -111,16 +183,6 @@ Two optional terms exist, but both are off in v1.1:
 - a penalty for a duck that leaves the box (0.02 per step in v1.2)
 
 Why each value is what it is: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
-
-## Next steps
-
-The full plan, per track, is in [ROADMAP.md](ROADMAP.md).
-
-- **Steering:** win the hard side (box turned more than 15 degrees the positive way, 5 of 17 at best),
-  then widen the box angle range.
-- **Rendezvous:** start the ducks away from the box, so they walk to it and push together.
-- **Decentralized:** D2 from scratch matches central (10 seeds each); next, the same comparison on harder
-  starts (random box starts, ducks starting apart).
 
 ## Links
 
