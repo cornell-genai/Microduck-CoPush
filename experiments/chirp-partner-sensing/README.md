@@ -1,8 +1,9 @@
 # Chirp partner sensing: can two ducks cooperate when they only hear each other?
 
-**Status:** Part 1 done (2026-11-15): the chirp observation is built and tested, and the trained D2
-policy was checked zero-shot, with the heading zeroed and (as a diagnostic) with the true heading.
-Part 2 (fine-tune with chirps) is training. Part 3 (sweep) not started.
+**Status:** Parts 1 and 2 done (2026-11-15). The chirp observation is built and tested, the trained D2 policy
+was checked zero-shot, and Part 2 fine-tuned it with chirps: **60% on the stage 1 test set, the same as D1
+(no partner info), against 74% for D2 with exact info.** Part 3 (sweep) not started; see the proposed check
+before step 2 below.
 
 ## The question
 
@@ -41,7 +42,7 @@ How it works:
 
 ## The order of work (decentralized track)
 
-1. **Retrain with chirps (Part 2, in progress):** the baseline for realistic sensing.
+1. **Retrain with chirps (Part 2, done):** the baseline for realistic sensing. It wins 60%, the same as D1.
 2. **Missed chirps and front-back direction flips:** the same sense, more realistic.
 3. **Randomize the box mass, with observation history:** stops the policy memorizing push timing, and
    the history lets it sense the mass.
@@ -77,14 +78,38 @@ All "placeholder" values are made up until measured on the real ducks. Code: `co
 | run | what | status |
 |---|---|---|
 | [zero-shot/](zero-shot/) | trained D2 with chirps, no training, stage 1 test set; plus a diagnostic with the true heading | done |
-| [finetune-2s-30deg/](finetune-2s-30deg/) | Part 2: fine-tune D2 with chirps every 2 s, 30 deg, heading removed, stage 1 random box starts, up to 1M steps | training (started 2026-11-15 13:40) |
+| [finetune-2s-30deg/](finetune-2s-30deg/) | Part 2: fine-tune D2 with chirps every 2 s, 30 deg, heading removed, stage 1 random box starts, up to 1M steps; plus an information ablation and a clip | done: 60% |
+| [visibility-check/](visibility-check/) | how often each duck sees its partner (front camera, no training) | done: under 10% |
 
 ## Results so far
 
-Zero-shot, 50 test starts: **D2 74% with exact info, D1 60%, D2 with chirps 30 to 42% across four
-settings.** Most of that drop comes from the zeroed heading, not the noise: with no noise at all but the
-heading zeroed it is 36%. With the true heading filled in (a diagnostic), the same four settings give
-50 to 70% (62% at 2 s and 30 deg). Details and tables: [zero-shot/README.md](zero-shot/README.md).
+Stage 1 test set, 50 starts (a rate has a standard error of about 7 points, one seed):
+
+| policy | success | < -15 deg | -15 to +15 | > +15 deg |
+|---|---|---|---|---|
+| D2, exact partner info | **74%** | 17/17 | 15/16 | 5/17 |
+| D1, own view only | **60%** | 15/17 | 14/16 | 1/17 |
+| D2 with chirps, zero-shot (heading zeroed) | 34% | 6/17 | 9/16 | 2/17 |
+| D2 with chirps, zero-shot, true heading filled in (diagnostic) | 62% | 17/17 | 14/16 | 0/17 |
+| **D2 fine-tuned with chirps (Part 2)** | **60%** | 15/17 | 12/16 | 3/17 |
+
+- **Part 2 lands at D1's level:** chirps (every 2 s, 30 degrees off, no heading) add little over no partner info.
+  Cooperation is fine, but it idles twice as much as D2 (30% against 15% of steps) and overshoots the target more
+  (11 starts against 1). Details: [finetune-2s-30deg/README.md](finetune-2s-30deg/README.md).
+- **It does read the chirps:** random directions drop it to 22%. But even the exact partner position every step
+  gives only 64%, so the 10 points between that and D2's 74% look like the missing heading.
+- **Zero-shot, the heading was the larger part of the loss:** with the true heading filled in, the same four chirp
+  settings reach 50 to 70% instead of 30 to 42%. See [zero-shot/README.md](zero-shot/README.md).
+- **Vision cannot help yet:** side by side, each duck sees its partner on under 10% of steps (6.5% and 5.1%;
+  2.7% for duck B with the box blocking), as expected with the partner 90 degrees to the side. See
+  [visibility-check/README.md](visibility-check/README.md).
+
+![D2 with exact partner info (left) wins in 29 steps; D2 with chirps (right) runs out of time](finetune-2s-30deg/results/start08_side_by_side.gif)
+
+**Proposed before step 2 (missed chirps and flips):** stacking more realism on a policy that is already at D1's level
+would be hard to read. First check whether the missing heading is the bottleneck (a diagnostic fine-tune with
+chirps plus the true heading; if it climbs back toward 74%, estimating the heading is the next thing to build,
+see the ideas below), and repeat Part 2 with a second seed to see how much of the 60% is luck.
 
 ## Ideas (not started)
 
