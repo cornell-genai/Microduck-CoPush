@@ -18,9 +18,11 @@ Settings (cfg["chirp"], all off by default):
                             is heard and the vector gets a fixed length (nominal_distance_m)
     distance_noise          standard deviation of the relative distance noise (0.3 = about 30%)
     nominal_distance_m      the length used when distance is off (the ducks start 0.20 m apart)
+    heading                 zero (default, the real case): the partner's heading is not heard, so D2's two
+                            heading entries are 0; true: the exact partner heading is filled in at every
+                            step (a diagnostic, not something a duck could hear)
 The two ducks' chirps are staggered: each duck's chirp times are shifted by its own random offset in
-[0, interval_s), drawn at every reset. Partner heading cannot be heard, so D2's two heading entries are
-zero (copush.decentral.local_obs).
+[0, interval_s), drawn at every reset (copush.decentral.local_obs puts the heading entries in).
 """
 from __future__ import annotations
 
@@ -28,6 +30,7 @@ import math
 from typing import Dict, Tuple
 
 DUCKS = ("duck_a", "duck_b")
+HEADINGS = ("zero", "true")
 _EPS = 1e-9
 
 
@@ -38,9 +41,12 @@ class ChirpSensor:
         self.use_distance = bool(ccfg["distance"])
         self.dist_noise = float(ccfg["distance_noise"])
         self.nominal = float(ccfg["nominal_distance_m"])
+        self.heading = str(ccfg.get("heading", "zero"))
         self.dt = float(dt)
         if self.interval <= 0 or self.nominal <= 0:
             raise ValueError("chirp.interval_s and chirp.nominal_distance_m must be positive")
+        if self.heading not in HEADINGS:
+            raise ValueError(f"chirp.heading must be one of {HEADINGS}, not {self.heading!r}")
         if self.sigma < 0 or self.dist_noise < 0:
             raise ValueError("chirp.direction_noise_deg and chirp.distance_noise must not be negative")
 

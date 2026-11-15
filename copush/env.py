@@ -218,6 +218,7 @@ class CoPushEnv(gym.Env):
         self.state = st
         if self.chirp:                                    # what each duck hears of its partner (copush.chirp)
             st["chirp"] = self.chirp.reset(st, self.np_random)
+            st["chirp_heading"] = self.chirp.heading
         self.sim.pop_events()
         self.monitor.reset()
         self._close_switches(only_done=False)             # windows cut short by the reset
@@ -350,6 +351,7 @@ class CoPushEnv(gym.Env):
         self.state = st
         if self.chirp:
             st["chirp"] = self.chirp.update(st, self.np_random)
+            st["chirp_heading"] = self.chirp.heading
         b = balance(push["duck_a"], push["duck_b"])
 
         s = self.stats

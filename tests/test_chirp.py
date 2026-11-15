@@ -38,7 +38,8 @@ def test_off_by_default():
 
 
 def test_bad_settings_are_rejected():
-    for bad in ({"interval_s": 0}, {"direction_noise_deg": -1}, {"distance_noise": -0.1}, {"nominal_distance_m": 0}):
+    for bad in ({"interval_s": 0}, {"direction_noise_deg": -1}, {"distance_noise": -0.1}, {"nominal_distance_m": 0},
+                {"heading": "mostly"}):
         with pytest.raises(ValueError):
             ChirpSensor(_ccfg(**bad), DT)
 
@@ -155,6 +156,18 @@ def test_env_chirp_matches_d2_partner_info_except_heading():
         assert np.allclose(a[:-2], b[:-2], atol=1e-5)                            # own view and partner position
         assert np.allclose(a[-2:], 0.0)                                          # heading dropped
         on.step(rng.uniform(-1, 1, 4).astype(np.float32))
+
+
+def test_env_heading_zero_by_default_and_true_fills_in_the_exact_heading():
+    from copush.decentral import local_obs
+    zero = _env(enabled=True, interval_s=0.2, direction_noise_deg=30.0)
+    true = _env(enabled=True, interval_s=0.2, direction_noise_deg=30.0, heading="true")
+    for env in (zero, true):
+        env.reset(seed=3)
+        env.step(np.zeros(4, dtype=np.float32))
+    exact = local_obs(dict(true.state, chirp=None), "duck_a", True)[-2:]       # D2's exact partner heading
+    assert np.allclose(local_obs(zero.state, "duck_a", True)[-2:], 0.0)
+    assert np.allclose(local_obs(true.state, "duck_a", True)[-2:], exact, atol=1e-6)
 
 
 def test_env_chirp_is_held_between_chirps():
