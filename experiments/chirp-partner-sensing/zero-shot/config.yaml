@@ -1,0 +1,17 @@
+# Zero-shot check, no training: the trained D2 stage 1 policy run with chirps on, on the stage 1 test set.
+# run.sh runs exactly this (scripts/rl/compare_policies.py; @chirp:<interval_s>:<direction_noise_deg>[:<distance_noise>]).
+test_config: experiments/stage1-random-box-pose/config.yaml   # the env the episodes run under
+test_set: experiments/test_sets/stage1.json                   # 50 random box starts, never trained on
+policy: runs/decentral-p2-d2/model.zip                        # D2 stage 1 (phase 2 of experiments/decentralized-control)
+settings:                                                     # chirp.interval_s, chirp.direction_noise_deg, chirp.distance
+  chirp_2s_30deg:   {interval_s: 2.0, direction_noise_deg: 30, distance: false}
+  chirp_2s_10deg:   {interval_s: 2.0, direction_noise_deg: 10, distance: false}
+  chirp_0.5s_30deg: {interval_s: 0.5, direction_noise_deg: 30, distance: false}
+  chirp_4s_60deg:   {interval_s: 4.0, direction_noise_deg: 60, distance: false}
+extra:                                                        # not asked for: to help read the four above
+  extra_chirp_2s_30deg_dist30: {interval_s: 2.0, direction_noise_deg: 30, distance: true, distance_noise: 0.3}
+  extra_no_noise_no_heading:   {interval_s: 0.2, direction_noise_deg: 0, distance: true, distance_noise: 0.0}   # exact partner position, heading zeroed
+reference:                                                    # exact partner info, no chirps
+  d2_exact: runs/decentral-p2-d2/model.zip
+  d1: runs/decentral-p2-d1/model.zip                          # own view only
+nominal_distance_m: 0.20                                      # partner vector length when distance is off (measured ducks spacing: mean 0.19 m)
