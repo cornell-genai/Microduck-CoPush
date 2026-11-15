@@ -19,25 +19,29 @@ and [ROADMAP.md](../../../ROADMAP.md) (the plan, each track's status and next st
 | `docs/TIMELINE.md` | One row per milestone or experiment round | yes |
 | `docs/REWARD_LOG.md` | One entry per reward version (already exists) | yes |
 | `docs/DEMO.md` | 5-minute demo outline, always current | yes |
-| `docs/media/` | A few short "hero" videos, each under 1 MB | yes |
-| `README.md` | Short project page: goal, status, progress GIFs, reward function, next steps (template below) | yes |
+| `docs/media/` | A few short "hero" videos and labeled thumbnail GIFs, each under 1 MB | yes |
+| `docs/DIAGRAMS.md` | Small hand-drawn Mermaid diagrams: central vs decentralized, training loop, curriculum ladder, chirps, data flow | yes |
+| `README.md` | Project page, focused on central vs decentralized: labeled top GIF, system diagram, results, behaviors table, next steps (template below) | yes |
+| `experiments/README.md` | Index of the stages, same style as the README (template below) | yes |
 | `ROADMAP.md` | The plan: one section per track (status, next steps), dated decisions, open questions | yes |
-| `SETUP.md` | Every terminal command: install, sim, training, tests, queue, troubleshooting | yes |
+| `SETUP.md` | Every terminal command: install, sim, training, tests, queue, thumbnails, troubleshooting. The only place commands go | yes |
 | `AGENTS.md` | Stable rules and context for AI agents; change only when a rule changes | yes |
 | `notes/progress_blog.md` | Personal blog ideas and findings | no (git-ignored) |
 
 Create any missing file using the templates below.
 
 **Keep the .md count lean.** The live docs are README.md, AGENTS.md, SETUP.md and
-ROADMAP.md at the root, docs/REWARD_LOG.md, docs/DEMO.md and docs/TIMELINE.md, plus one
-README per experiment folder. Add to one of these rather than creating a new .md file;
+ROADMAP.md at the root, docs/REWARD_LOG.md, docs/DEMO.md, docs/TIMELINE.md and docs/DIAGRAMS.md,
+experiments/README.md, plus one README per experiment folder. Add to one of these rather than creating a new .md file;
 outdated docs go to `docs/archive/`, not next to the live ones.
 
 ## Steps after each run or round
 
-On a side branch, write results only in that experiment's own folder
-(`experiments/<name>/`). Steps 2, 6 and 7 (TIMELINE, DEMO, README) happen only when the
-branch is merged to main; see the Branch rule below.
+On a side branch, write results in that experiment's own folder (`experiments/<name>/`),
+and update only your track's row in the README's "Behaviors we're teaching" table and your
+track's section of ROADMAP.md. The rest of steps 2, 6 and 7 (TIMELINE, DEMO, the rest of the
+README and experiments/README.md, DIAGRAMS) happen only when the branch is merged to main, by
+the lead; see the Branch rule below.
 
 1. **Gather facts** from the run folders (SUMMARY.md, report.md, DECISIONS.md,
    evals.jsonl, video index.md). Every claim must point to a run folder. If a number
@@ -53,17 +57,28 @@ branch is merged to main; see the Branch rule below.
 5. **Make a side-by-side video** when comparing two controllers on the same start
    (for example script vs PPO). These are the most convincing demo material.
 6. **Update DEMO.md** so it shows the current best story.
-7. **Refresh the README on every merge to main.** Update these sections to match
-   the README template below:
+7. **Refresh the README and experiments/README.md on every merge to main** (the lead). Keep the
+   README's structure (template below) and update:
+   - **Top GIF:** the three-way clip (central, decentralized, distilled), each panel labeled with
+     a clear text label; under 1 MB. Replace it when a better comparison exists.
    - **Current status:** current stage, headline result in plain words, date, and which
      controller the result used (central is the default unless the config says otherwise).
+   - **How it works:** keep the system diagram in step with the code.
+   - **Central vs decentralized:** the main result (from scratch, with seeds and ranges) first, then
+     earlier results clearly labeled as earlier, with their caveats. Never drop a caveat.
+   - **Behaviors we're teaching:** one row per track. On a side branch each track updates only its own
+     row (plain language, status, link to its experiment folder).
    - **Progress:** add the new hero GIF in order, with a one-line caption of the milestone.
    - **Reward function:** regenerate the formula and the value table from the current
      config (`configs/copush.yaml`: `reward` with `reward_versions[reward.version]` applied
      on top; or `copush.config.effective_reward`), and the episode endings from
      `copush/rewards.py` and `copush/env.py`. Never fill in values from memory.
-   - **Next steps:** 2 to 3 bullets, one per track, linking to ROADMAP.md for the full plan.
-   Any new command goes in SETUP.md, never in the README.
+   - **Next steps:** 2 to 4 bullets, one per track, linking to ROADMAP.md for the full plan.
+   - **experiments/README.md:** one row per finished stage with a small labeled thumbnail GIF linked
+     to its folder; its result in plain words (a stage that has several seeds reports the mean and range).
+   - **docs/DIAGRAMS.md:** update a diagram only when what it shows has changed.
+   No terminal command goes in the README, experiments/README.md, TIMELINE or DEMO; a new command goes
+   in SETUP.md and the README links to it.
 8. **Append to notes/progress_blog.md:** surprising findings, reward hacking examples,
    bugs, and lessons, each with key numbers and a link.
 9. **Commit** the docs changes (see Git rules).
@@ -89,15 +104,26 @@ branch is merged to main; see the Branch rule below.
 
 ## Branch rule
 
-On side branches, results go only in that experiment's own folder
-(`experiments/<name>/README.md` and its results). The README, docs/TIMELINE.md and
-docs/DEMO.md get updated only when merging to main, so parallel branches don't
-conflict on them.
+On side branches, results go in that experiment's own folder
+(`experiments/<name>/README.md` and its results). The PR also updates only that track's row in
+the README "Behaviors we're teaching" table and that track's section of ROADMAP.md, in plain
+language with a link to the experiment folder. The rest of the README, experiments/README.md,
+docs/TIMELINE.md, docs/DEMO.md and docs/DIAGRAMS.md get updated only by the lead when merging to
+main, so parallel branches don't conflict on them.
 
-## README rule
+## No commands outside SETUP.md
 
-The README never contains terminal commands. Commands, install steps and
-troubleshooting go in SETUP.md, and the README links to it.
+The README, experiments/README.md, docs/TIMELINE.md and docs/DEMO.md never contain terminal
+commands. Commands, install steps and troubleshooting go in SETUP.md, and the other docs link to
+it. (The commands in "Video commands" below are for you, the agent, and never go in those files.)
+Explain any acronym the first time it appears in each of them.
+
+## Diagrams
+
+Diagrams are Mermaid with the hand-drawn look (`look: handDrawn` in the diagram's front matter),
+labels in plain words, colors minimal. After pushing, check the PR preview: if GitHub ignores the
+hand-drawn look, draw Excalidraw-style SVGs in `docs/media/diagrams/` and keep the editable source
+next to each.
 
 ## Writing style
 
@@ -123,11 +149,15 @@ troubleshooting go in SETUP.md, and the README links to it.
 ```markdown
 # Microduck-CoPush
 
-<one-line description>
+<one-line description, with the central vs decentralized angle>
 
-<best hero GIF, linked to its mp4>
+<top GIF: central from scratch | decentralized (D2) from scratch | D2 distilled, same start, each
+panel labeled, linked to its mp4>
 
-**📈 [See the full progress timeline, with clips →](docs/TIMELINE.md)**
+<one caption line>
+
+**How it works: see the diagrams → [docs/DIAGRAMS.md](docs/DIAGRAMS.md)** ·
+**📈 [Progress timeline, with clips →](docs/TIMELINE.md)**
 
 ## Final goal
 
@@ -138,14 +168,41 @@ angle, with the box anywhere and at any angle, learn to push it into the target 
 
 - **Current stage:** <stage, in plain words>
 - **Last finished result:** <headline result in plain words, with eval size>
+- **Still unsolved:** <one bullet>
 
-**How it works:** <one paragraph; one central controller by default, D2 as the decentralized option>
+## How it works
 
-## Decentralized control
+<one paragraph: frozen walking and pushing policies, the coordinator network we train, RL, the reward,
+PPO; acronyms explained>
 
-<one sentence, one small table (central / D1 / D2: success, hard-side wins, both ducks
-pushing, lazy-duck episodes), one caveat line, the side-by-side GIF, one link to
-experiments/decentralized-control/README.md>
+<small Mermaid system diagram: duck observations -> coordinator network -> speed/turn commands ->
+frozen walking and pushing policies -> MuJoCo sim -> reward -> PPO update back to the network>
+
+## Central vs decentralized
+
+<one plain sentence each: central, decentralized (D2; D1 without the partner), distilled>
+
+### Main result: trained from scratch, <N> seeds each
+
+<small table: setup, test starts won (mean), range across seeds; one "no measurable difference" (or
+not) sentence; one line on style differences; the learning-curve chart with a caption; link to the
+experiment folder>
+
+### Earlier result: <label it> (<what it was, e.g. distilled from central>)
+
+<the earlier table, the caveat line (seeds, training budget), one clip, a link to its folder>
+
+## Behaviors we're teaching
+
+| behavior | status | where |
+|---|---|---|
+| **<behavior>.** <one line> | <done / in progress / planned, with the headline> | <link to experiment folder or ROADMAP.md section> |
+
+## Next steps
+
+The full plan, per track, is in [ROADMAP.md](ROADMAP.md).
+
+<2-4 bullets, one per track>
 
 ## Progress
 
@@ -163,15 +220,35 @@ experiments/decentralized-control/README.md>
 
 Why each value is what it is: [docs/REWARD_LOG.md](docs/REWARD_LOG.md).
 
-## Next steps
-
-The full plan, per track, is in [ROADMAP.md](ROADMAP.md).
-
-<2-3 bullets, one per track>
-
 ## Links
 
-ROADMAP.md · SETUP.md · AGENTS.md · docs/REWARD_LOG.md · docs/TIMELINE.md · experiments/README.md · docs/DEMO.md
+ROADMAP.md · SETUP.md · AGENTS.md · docs/REWARD_LOG.md · docs/TIMELINE.md · docs/DIAGRAMS.md · experiments/README.md · docs/DEMO.md
+```
+
+### experiments/README.md
+
+```markdown
+# Experiments
+
+<2 sentences: one folder per stage, each changing one thing; tested on fixed held-out starts>
+
+<links: main README, docs/DIAGRAMS.md curriculum ladder, README reward function table>
+
+## Finished stages
+
+| clip | stage and the one change | result, in plain words |
+|---|---|---|
+| <a href="<stage>/"><img src="../docs/media/<clip>_thumb.gif" width="260" alt="<what the panels show>"></a> | **[<stage>](<stage>/).** <the one change> | <result with eval size; mean and range for several seeds> |
+
+## What is in this folder, in plain words
+
+<bullets: the index, test_sets, a stage folder's README / config / results, large outputs in runs>
+
+How to run a stage: [SETUP.md](../SETUP.md#run-a-stage-experiment).
+
+## Next
+
+The plan for the next stages, per track, is in [ROADMAP.md](../ROADMAP.md).
 ```
 
 ### DEMO.md
@@ -202,11 +279,13 @@ Side by side (both clips same height):
 ffmpeg -i LEFT.mp4 -i RIGHT.mp4 -filter_complex "[0:v]scale=-2:270[a];[1:v]scale=-2:270[b];[a][b]hstack=inputs=2" -c:v libx264 -preset veryfast -crf 30 -an docs/media/NAME_side_by_side.mp4
 ```
 
-Check the size with `ls -lh docs/media/`.
+Check the size with `ls -lh docs/media/`. Labeled thumbnails for experiments/README.md:
+`scripts/make_stage_thumbs.sh` (see SETUP.md). The README's top GIF has a text label drawn
+on each panel (ffmpeg drawtext); the recipe is in experiments/d2-from-scratch-comparison/make_gifs.sh.
 
 ## Git rules
 
-- Commit only docs, README, ROADMAP.md, SETUP.md, and docs/media on the current branch.
+- Commit only docs, README, experiments/README.md, ROADMAP.md, SETUP.md, and docs/media on the current branch.
 - Use the user's git identity. No Claude co-author lines, no "Generated with" lines.
 - Don't push or merge unless the user asks.
 - notes/ and runs/ stay git-ignored.
