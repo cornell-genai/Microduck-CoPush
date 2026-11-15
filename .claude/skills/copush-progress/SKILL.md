@@ -20,7 +20,7 @@ and [ROADMAP.md](../../../ROADMAP.md) (the plan, each track's status and next st
 | `docs/REWARD_LOG.md` | One entry per reward version (already exists) | yes |
 | `docs/DEMO.md` | 5-minute demo outline, always current | yes |
 | `docs/media/` | A few short "hero" videos and labeled thumbnail GIFs, each under 1 MB | yes |
-| `docs/DIAGRAMS.md` | Small hand-drawn Mermaid diagrams: central vs decentralized, training loop, curriculum ladder, chirps, data flow | yes |
+| `docs/DIAGRAMS.md` | Small illustrated SVG diagrams (in `docs/media/diagrams/`): central vs decentralized, training loop, ladder, chirps, data flow | yes |
 | `README.md` | Project page, focused on central vs decentralized: labeled top GIF, system diagram, results, behaviors table, next steps (template below) | yes |
 | `experiments/README.md` | Index of the stages, same style as the README (template below) | yes |
 | `ROADMAP.md` | The plan: one section per track (status, next steps), dated decisions, open questions | yes |
@@ -120,10 +120,15 @@ Explain any acronym the first time it appears in each of them.
 
 ## Diagrams
 
-Diagrams are Mermaid with the hand-drawn look (`look: handDrawn` in the diagram's front matter),
-labels in plain words, colors minimal. After pushing, check the PR preview: if GitHub ignores the
-hand-drawn look, draw Excalidraw-style SVGs in `docs/media/diagrams/` and keep the editable source
-next to each.
+Diagrams are SVGs in `docs/media/diagrams/`, in the style of `controllers_gamepad.svg`: cream cards with an
+amber border, the cartoon duck and the gamepad with a small neural net, soft flat colors, big plain labels,
+no hatching. All text sits on cream cards or pills, so they read on light and dark pages. No Mermaid.
+- Each SVG has a `make_<name>.py` next to it, built from the shared `diagram_kit.py`. Change the script and
+  rerun `make_all.py` (or that one script); never edit the SVG by hand.
+- 4 to 6 elements per diagram, plenty of space, labels in plain words.
+- Embed with a normal image link and alt text that says what the picture shows.
+- Color by role where it helps: blue for what we train, green for frozen pretrained parts, cream for the
+  simulator and reward.
 
 ## Writing style
 
@@ -175,12 +180,14 @@ angle, with the box anywhere and at any angle, learn to push it into the target 
 <one paragraph: frozen walking and pushing policies, the coordinator network we train, RL, the reward,
 PPO; acronyms explained>
 
-<small Mermaid system diagram: duck observations -> coordinator network -> speed/turn commands ->
-frozen walking and pushing policies -> MuJoCo sim -> reward -> PPO update back to the network>
+<system diagram image (docs/media/diagrams/system_loop.svg): what the ducks see -> coordinator (trained) ->
+speed and turn -> frozen walking and pushing policies -> simulator -> reward -> PPO update, with an arrow
+back to the coordinator; cards colored by role, with a legend>
 
 ## Central vs decentralized
 
-<one plain sentence each: central, decentralized (D2; D1 without the partner), distilled>
+<one plain sentence each: central, decentralized (D2; D1 without the partner), distilled, then the
+controllers_gamepad.svg picture>
 
 ### Main result: trained from scratch, <N> seeds each
 
