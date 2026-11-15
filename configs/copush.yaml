@@ -124,6 +124,14 @@ controller:                 # who picks the commands (copush.decentral); trainin
   mode: central             # central: one policy for both ducks; decentral: each duck runs the shared policy on its own view
   include_partner: true     # decentral only: the partner's position and heading in each duck's view (D2; false = D1)
 
+chirp:                      # copush.chirp: partner sensing by chirps (decentral controller with include_partner)
+  enabled: false            # on: a duck hears a noisy direction to its partner once per chirp, not its exact position and heading
+  interval_s: 2.0           # seconds between one duck's chirps (the two ducks' chirps are staggered at random)
+  direction_noise_deg: 30.0 # standard deviation of the bearing error
+  distance: false           # on: each chirp also carries a rough distance; off: no distance is heard
+  distance_noise: 0.3       # standard deviation of the relative distance error (0.3 = 30%)
+  nominal_distance_m: 0.20  # the length of the partner vector when distance is off (the ducks start 0.20 m apart)
+
 rl:                         # copush.rl_callbacks.VideoEvalCallback (PPO, later)
   eval_every: 10000         # training steps between evaluation episodes
   eval_seed: 10000          # a held-out seed (env.heldout_seeds)

@@ -63,6 +63,8 @@ DEFAULTS = {
             "ent_coef": 0.01, "seed": 0},
     "video": {"width": 480, "height": 270, "fps": 25, "speedup": 2},
     "rl": {"eval_every": 10000, "eval_seed": 10000, "improve_margin": 2.0},
+    "chirp": {"enabled": False, "interval_s": 2.0, "direction_noise_deg": 30.0, "distance": False,
+              "distance_noise": 0.3, "nominal_distance_m": 0.20},
 }
 FALL_MODES = ("terminate", "continuous")
 COOPERATION_MODES = ("none", "gated_balanced")

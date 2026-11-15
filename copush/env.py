@@ -64,6 +64,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
+from copush.chirp import ChirpSensor
 from copush.config import effective_reward, load_config
 from copush.rewards import TERMS, RewardMonitor, StepSummary, TaskReward, balance
 from copush.sim import CONTROL_DT, DUCKS, CoPushSim
@@ -131,6 +132,7 @@ class CoPushEnv(gym.Env):
             self._csv = csv.DictWriter(self._csv_file, fieldnames=LOG_COLUMNS)
             self._csv.writeheader()
             self._events = open(os.path.join(log_dir, "events.log"), "w")
+        self.chirp = ChirpSensor(self.cfg["chirp"], self.dt) if self.cfg.get("chirp", {}).get("enabled") else None
         self.state = None
         self.frame_hook = None          # callable(state, return_so_far) after every control step (videos)
         self.hold = {d: False for d in DUCKS}
@@ -214,6 +216,8 @@ class CoPushEnv(gym.Env):
         else:
             st = self.sim.reset()
         self.state = st
+        if self.chirp:                                    # what each duck hears of its partner (copush.chirp)
+            st["chirp"] = self.chirp.reset(st, self.np_random)
         self.sim.pop_events()
         self.monitor.reset()
         self._close_switches(only_done=False)             # windows cut short by the reset
@@ -344,6 +348,8 @@ class CoPushEnv(gym.Env):
         if truncated:
             reason = "timeout"
         self.state = st
+        if self.chirp:
+            st["chirp"] = self.chirp.update(st, self.np_random)
         b = balance(push["duck_a"], push["duck_b"])
 
         s = self.stats

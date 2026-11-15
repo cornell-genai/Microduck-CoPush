@@ -13,6 +13,8 @@ its heading, y to its left):
     (forward, left; 2), touching the box (1), on Shoe Push (1)
     partner (include_partner): partner position relative to this duck (2), partner heading
     relative to this duck's as sin/cos (2)
+    with chirps on (config chirp.enabled, copush.chirp) the partner position is the last chirp's noisy
+    direction and distance instead, and the heading entries are 0: same size, so a D2 policy can be reused
 Action of one duck: [vx, vyaw] in [-1, 1], mapped exactly like that duck's half of the central action
 (copush.env.action_to_cmd). Both ducks get the team reward and the same episode endings.
 
@@ -68,10 +70,13 @@ def local_obs(st: dict, duck: str, include_partner: bool) -> np.ndarray:
          *tf(*st["box"]["velocity"]), st["box"]["yaw_rate"],
          *tf(*me["velocity"]), float(st["contact"][duck]["in_contact"]), float(me["policy"] == "shoepush")]
     if include_partner:
-        mate = st[DUCK_ORDER[1 - DUCK_ORDER.index(duck)]]
-        px, py = mate["position"]
-        dh = wrap_angle(mate["yaw"] - h)
-        o += [*tf(px - mx, py - my), math.sin(dh), math.cos(dh)]
+        if st.get("chirp"):                              # partner sensing by chirps (copush.chirp): what this duck last
+            o += [*st["chirp"][duck], 0.0, 0.0]          # heard, in its own frame; heading cannot be heard
+        else:
+            mate = st[DUCK_ORDER[1 - DUCK_ORDER.index(duck)]]
+            px, py = mate["position"]
+            dh = wrap_angle(mate["yaw"] - h)
+            o += [*tf(px - mx, py - my), math.sin(dh), math.cos(dh)]
     return np.asarray(o, dtype=np.float32)
 
 
