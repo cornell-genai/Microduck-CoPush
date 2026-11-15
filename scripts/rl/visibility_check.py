@@ -33,7 +33,7 @@ DUCKS = ("duck_a", "duck_b")
 
 
 def _run(job):
-    cfg_path, ts_path, policy, name, fov, rng_m = job
+    cfg_path, ts_path, policy, name, fov, rng_m, limit = job
     from stable_baselines3 import PPO
     from copush.decentral import decentral_action
     from copush.env import CoPushEnv
@@ -46,7 +46,7 @@ def _run(job):
                         "distance": False, "heading": "zero"}
         cfg["vision"] = {**cfg["vision"], "enabled": True, "fov_deg": fov, "range_m": rng_m,
                          "occlusion": name == "vision+box"}
-    starts = load_test_set(ts_path)["starts"]
+    starts = load_test_set(ts_path)["starts"][:limit]
     model = PPO.load(repo_path(policy), device="cpu")
     env = CoPushEnv(cfg, split="eval")
     seed0 = cfg["env"]["heldout_seeds"][0]
@@ -87,9 +87,10 @@ def main() -> int:
     p.add_argument("--policy", required=True, help="a decentral (D2) model.zip")
     p.add_argument("--out", required=True)
     p.add_argument("--fov", type=float, default=120.0, help="deg, placeholder until measured on the real camera")
+    p.add_argument("--limit", type=int, default=None, help="only the first N starts (smoke tests)")
     p.add_argument("--range", type=float, default=0.8, dest="range_m", help="m, placeholder")
     a = p.parse_args()
-    jobs = [(a.config, a.test_set, a.policy, n, a.fov, a.range_m) for n in ("exact", "vision", "vision+box")]
+    jobs = [(a.config, a.test_set, a.policy, n, a.fov, a.range_m, a.limit) for n in ("exact", "vision", "vision+box")]
     with Pool(len(jobs)) as pool:
         res = dict(pool.map(_run, jobs))
     from copush.experiments import repo_path
