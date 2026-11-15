@@ -36,22 +36,7 @@ turn rate every 0.2 s. It is trained with reinforcement learning (RL): it tries 
 simulator (MuJoCo) and learns from a score called the reward. The method is PPO (Proximal Policy
 Optimization), a standard RL algorithm.
 
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neutral
----
-flowchart LR
-  OBS["What the ducks see<br/>(box, target, partner)"] --> NET["Coordinator network<br/>(the part we train)"]
-  NET --> CMD["Speed and turn<br/>for each duck<br/>(every 0.2 s)"]
-  CMD --> WALK["Frozen walking and<br/>pushing policies"]
-  WALK --> SIM["MuJoCo physics<br/>simulator"]
-  SIM --> OBS
-  SIM --> REW["Reward<br/>(box closer, box turned right)"]
-  REW --> PPO["PPO update"]
-  PPO -.->|"changes the weights"| NET
-```
+![How it works: what the ducks see goes to the coordinator network (the part we train), which picks speed and turn; frozen walking and pushing policies move the ducks in the simulator; the simulator gives a reward (+10 for the box in the target) or a penalty (-10 when a duck falls), and a PPO update changes the coordinator's weights](docs/media/diagrams/system_loop.svg)
 
 ## Central vs decentralized
 
@@ -61,6 +46,8 @@ flowchart LR
   partner.)
 - **Distilled:** decentralized ducks that first copy the central brain by imitating its choices, then
   keep training.
+
+![Centralized: one controller drives both ducks. Distilled: small controllers copy a trained teacher. Decentralized: each duck has its own controller.](docs/media/diagrams/controllers_gamepad.svg)
 
 ### Main result: trained from scratch, 10 seeds each
 
