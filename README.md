@@ -76,11 +76,10 @@ different random start. Each is then tested on 50 random box starts it never tra
 setup. The style differs: decentralized ducks idle more (29% of steps against 9%) and over-turn the
 box, but share the pushing more evenly (1 lazy-duck episode in 500, against 7).
 
-[![Learning curves: fixed-start success against training steps, central and decentralized from scratch](experiments/d2-from-scratch-comparison/comparison/learning_curves.png)](experiments/d2-from-scratch-comparison/comparison/learning_curves.png)
+![Success on 50 new starts, one dot per training run: central from scratch (10 seeds, mean 46%), D2 from scratch (10 seeds, mean 40%) and D2 distilled (3 seeds, mean 51%). The dots overlap, so no measurable difference between one brain and two.](docs/media/diagrams/seed_comparison.svg)
 
-Learning curves: success on the fixed start while training. The two from-scratch setups learn at a
-similar pace (lines are the mean, shaded bands the min to max over seeds). Details, per-seed table and
-plots: [experiments/d2-from-scratch-comparison/](experiments/d2-from-scratch-comparison/README.md).
+Each dot is one training run, tested on 50 random box starts it never trained on. Per-seed table, the
+learning curves and all plots: [experiments/d2-from-scratch-comparison/](experiments/d2-from-scratch-comparison/README.md).
 
 ### Earlier result: decentralized ducks that copied the central brain
 
