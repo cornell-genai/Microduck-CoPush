@@ -252,3 +252,37 @@ def test_env_chirp_noise_is_reproducible_per_seed():
             out.append(env.state["chirp"]["duck_a"])
         return out
     assert run(7) == run(7) and run(7) != run(8)
+
+
+def test_held_true_heading_is_the_heading_at_the_last_chirp():
+    st = _ahead_state()
+    s = ChirpSensor(_ccfg(interval_s=1.0, direction_noise_deg=0, distance=True, distance_noise=0, heading="true_held"), DT)
+    rng = np.random.default_rng(10)
+    s.reset(st, rng)
+    first = s.heading_held()["duck_a"]
+    assert first == pytest.approx((math.sin(0.0), math.cos(0.0)))                      # B faces the way A does
+    st["duck_b"]["yaw"] = 1.0                                                           # B turns between chirps
+    held = [s.heading_held()["duck_a"]]
+    changes = 0
+    for _ in range(10):
+        s.update(st, rng)
+        now = s.heading_held()["duck_a"]
+        changes += now != held[-1]
+        held.append(now)
+    assert changes == 2 or changes == 1                      # only at chirps (every 5 steps), not live
+    assert held[-1] == pytest.approx((math.sin(1.0), math.cos(1.0)))                    # the true heading once it has chirped
+    assert held[1] == first                                                              # still the old one right after B turned
+
+
+def test_env_true_held_heading_enters_the_observation_only_at_chirps():
+    from copush.decentral import local_obs
+    env = _env(enabled=True, interval_s=1.0, direction_noise_deg=30.0, heading="true_held")
+    env.reset(seed=3)
+    rng = np.random.default_rng(2)
+    seen = []
+    for _ in range(10):
+        o = local_obs(env.state, "duck_a", True)[-2:]
+        assert math.isclose(float(o[0] ** 2 + o[1] ** 2), 1.0, rel_tol=1e-5)           # a real (sin, cos), not zeros
+        seen.append(o.copy())
+        env.step(rng.uniform(-1, 1, 4).astype(np.float32))
+    assert sum(not np.array_equal(seen[i], seen[i - 1]) for i in range(1, len(seen))) <= 3   # held between chirps

@@ -12,7 +12,8 @@ decentralized (copush.decentral: the shared policy once per duck, without / with
 After @partner, @chirp:<interval_s>:<direction_noise_deg>[:<distance_noise>] turns on chirps for that
 policy only (copush.chirp; the distance is heard when the third number is given), for example
     --policy d2_chirp=runs/decentral-p2-d2/model.zip@partner@chirp:2:30
-and a final @trueheading fills in the exact partner heading (a diagnostic).
+and a final @trueheading fills in the exact partner heading every step, @heldheading the true heading at each
+chirp, held until the next one (both diagnostics).
 Per episode:
     turn before push   box rotation (deg, > 0 the way the start needs: toward aiming the push face
                        at the target) done before the box has made PUSH_M of progress toward the target
@@ -134,9 +135,10 @@ def main() -> int:
     for spec in args.policy:
         name, path = spec.split("=", 1)
         dc = None
-        true_heading = path.endswith("@trueheading")
-        if true_heading:
-            path = path[: -len("@trueheading")]
+        heading = "zero"
+        for tag, mode in (("@trueheading", "true"), ("@heldheading", "true_held")):
+            if path.endswith(tag):
+                path, heading = path[: -len(tag)], mode
         chirp = re.search(r"@chirp:([\d.]+):([\d.]+)(?::([\d.]+))?$", path)
         if chirp:
             path = path[: chirp.start()]
@@ -147,7 +149,7 @@ def main() -> int:
             if not (dc and dc["include_partner"]):
                 p.error(f"{name}: @chirp needs @partner")
             dc["chirp"] = {"interval_s": float(chirp[1]), "direction_noise_deg": float(chirp[2]),
-                           "heading": "true" if true_heading else "zero",
+                           "heading": heading,
                            "distance": chirp[3] is not None, **({"distance_noise": float(chirp[3])} if chirp[3] else {})}
         if os.path.exists(repo_path(path)):
             jobs.append((args.config, args.test_set, name, {"path": path, "decentral": dc} if dc else path))

@@ -8,7 +8,7 @@
         --out experiments/chirp-partner-sensing/finetune-2s-30deg/results
 
 A spec is label=path@partner or @own, optionally followed by @chirp:<interval_s>:<direction_noise_deg>[:<distance_noise>]
-(as in scripts/rl/compare_policies.py). The outcome of each episode is written under its label. Writes
+and @trueheading or @heldheading (as in scripts/rl/compare_policies.py). The outcome of each episode is written under its label. Writes
 <out>/start<N>_side_by_side.gif and .mp4 (GIF under 1 MB).
 """
 from __future__ import annotations
@@ -28,6 +28,10 @@ FONT = "/System/Library/Fonts/Supplemental/Arial.ttf"
 
 def parse(spec: str):
     label, path = spec.split("=", 1)
+    heading = "zero"
+    for tag, mode in (("@trueheading", "true"), ("@heldheading", "true_held")):
+        if path.endswith(tag):
+            path, heading = path[: -len(tag)], mode
     chirp = re.search(r"@chirp:([\d.]+):([\d.]+)(?::([\d.]+))?$", path)
     if chirp:
         path = path[: chirp.start()]
@@ -35,7 +39,8 @@ def parse(spec: str):
     path = path[: path.rindex("@")]
     dc = {"include_partner": not own}
     if chirp:
-        dc["chirp"] = {"interval_s": float(chirp[1]), "direction_noise_deg": float(chirp[2]), "distance": chirp[3] is not None,
+        dc["chirp"] = {"interval_s": float(chirp[1]), "direction_noise_deg": float(chirp[2]), "heading": heading,
+                       "distance": chirp[3] is not None,
                        **({"distance_noise": float(chirp[3])} if chirp[3] else {})}
     return label, {"path": path, "decentral": dc}
 

@@ -24,7 +24,8 @@ Settings (cfg["chirp"], all off by default):
                             localization with two ears confuses front and back). 0 = never
     heading                 zero (default, the real case): the partner's heading is not heard, so D2's two
                             heading entries are 0; true: the exact partner heading is filled in at every
-                            step (a diagnostic, not something a duck could hear)
+                            step; true_held: the partner's true heading at each chirp, held until the next
+                            chirp like the direction (both are DIAGNOSTICS, not something a duck could hear)
 miss_prob and front_back_flip_prob are PLACEHOLDERS (0 = off) until measured on the real ducks.
 The two ducks' chirps are staggered: each duck's chirp times are shifted by its own random offset in
 [0, interval_s), drawn at every reset (copush.decentral.local_obs puts the heading entries in).
@@ -35,7 +36,7 @@ import math
 from typing import Dict, Tuple
 
 DUCKS = ("duck_a", "duck_b")
-HEADINGS = ("zero", "true")
+HEADINGS = ("zero", "true", "true_held")
 _EPS = 1e-9
 
 
@@ -65,6 +66,7 @@ class ChirpSensor:
         self.offset = {d: float(rng.uniform(0.0, self.interval)) for d in DUCKS}
         self.n_heard = {d: 0 for d in DUCKS}                  # scheduled chirps already heard
         self.held = {d: self._hear(st, d, rng) for d in DUCKS}   # everyone hears one at t = 0
+        self.held_heading = {d: self._heading(st, d) for d in DUCKS}
         self.last_chirp_step = {d: 0 for d in DUCKS}
         return dict(self.held)
 
@@ -80,10 +82,21 @@ class ChirpSensor:
                 continue                                       # the chirp was lost: keep the last value
             if due:
                 self.held[d] = self._hear(st, d, rng)
+                self.held_heading[d] = self._heading(st, d)
                 self.last_chirp_step[d] = self.k
         return dict(self.held)
 
+    def heading_held(self) -> Dict[str, Tuple[float, float]]:
+        """The partner's (sin, cos) heading relative to each duck at that duck's last chirp (heading: true_held)."""
+        return dict(self.held_heading)
+
     # ── one chirp ───────────────────────────────────────────────────────────
+    @staticmethod
+    def _heading(st: dict, duck: str) -> Tuple[float, float]:
+        me, mate = st[duck], st[DUCKS[1 - DUCKS.index(duck)]]
+        dh = math.atan2(math.sin(mate["yaw"] - me["yaw"]), math.cos(mate["yaw"] - me["yaw"]))
+        return (math.sin(dh), math.cos(dh))
+
     def _hear(self, st: dict, duck: str, rng) -> Tuple[float, float]:
         me = st[duck]
         mate = st[DUCKS[1 - DUCKS.index(duck)]]

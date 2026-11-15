@@ -408,6 +408,8 @@ class CoPushEnv(gym.Env):
         if self.chirp:                                    # what each duck hears of its partner
             st["chirp"] = self.chirp.reset(st, self.np_random) if prev is None else self.chirp.update(st, self.np_random)
             st["chirp_heading"] = self.chirp.heading
+            if self.chirp.heading == "true_held":
+                st["chirp_heading_held"] = self.chirp.heading_held()
         if self.vision:                                   # who sees their partner right now (copush.vision)
             st["vision"] = {d: visible(st, d, *self.vision) for d in DUCKS}
         if self.history_steps > 1:

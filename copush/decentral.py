@@ -86,7 +86,10 @@ def _one_view(st: dict, duck: str, include_partner: bool) -> np.ndarray:
         mate = st[DUCK_ORDER[1 - DUCK_ORDER.index(duck)]]
         if st.get("chirp") and not (st.get("vision") or {}).get(duck):   # chirps (copush.chirp): what this duck last
             dh = wrap_angle(mate["yaw"] - h)             # heard, in its own frame; the heading is 0 (not heard), or
-            o += [*st["chirp"][duck], *((math.sin(dh), math.cos(dh)) if st.get("chirp_heading") == "true" else (0.0, 0.0))]
+            mode = st.get("chirp_heading")               # (diagnostics) the exact one now, or the one at the last chirp
+            head = ((math.sin(dh), math.cos(dh)) if mode == "true" else
+                    st["chirp_heading_held"][duck] if mode == "true_held" else (0.0, 0.0))
+            o += [*st["chirp"][duck], *head]
         else:                                            # exact: no chirps, or the partner is in view (copush.vision)
             px, py = mate["position"]
             dh = wrap_angle(mate["yaw"] - h)
