@@ -1,100 +1,46 @@
 # Diagrams
 
-How the project fits together, in small pictures. Each is a Mermaid diagram (drawn by GitHub from the
-text below it, in a hand-drawn style). The system loop is also on the [README](../README.md).
+How the project fits together, in small pictures. Each one is an SVG in
+[docs/media/diagrams/](media/diagrams/), drawn in the style of `controllers_gamepad.svg` (cream cards, the
+cartoon duck, the gamepad with a small neural net on it). Each has a `make_<name>.py` script next to it that
+builds it, so change the script and rebuild rather than editing the SVG. The system loop is also on the
+[README](../README.md).
 
 ## 1. Central, decentralized, distilled: who sees what, who decides
 
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neutral
----
-flowchart LR
-  subgraph C["Central"]
-    direction LR
-    c1["The whole scene:<br/>both ducks, box, target"] --> c2["One brain"] --> c3["Commands for<br/>both ducks"]
-  end
-  subgraph D["Decentralized (D2)"]
-    direction LR
-    d1["Duck A's view<br/>+ where B is"] --> d2["Brain copy"] --> d3["Duck A's<br/>commands"]
-    d4["Duck B's view<br/>+ where A is"] --> d5["Same brain copy"] --> d6["Duck B's<br/>commands"]
-  end
-  subgraph S["Distilled"]
-    direction LR
-    s1["Central brain<br/>(trained first)"] -->|"teaches by example"| s2["Decentralized ducks<br/>(then keep training)"]
-  end
-```
+![Centralized: one controller drives both ducks. Distilled: small controllers copy a trained teacher. Decentralized: each duck has its own controller.](media/diagrams/controllers_gamepad.svg)
+
+One gamepad (controller) for both ducks, small gamepads that copied a trained teacher, or a gamepad in each
+duck. The pink arrow shows that, in the decentralized case, the ducks also tell each other where they are.
 
 ## 2. The training loop: how the reward changes the network
 
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neutral
----
-flowchart LR
-  A["The network picks a speed<br/>and a turn for each duck<br/>(random weights at first)"] --> B["The ducks try it in the<br/>simulator, up to 100 steps"]
-  B --> C["After every step: reward<br/>box closer? box turned right?<br/>a duck fell?"]
-  C --> D["PPO nudges the weights:<br/>do more of what scored well"]
-  D --> A
-```
+![The training loop: the network picks speed and turn, the ducks try it in the simulator, a try ends in a reward (plus 10 for the box in the target) or a penalty (minus 10 when a duck falls), and PPO nudges the weights; then it repeats.](media/diagrams/training_loop.svg)
 
-## 3. The curriculum ladder: from easy starts to the full task
+The network starts with random (or copied) weights. Each try ends either well (a reward, for example +10 when
+the box reaches the target) or badly (a penalty, for example -10 when a duck falls), and PPO nudges the
+weights toward what scored well. Built by [make_training_loop.py](media/diagrams/make_training_loop.py).
 
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neutral
----
-flowchart LR
-  L1["1. Fixed start<br/>(done)"] --> L2["2. Random box pose<br/>stage 1 (done)"]
-  L2 --> L3a["3a. Steering<br/>turn the box either way<br/>(in progress)"]
-  L2 --> L3b["3b. Rendezvous<br/>ducks start apart<br/>(starting)"]
-  L3a --> L4["4. One combined<br/>curriculum"]
-  L3b --> L4
-  L4 --> L5["5. Full task<br/>ducks and box start anywhere,<br/>any angle"]
-  L5 --> L6["6. Distill into per-duck<br/>controllers, compare with<br/>D2 from scratch"]
-```
+## 3. The ladder for the decentralized ducks: from exact partner info to realistic sensing
+
+![The decentralized ladder: retrain with chirps, missed and flipped chirps, random box mass, ducks start apart, vision with the box blocking the view, then distill the combined central teacher.](media/diagrams/curriculum_ladder.svg)
+
+The order of work for the decentralized track (see [ROADMAP.md](../ROADMAP.md)). The central track (steering and
+rendezvous) trains the teacher that step 6 copies into these ducks. Built by
+[make_curriculum.py](media/diagrams/make_curriculum.py).
 
 ## 4. The chirp experiment: what each duck knows, and when
 
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neutral
----
-flowchart LR
-  subgraph T["D2 today"]
-    direction TB
-    t1["Partner's exact position<br/>and heading<br/>every 0.2 s"]
-  end
-  subgraph K["With chirps (planned)"]
-    direction TB
-    k1["Every few seconds,<br/>the partner chirps"] --> k2["A rough direction<br/>(tens of degrees off),<br/>maybe a rough distance"]
-    k2 --> k3["Held until the next chirp.<br/>Heading is not heard."]
-  end
-  A["Always known, both cases:<br/>box, target, own speed"] --- T
-  A --- K
-```
+![The chirp experiment: D2 knows its partner's exact position and heading every 0.2 s; with chirps a duck hears a rough direction every few seconds and holds it until the next chirp.](media/diagrams/chirp_experiment.svg)
+
+Today a duck knows its partner's exact position and heading all the time. With chirps it hears a rough
+direction every few seconds and keeps it until the next chirp, and the two ducks chirp at different times.
+Built by [make_chirps.py](media/diagrams/make_chirps.py).
 
 ## 5. Data flow: from settings to results
 
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neutral
----
-flowchart LR
-  cfg["Config file<br/>(every setting)"] --> q["Training queue<br/>(one run after another)"]
-  q --> runs["runs/<br/>checkpoints, videos, logs<br/>(kept out of git)"]
-  runs --> ev["Test on the<br/>50-start test set"]
-  ts["Test sets<br/>(never trained on)"] --> ev
-  ev --> res["Results in the<br/>experiment folder"]
-  res --> docs["README, ROADMAP<br/>and timeline"]
-```
+![Data flow: config file, training queue, runs folder, test set, then results and docs.](media/diagrams/data_flow.svg)
+
+Every setting lives in a config file. The queue trains one run after another into the `runs` folder (kept out
+of git), each policy is tested on the 50-start test set it never trained on, and the results go in the
+experiment folder and the docs. Built by [make_data_flow.py](media/diagrams/make_data_flow.py).

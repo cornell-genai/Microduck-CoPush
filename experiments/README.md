@@ -4,9 +4,9 @@ One folder per stage, each changing ONE thing from the stage before. Every stage
 set of 50 starts the policy never trained on ([test_sets/](test_sets/)), so any policy can be scored on
 any earlier stage's test.
 
-The project overview is the [main README](../README.md). How the stages build on each other:
-[curriculum ladder](../docs/DIAGRAMS.md#3-the-curriculum-ladder-from-easy-starts-to-the-full-task). What
-the score means: the [reward function table](../README.md#the-reward-function).
+The project overview is the [main README](../README.md). The order of work for the decentralized ducks:
+[the ladder](../docs/DIAGRAMS.md#3-the-ladder-for-the-decentralized-ducks-from-exact-partner-info-to-realistic-sensing).
+What the score means: the [reward function table](../README.md#the-reward-function).
 
 ## Finished stages
 
