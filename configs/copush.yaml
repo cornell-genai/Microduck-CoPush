@@ -136,6 +136,12 @@ chirp:                      # copush.chirp: partner sensing by chirps (decentral
   front_back_flip_prob: 0.0 # chance a heard chirp's direction is mirrored front to back. PLACEHOLDER until measured on real ducks; 0 = never
   heading: zero             # zero: the partner's heading is not heard (0 in the observation); true: the exact heading every step; true_held: the true heading at each chirp, held like the direction (both diagnostic only)
 
+start_noise:                # copush.env: noise on the in-contact start (all 0 = off: the exact placement); clipped at 3x std
+  duck_heading_std_deg: 0.0 # each duck's starting heading, independently (on: 5)
+  duck_spacing_std_m: 0.0   # the distance between the ducks (on: 0.02)
+  duck_setback_std_m: 0.0   # each duck's distance behind the box (on: 0.01)
+  max_resamples: 20         # starts where a duck overlaps the box or the other duck, or is not upright after settling, are redrawn
+
 obs:                        # what the controller sees (copush.env, copush.decentral)
   history_steps: 1          # stack the last N observations, newest first (1 = just the current one: the old behavior)
 
