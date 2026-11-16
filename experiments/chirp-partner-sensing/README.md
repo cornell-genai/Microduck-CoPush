@@ -15,6 +15,10 @@ decentralized control still work with that?
 
 ## The chirp observation
 
+![What each duck knows about its partner, and when: D2 knows the exact position and heading every 0.2 s; with chirps a duck hears a rough direction every few seconds and holds it until the next chirp](chirp_experiment.svg)
+
+*The diagram: [make_chirp_experiment.py](make_chirp_experiment.py), in the style of [docs/DIAGRAMS.md](../../docs/DIAGRAMS.md).*
+
 Code: [copush/chirp.py](../../copush/chirp.py); tests: [tests/test_chirp.py](../../tests/test_chirp.py).
 Everything is a config setting under `chirp:` in [configs/copush.yaml](../../configs/copush.yaml), off by
 default (so every earlier config behaves as before).

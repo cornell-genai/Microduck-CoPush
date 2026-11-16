@@ -29,15 +29,10 @@ The order of work for the decentralized track (see [ROADMAP.md](../ROADMAP.md)).
 rendezvous) trains the teacher that step 6 copies into these ducks. Built by
 [make_curriculum.py](media/diagrams/make_curriculum.py).
 
-## 4. The chirp experiment: what each duck knows, and when
+Partner sensing by chirps: tested, no measurable effect when ducks start side by side (details in
+[experiments/chirp-partner-sensing/](../experiments/chirp-partner-sensing/README.md)).
 
-![The chirp experiment: D2 knows its partner's exact position and heading every 0.2 s; with chirps a duck hears a rough direction every few seconds and holds it until the next chirp.](media/diagrams/chirp_experiment.svg)
-
-Today a duck knows its partner's exact position and heading all the time. With chirps it hears a rough
-direction every few seconds and keeps it until the next chirp, and the two ducks chirp at different times.
-Built by [make_chirps.py](media/diagrams/make_chirps.py).
-
-## 5. Data flow: from settings to results
+## 4. Data flow: from settings to results
 
 ![Data flow: config file, training queue, runs folder, test set, then results and docs.](media/diagrams/data_flow.svg)
 
