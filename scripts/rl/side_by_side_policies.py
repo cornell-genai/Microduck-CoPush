@@ -8,7 +8,7 @@
         --out experiments/chirp-partner-sensing/finetune-2s-30deg/results
 
 A spec is label=path@partner or @own, optionally followed by @chirp:<interval_s>:<direction_noise_deg>[:<distance_noise>]
-and @trueheading or @heldheading (as in scripts/rl/compare_policies.py). The outcome of each episode is written under its label. Writes
+and @trueheading or @heldheading, and a last @standstill (as in scripts/rl/compare_policies.py). The outcome of each episode is written under its label. Writes
 <out>/start<N>_side_by_side.gif and .mp4 (GIF under 1 MB).
 """
 from __future__ import annotations
@@ -28,6 +28,9 @@ FONT = "/System/Library/Fonts/Supplemental/Arial.ttf"
 
 def parse(spec: str):
     label, path = spec.split("=", 1)
+    stand = path.endswith("@standstill")
+    if stand:
+        path = path[: -len("@standstill")]
     heading = "zero"
     for tag, mode in (("@trueheading", "true"), ("@heldheading", "true_held")):
         if path.endswith(tag):
@@ -42,7 +45,7 @@ def parse(spec: str):
         dc["chirp"] = {"interval_s": float(chirp[1]), "direction_noise_deg": float(chirp[2]), "heading": heading,
                        "distance": chirp[3] is not None,
                        **({"distance_noise": float(chirp[3])} if chirp[3] else {})}
-    return label, {"path": path, "decentral": dc}
+    return label, {"path": path, "decentral": dc, "standstill": stand}
 
 
 def main() -> int:
@@ -69,6 +72,8 @@ def main() -> int:
         cfg = dict(cfg0)
         if "chirp" in pol["decentral"]:
             cfg["chirp"] = {**cfg0["chirp"], "enabled": True, **pol["decentral"]["chirp"]}
+        if pol["standstill"]:
+            cfg["env"] = {**cfg0["env"], "stand_still": {**cfg0["env"]["stand_still"], "enabled": True}}
         env = CoPushEnv(cfg, split="eval")
         act = make_act_factory(label, pol)(env, seed)
         mp4 = os.path.join(out, f"start{a.start:02d}_{i}.mp4")
