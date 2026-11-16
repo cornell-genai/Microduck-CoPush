@@ -1,0 +1,26 @@
+# A larger held-out set of stage 1 starts, for evaluation ONLY (never trained on, never used for early stopping):
+#
+#   scripts/rl.sh scripts/rl/test_set.py make --config experiments/chirp-partner-sensing/large-eval/config.yaml   # once
+#   experiments/chirp-partner-sensing/large-eval/run.sh                                                           # evaluate
+#
+# 200 starts over stage 1's FULL box range (the same sampler as the 50-start sets: a Latin hypercube per axis, so the
+# box angle is spread evenly, one start in each of 200 equal slices of the +-45 deg range, and the same for the offsets),
+# with its own RNG seed, separate from the test set (stage1.json, 20261112) and the check set (stage1_checks.json).
+# Resolved config = base < reference < overrides, as in experiments/stage1-random-box-pose/config.yaml (no training here).
+name: stage1-large-heldout
+change: evaluation set of 200 stage 1 starts (no training)
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+out: runs/chirp-partner-sensing/large-eval            # unused: nothing is trained
+results: experiments/chirp-partner-sensing/large-eval/results
+test_set: experiments/test_sets/stage1_large.json
+
+overrides:
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}     # stage 1's FINAL range
+
+test:
+  n: 200
+  rng_seed: 20261115                                  # used once by `test_set.py make`; the file is then fixed
+  controllers: []
+  policies: {}
