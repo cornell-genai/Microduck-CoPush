@@ -46,10 +46,16 @@ angle, and the ducks walk to the box and push it into the target together.
   old behavior, so earlier configs reproduce.
 - **Warm start from the released policies:** `scripts/get_policies.sh` puts them in `runs/` where
   the configs expect them.
-- **Test on the shared 50-start test sets** in `experiments/test_sets/` (never trained on). Training
-  checks and early stopping use the separate check sets (`*_checks.json`), never the test set.
+- **Test on held-out starts** in `experiments/test_sets/` (never trained on). Training checks and early
+  stopping use the separate check sets (`*_checks.json`), never the test sets.
+- **Evaluation size.** Quick checks while working may use the 50-start sets. **Any result that goes in a
+  README, a PR or a decision uses `stage1_large.json` (or a 200-start set made for that stage) with 95%
+  confidence intervals.** A rate on 50 starts is only good to about +-13 points, which is how a
+  14-point gap between two policies turned out to be noise. **A difference inside the intervals is "no
+  measurable difference"**, and say so.
 - **Report success overall and per difficulty** (for example the box angle sides), with the number
-  of episodes and seeds.
+  of episodes, the 95% interval and the number of seeds. Keep superseded numbers visible, marked with
+  their size (for example "50-start, superseded").
 - **Never overstate.** One seed is preliminary; a difference inside the spread across seeds is "no
   measurable effect"; compare by success rate, not return, when rewards differ.
 
@@ -74,7 +80,7 @@ angle, and the ducks walk to the box and push it into the target together.
 
 ## Report after each run
 
-1. Test-set success against the previous policy, overall and per difficulty.
+1. Test-set success (200 starts, 95% intervals) against the previous policy, overall and per difficulty.
 2. Forgetting check: the new policy on earlier stages' test sets (at least stage 1).
 3. Falls, box lost, overshoots, and push share (is one duck doing all the work?).
 4. One success video and one failure video (paths).

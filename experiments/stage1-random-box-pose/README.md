@@ -2,6 +2,11 @@
 
 **Status:** done (2026-11-12). Trained 980k steps (early stop), 66 min.
 
+**Result (200 held-out starts, 95% interval, 2026-11-15): 58% (51 to 65).** 01_reference gets 50% (44 to 57), the best script
+(pivot_push) 38% (32 to 45); stage 1 beats 01_reference by +7.5 points (+1.8 to +13.2). Blind spot: a box turned more than
+15 degrees the positive way, 5% (2 to 13), against 81% (70 to 88) on the negative side. *Original 50-start numbers, superseded:
+60%, 50%, 32%, 2 of 17.* Re-evaluation: [../stage1-reevaluation/](../stage1-reevaluation/README.md).
+
 ## Goal and the one change
 
 01_reference always starts from the same box pose. This stage asks whether it can push the box
@@ -46,7 +51,12 @@ The range reached its maximum at step 80k. After that, the full-range checks sta
 75% for 800k steps, and the early stop fired on a streak of noisy checks. Full history:
 [results/training.json](results/training.json).
 
-## Test set (50 fixed held-out starts)
+## Test set (50 fixed held-out starts, superseded by 200 starts)
+
+> A rate on 50 starts is good to only about +-13 points. On the 200-start set
+> ([../test_sets/stage1_large.json](../test_sets/stage1_large.json)) the same controllers get, with 95% intervals:
+> 01_reference 50% (44 to 57), **stage 1 58% (51 to 65)**, pivot_push 38% (32 to 45), push_steer 20% (15 to 26). The ordering
+> holds; see [../stage1-reevaluation/](../stage1-reevaluation/README.md). The numbers below are the 50-start originals.
 
 The starts are in [../test_sets/stage1.json](../test_sets/stage1.json). They're drawn from the final range by
 Latin hypercube sampling, so each axis is evenly covered. A plain uniform draw put 28 of 50
@@ -73,7 +83,8 @@ pivot_push it's 17 against 3.
 - **One turning direction.** Box turned more than 15° clockwise (negative angle): stage 1 wins 15/17. Turned the
   other way: 2/17 (+15 to +30°: 2/8; +30 to +45°: 0/9). 01_reference has the same split
   (10/17 against 1/17), so stage 1 inherited this blind spot and fixed the easier half only. Offset size
-  barely matters.
+  barely matters. (50-start counts; on 200 starts: 81% (70 to 88) on the negative side and 5% (2 to 13) on the
+  positive long-turn side for stage 1, 64% and 6% for 01_reference. The split is real.)
 - **Overshoot.** 11 of the 20 failures end 1.1 to 1.5 m from the target, farther than the
   starting distance (about 0.7 m). The box is pushed past the target or swings away rather than stalling.
   In the failure clip (start 49, +38°), stage 1 gets the box within 0.28 m of the target at 8 s with 12° of yaw
