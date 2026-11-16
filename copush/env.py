@@ -64,10 +64,12 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
+from copush.chirp import ChirpSensor
 from copush.config import effective_reward, load_config
 from copush.rewards import TERMS, RewardMonitor, StepSummary, TaskReward, balance
-from copush.sim import CONTROL_DT, DUCKS, CoPushSim
+from copush.sim import BOX_HALF, CONTROL_DT, DUCKS, CoPushSim
 from copush.state import wrap_angle
+from copush.vision import visible
 
 VX_MAX, VYAW_MAX = 0.3, 1.5
 SWITCH_WINDOW_S = 1.0
@@ -110,6 +112,10 @@ class CoPushEnv(gym.Env):
         self.task = TaskReward(self.rcfg)
         self.sim = CoPushSim(self.cfg)                       # shares self.cfg (randomize edits its box)
         self.box0 = dict(self.cfg["box"])
+        mr = self.cfg["box"].get("mass_range")                # randomized box mass (each reset), or None
+        self.mass_range = None if mr is None else (float(mr[0]), float(mr[1]))
+        if self.mass_range and not 0 < self.mass_range[0] <= self.mass_range[1]:
+            raise ValueError(f"box.mass_range must be [lo, hi] with 0 < lo <= hi, got {mr!r}")
         self.target0 = dict(self.cfg["target"])
         self.curriculum_level = 0
         self.box_scale = float(self.ecfg["box_start"]["scale"])
@@ -120,7 +126,11 @@ class CoPushEnv(gym.Env):
         self.split = split
         self.heldout = tuple(self.ecfg["heldout_seeds"])
         self.action_space = spaces.Box(-1.0, 1.0, shape=(4,), dtype=np.float32)
-        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(len(OBS_NAMES),), dtype=np.float32)
+        self.history_steps = int((self.cfg.get("obs") or {}).get("history_steps", 1))   # observations stacked, newest first
+        if self.history_steps < 1:
+            raise ValueError(f"obs.history_steps must be at least 1, got {self.history_steps}")
+        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(len(OBS_NAMES) * self.history_steps,),
+                                            dtype=np.float32)
         self.monitor = RewardMonitor()
         self.episode = 0
         self.log_dir = log_dir
@@ -131,6 +141,14 @@ class CoPushEnv(gym.Env):
             self._csv = csv.DictWriter(self._csv_file, fieldnames=LOG_COLUMNS)
             self._csv.writeheader()
             self._events = open(os.path.join(log_dir, "events.log"), "w")
+        self.chirp = ChirpSensor(self.cfg["chirp"], self.dt) if self.cfg.get("chirp", {}).get("enabled") else None
+        vis = self.cfg.get("vision") or {}
+        if vis.get("occlusion") and not vis.get("enabled"):
+            raise ValueError("vision.occlusion needs vision.enabled")
+        self.vision = ((float(vis["fov_deg"]), float(vis["range_m"]), BOX_HALF[:2] if vis.get("occlusion") else None)
+                       if vis.get("enabled") else None)
+        if self.vision and not self.chirp:
+            raise ValueError("vision.enabled needs chirp.enabled: out of view, a duck falls back to its last chirp")
         self.state = None
         self.frame_hook = None          # callable(state, return_so_far) after every control step (videos)
         self.hold = {d: False for d in DUCKS}
@@ -204,6 +222,8 @@ class CoPushEnv(gym.Env):
         else:
             box.update({k: self.box0[k] for k in ("x", "y", "yaw")})
             self.sim.set_box_mass(self.box0["mass"])
+        if self.mass_range:                               # a different box mass every episode (seeded by reset)
+            self.sim.set_box_mass(float(self.np_random.uniform(*self.mass_range)))
         if self.start_mode == "in_contact":
             self._place_in_contact()
             self.sim.reset()
@@ -214,6 +234,7 @@ class CoPushEnv(gym.Env):
         else:
             st = self.sim.reset()
         self.state = st
+        self._sense(st, None)
         self.sim.pop_events()
         self.monitor.reset()
         self._close_switches(only_done=False)             # windows cut short by the reset
@@ -232,7 +253,7 @@ class CoPushEnv(gym.Env):
                       "min_dist": st["box_to_target"], "start_dist": st["box_to_target"], "flags": []}
         self._event(0.0, "reset", f"episode {self.episode} box=({box['x']:.3f},{box['y']:.3f},"
                                   f"{box['yaw']:.1f}deg,{box['mass']:.3f}kg) seed={seed}")
-        return self._obs(st), {"box": dict(box), "target": dict(self.cfg["target"])}
+        return self._stacked_obs(st), {"box": dict(box), "target": dict(self.cfg["target"])}
 
     def set_hold(self, duck: str, on: bool) -> None:
         """on: keep `duck` on velstand (switching now if needed); off: automatic switching again."""
@@ -344,6 +365,7 @@ class CoPushEnv(gym.Env):
         if truncated:
             reason = "timeout"
         self.state = st
+        self._sense(st, st0)
         b = balance(push["duck_a"], push["duck_b"])
 
         s = self.stats
@@ -376,9 +398,36 @@ class CoPushEnv(gym.Env):
                 "final_dist": st["box_to_target"], "min_dist": s["min_dist"],
                 "final_yaw_deg": math.degrees(st["yaw_error"]), "flags": list(s["flags"])}
         self._log_row(action, terms, reward, st, b, push, force, ctime, reason, flags)
-        return self._obs(st), reward, terminated, truncated, info
+        return self._stacked_obs(st), reward, terminated, truncated, info
 
     # ── observation ─────────────────────────────────────────────────────────
+    def _sense(self, st: dict, prev) -> None:
+        """What the controller senses beyond the exact state, added to the state dict (the decentral observations
+        read it from there): chirps (copush.chirp), vision (copush.vision) and, with obs.history_steps > 1, the last steps' states
+        (st["history"], newest first, without their own history). prev is the previous step's state, None at reset."""
+        if self.chirp:                                    # what each duck hears of its partner
+            st["chirp"] = self.chirp.reset(st, self.np_random) if prev is None else self.chirp.update(st, self.np_random)
+            st["chirp_heading"] = self.chirp.heading
+            if self.chirp.heading == "true_held":
+                st["chirp_heading_held"] = self.chirp.heading_held()
+        if self.vision:                                   # who sees their partner right now (copush.vision)
+            st["vision"] = {d: visible(st, d, *self.vision) for d in DUCKS}
+        if self.history_steps > 1:
+            if prev is None:
+                self._past = []
+            else:
+                self._past = ([{k: v for k, v in prev.items() if k != "history"}] + self._past)[: self.history_steps - 1]
+            st["history"] = list(self._past)
+            st["history_n"] = self.history_steps
+
+    def _stacked_obs(self, st: dict) -> np.ndarray:
+        """The central observation, stacked over obs.history_steps (newest first; the oldest repeats at the start)."""
+        if self.history_steps == 1:
+            return self._obs(st)
+        past = st.get("history", [])
+        states = [st] + past + [past[-1] if past else st] * (self.history_steps - 1 - len(past))
+        return np.concatenate([self._obs(s) for s in states])
+
     def _obs(self, st: dict) -> np.ndarray:
         g = st["goal"]
         gx, gy = g["position"]

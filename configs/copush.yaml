@@ -19,6 +19,7 @@ box:                        # 28 x 10 x 9 cm, free joint (the Shoe Push box)
   y: 0.0
   yaw: 90                   # 90 = long 28 cm face toward ducks that face +x
   mass: 0.15                # kg
+  mass_range: null          # [lo, hi] kg: each episode draws the box mass uniformly from it (off when null). PLACEHOLDER, e.g. [0.10, 0.25]; set from the real box
 
 target:                     # flat, visual only (no collision)
   x: 1.20
@@ -123,6 +124,26 @@ video:                      # copush.video: episode videos (runs/<run_id>/videos
 controller:                 # who picks the commands (copush.decentral); training, checks and videos follow it
   mode: central             # central: one policy for both ducks; decentral: each duck runs the shared policy on its own view
   include_partner: true     # decentral only: the partner's position and heading in each duck's view (D2; false = D1)
+
+chirp:                      # copush.chirp: partner sensing by chirps (decentral controller with include_partner)
+  enabled: false            # on: a duck hears a noisy direction to its partner once per chirp, not its exact position and heading
+  interval_s: 2.0           # seconds between one duck's chirps (the two ducks' chirps are staggered at random)
+  direction_noise_deg: 30.0 # standard deviation of the bearing error
+  distance: false           # on: each chirp also carries a rough distance; off: no distance is heard
+  distance_noise: 0.3       # standard deviation of the relative distance error (0.3 = 30%)
+  nominal_distance_m: 0.20  # the length of the partner vector when distance is off (the ducks start 0.20 m apart)
+  miss_prob: 0.0            # chance a scheduled chirp is lost (the duck keeps its last one). PLACEHOLDER until measured on real ducks; 0 = never
+  front_back_flip_prob: 0.0 # chance a heard chirp's direction is mirrored front to back. PLACEHOLDER until measured on real ducks; 0 = never
+  heading: zero             # zero: the partner's heading is not heard (0 in the observation); true: the exact heading every step; true_held: the true heading at each chirp, held like the direction (both diagnostic only)
+
+obs:                        # what the controller sees (copush.env, copush.decentral)
+  history_steps: 1          # stack the last N observations, newest first (1 = just the current one: the old behavior)
+
+vision:                     # copush.vision: partner info only while the partner is in the duck's front camera view (needs chirp.enabled)
+  enabled: false            # in view: the exact partner position and heading; out of view: the last chirp
+  fov_deg: 120.0            # PLACEHOLDER until measured on the real camera: full field of view, centered on the duck's heading
+  range_m: 0.8              # PLACEHOLDER until measured on the real camera: how far the camera sees the partner
+  occlusion: false          # on: the box also blocks the view (the partner is hidden when the line of sight crosses the box); needs enabled
 
 rl:                         # copush.rl_callbacks.VideoEvalCallback (PPO, later)
   eval_every: 10000         # training steps between evaluation episodes

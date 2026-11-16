@@ -27,7 +27,7 @@ POLICY_NAMES = ("velstand", "shoepush")
 DEFAULTS = {
     "duck_a": {"x": 0.0, "y": 0.10, "yaw": 0.0, "policy": "velstand"},
     "duck_b": {"x": 0.0, "y": -0.10, "yaw": 0.0, "policy": "velstand"},
-    "box": {"x": 0.35, "y": 0.0, "yaw": 90.0, "mass": 0.15},
+    "box": {"x": 0.35, "y": 0.0, "yaw": 90.0, "mass": 0.15, "mass_range": None},
     "target": {"x": 1.20, "y": 0.0, "yaw": 90.0, "size": [0.40, 0.20]},
     "policies": {"velstand": "data/policies/velstand_v8/velstand.onnx",
                  "shoepush": "data/policies/robert/shoe_push/forward/policy.onnx"},
@@ -63,6 +63,11 @@ DEFAULTS = {
             "ent_coef": 0.01, "seed": 0},
     "video": {"width": 480, "height": 270, "fps": 25, "speedup": 2},
     "rl": {"eval_every": 10000, "eval_seed": 10000, "improve_margin": 2.0},
+    "chirp": {"enabled": False, "interval_s": 2.0, "direction_noise_deg": 30.0, "distance": False,
+              "distance_noise": 0.3, "nominal_distance_m": 0.20, "heading": "zero",
+              "miss_prob": 0.0, "front_back_flip_prob": 0.0},
+    "obs": {"history_steps": 1},
+    "vision": {"enabled": False, "fov_deg": 120.0, "range_m": 0.8, "occlusion": False},
 }
 FALL_MODES = ("terminate", "continuous")
 COOPERATION_MODES = ("none", "gated_balanced")

@@ -13,6 +13,10 @@ its heading, y to its left):
     (forward, left; 2), touching the box (1), on Shoe Push (1)
     partner (include_partner): partner position relative to this duck (2), partner heading
     relative to this duck's as sin/cos (2)
+    with chirps on (config chirp.enabled, copush.chirp) the partner position is the last chirp's noisy
+    direction and distance instead, and the heading entries are 0: same size, so a D2 policy can be reused;
+    with vision on (copush.vision) the exact entries are used while the partner is in the duck's camera view
+    obs.history_steps = N stacks the views of the last N steps, newest first
 Action of one duck: [vx, vyaw] in [-1, 1], mapped exactly like that duck's half of the central action
 (copush.env.action_to_cmd). Both ducks get the team reward and the same episode endings.
 
@@ -50,7 +54,18 @@ def local_names(include_partner: bool) -> list:
 
 
 def local_obs(st: dict, duck: str, include_partner: bool) -> np.ndarray:
-    """One duck's view of the state dict (CoPushEnv.state), in its own frame."""
+    """One duck's view of the state dict (CoPushEnv.state), in its own frame. With obs.history_steps > 1 the env
+    puts the last steps' states in st["history"], and the views of the last N steps are stacked, newest first
+    (the oldest repeats at the start of an episode)."""
+    n = st.get("history_n", 1)
+    if n == 1:
+        return _one_view(st, duck, include_partner)
+    past = st.get("history", [])
+    states = [st] + past + [past[-1] if past else st] * (n - 1 - len(past))
+    return np.concatenate([_one_view(s, duck, include_partner) for s in states])
+
+
+def _one_view(st: dict, duck: str, include_partner: bool) -> np.ndarray:
     me = st[duck]
     h = me["yaw"]
     c, s = math.cos(h), math.sin(h)
@@ -69,9 +84,16 @@ def local_obs(st: dict, duck: str, include_partner: bool) -> np.ndarray:
          *tf(*me["velocity"]), float(st["contact"][duck]["in_contact"]), float(me["policy"] == "shoepush")]
     if include_partner:
         mate = st[DUCK_ORDER[1 - DUCK_ORDER.index(duck)]]
-        px, py = mate["position"]
-        dh = wrap_angle(mate["yaw"] - h)
-        o += [*tf(px - mx, py - my), math.sin(dh), math.cos(dh)]
+        if st.get("chirp") and not (st.get("vision") or {}).get(duck):   # chirps (copush.chirp): what this duck last
+            dh = wrap_angle(mate["yaw"] - h)             # heard, in its own frame; the heading is 0 (not heard), or
+            mode = st.get("chirp_heading")               # (diagnostics) the exact one now, or the one at the last chirp
+            head = ((math.sin(dh), math.cos(dh)) if mode == "true" else
+                    st["chirp_heading_held"][duck] if mode == "true_held" else (0.0, 0.0))
+            o += [*st["chirp"][duck], *head]
+        else:                                            # exact: no chirps, or the partner is in view (copush.vision)
+            px, py = mate["position"]
+            dh = wrap_angle(mate["yaw"] - h)
+            o += [*tf(px - mx, py - my), math.sin(dh), math.cos(dh)]
     return np.asarray(o, dtype=np.float32)
 
 
@@ -122,7 +144,7 @@ class DuckPairEnv(gym.Env):
         super().__init__()
         self.env = CoPushEnv(cfg, split=split)
         self.include_partner = include_partner
-        n = len(local_names(include_partner))
+        n = len(local_names(include_partner)) * self.env.history_steps
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(2, n), dtype=np.float32)
         self.action_space = spaces.Box(-1.0, 1.0, shape=(2, 2), dtype=np.float32)
 
