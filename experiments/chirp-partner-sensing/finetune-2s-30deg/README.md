@@ -56,8 +56,10 @@ The same policy with the chirp information changed ([run_ablation.sh](run_ablati
 - **But chirps add little over no partner info:** with perfect direction, even every step, it reaches only
   64 to 66%, inside the error of D1's 60%. A partner direction without the partner's heading is worth about
   +5 points over knowing nothing, and D2's 74% needs more than that.
-- **The missing heading looks like the rest:** the exact partner position every step gets 64%, 10 points below
+- **The missing heading looked like the rest:** the exact partner position every step gets 64%, 10 points below
   D2 exact (74%); the zero-shot diagnostic gave the same message (true heading restored 20 to 32 points).
+  *Update: on 200 new starts the heading adds nothing measurable to the fine-tuned policies, and D2 exact is only
+  about 3 points above them; see [../large-eval/README.md](../large-eval/README.md).*
 
 ## Clip
 

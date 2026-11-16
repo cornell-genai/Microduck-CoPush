@@ -36,6 +36,10 @@ heading-removed runs both overshoot 10 to 11 times and time out 16 to 17 times, 
 
 ## Read
 
+> **Superseded by the 200-start evaluation ([../large-eval/README.md](../large-eval/README.md)):** on 200 new starts the
+> heading effect on success does not hold (Run 1 64% against 63% and 63%). The read below, written from 50 starts, is kept
+> as it was written.
+
 By the rule set before the runs: **Run 1 is near D2 (72% against 74%) and Run 2 is near Part 2 (62% against 60%), so
 the partner heading looks like the bottleneck**, and the seed matters little (2 points between seeds).
 

@@ -1,10 +1,10 @@
 # Chirp partner sensing: can two ducks cooperate when they only hear each other?
 
-**Status:** Parts 1 and 2 and two diagnostic runs done (2026-11-15). The chirp observation is built and tested, and
-Part 2 fine-tuned D2 with chirps: **60% on the stage 1 test set (seed 2: 62%), the same as D1 (no partner info),
-against 74% for D2 with exact info.** Adding the partner's true heading (a diagnostic) gives 72%, so the heading looks
-like the bottleneck, but on 50 starts and one run each that is suggestive, not established. Part 3 (sweep) and step 2
-(missed chirps) not started; see the proposal below.
+**Status:** Parts 1 and 2, two diagnostic runs and a 200-start evaluation done (2026-11-15). The chirp observation is
+built and tested, and Part 2 fine-tuned D2 with chirps. **On 200 held-out starts, chirps (63%, both seeds), the true-heading
+diagnostic (64%), D1 with no partner info (64%) and D2 with exact info (66%) are all the same within the noise (about +-6
+points).** The apparent heading effect on the 50-start test set (72% against 60%) was noise; the heading only changes how
+much the ducks idle. Part 3 (sweep) and step 2 (missed chirps) not started; see the proposal below.
 
 ## The question
 
@@ -83,11 +83,35 @@ All "placeholder" values are made up until measured on the real ducks. Code: `co
 | [visibility-check/](visibility-check/) | how often each duck sees its partner (front camera, no training) | done: under 10% |
 | [finetune-true-heading/](finetune-true-heading/) | Run 1, DIAGNOSTIC: Part 2 plus the partner's true heading at each chirp | done: 72% |
 | [finetune-2s-30deg-seed2/](finetune-2s-30deg-seed2/) | Run 2: Part 2 repeated with seed 2 | done: 62% |
-| [diagnostics/](diagnostics/) | the five-way comparison of these runs, the read and the clip | done |
+| [diagnostics/](diagnostics/) | the five-way comparison of these runs on the 50-start test set, the read (superseded) and the clip | done |
+| [large-eval/](large-eval/) | the same five policies on 200 new held-out starts, with 95% intervals and paired tests (no training) | done: no heading effect |
 
 ## Results so far
 
-Stage 1 test set, 50 starts (a rate has a standard error of about 7 points, one seed):
+**Main evidence: 200 new held-out starts, 95% intervals** ([large-eval/README.md](large-eval/README.md); the set is
+`experiments/test_sets/stage1_large.json`, even in box angle, separate from the test and check sets):
+
+| policy | success (200 starts) | < -15 deg | -15 to +15 deg | > +15 deg | idle share |
+|---|---|---|---|---|---|
+| D2, exact partner info | **66%** (60 to 73) | 97% | 87% | 15% | 15% |
+| D1, own view only | **64%** (57 to 70) | 96% | 87% | 9% | 21% |
+| Part 2, chirps, seed 1 | **63%** (56 to 69) | 97% | 81% | 11% | 26% |
+| Part 2 repeated, seed 2 | **63%** (56 to 69) | 96% | 87% | 6% | 20% |
+| Chirps + true heading (DIAGNOSTIC) | **64%** (57 to 70) | 94% | 87% | 9% | 13% |
+
+- **No measurable differences in success.** Chirps against D1: -1 point (interval -6 to +4). D2 with exact info against
+  chirps: +3.5 points (interval about -1.5 to +8.5). The true heading against the two heading-removed runs:
+  **+0.5 points (-3.6 to +4.6)**, so the heading is not what separates the chirp policy from D2, and the two seeds agree
+  (63% and 63%).
+- **The 50-start numbers were noise.** On the 50-start test set the same policies read 74% (D2), 60% (D1), 60% and 62%
+  (chirps) and 72% (true heading); a rate on 50 starts has an interval of about +-13 points. The zero-shot rows below are
+  on that set and carry the same caveat.
+- **The heading does change style:** the idle share is 13% with the true heading, 20 to 26% without (intervals about +-2).
+- **Where all of them lose:** the long-turn side (box turned more than +15 degrees), 4 to 15%.
+- **Partner info is not what limits stage 1:** D1, with none, is at 64%. Realistic sensing needs a setup where partner
+  info matters (ducks starting apart) before differences can be measured.
+
+Earlier results on the 50-start stage 1 test set (a rate has a standard error of about 7 points, one run each):
 
 | policy | success | < -15 deg | -15 to +15 | > +15 deg |
 |---|---|---|---|---|
@@ -95,37 +119,28 @@ Stage 1 test set, 50 starts (a rate has a standard error of about 7 points, one 
 | D1, own view only | **60%** | 15/17 | 14/16 | 1/17 |
 | D2 with chirps, zero-shot (heading zeroed) | 34% | 6/17 | 9/16 | 2/17 |
 | D2 with chirps, zero-shot, true heading filled in (diagnostic) | 62% | 17/17 | 14/16 | 0/17 |
-| **D2 fine-tuned with chirps (Part 2, seed 1)** | **60%** | 15/17 | 12/16 | 3/17 |
+| D2 fine-tuned with chirps (Part 2, seed 1) | 60% | 15/17 | 12/16 | 3/17 |
 | D2 fine-tuned with chirps, seed 2 (Run 2) | 62% | 17/17 | 13/16 | 1/17 |
-| **Chirps + true partner heading (Run 1, DIAGNOSTIC)** | **72%** | 16/17 | 15/16 | 5/17 |
+| Chirps + true partner heading (Run 1, DIAGNOSTIC) | 72% | 16/17 | 15/16 | 5/17 |
 
-- **Part 2 lands at D1's level:** chirps (every 2 s, 30 degrees off, no heading) add little over no partner info.
-  Cooperation is fine, but it idles twice as much as D2 (30% against 15% of steps) and overshoots the target more
-  (11 starts against 1). Details: [finetune-2s-30deg/README.md](finetune-2s-30deg/README.md).
-- **It does read the chirps:** random directions drop it to 22%. But even the exact partner position every step
-  gives only 64%, so the 10 points between that and D2's 74% look like the missing heading.
-- **Zero-shot, the heading was the larger part of the loss:** with the true heading filled in, the same four chirp
-  settings reach 50 to 70% instead of 30 to 42%. See [zero-shot/README.md](zero-shot/README.md).
+- **Zero-shot (no training), the heading was the larger part of the loss** (34% without it, 62% with it): a policy trained
+  with the heading input fails when that input is set to zero. That is a different question from fine-tuned policies, which
+  learn to do without it. See [zero-shot/README.md](zero-shot/README.md).
+- **Part 2 and the two diagnostic runs** ([finetune-2s-30deg/](finetune-2s-30deg/README.md),
+  [diagnostics/README.md](diagnostics/README.md)): idle share and overshoots differ between the policies, success does
+  not (see the 200-start table above).
 - **Vision cannot help yet:** side by side, each duck sees its partner on under 10% of steps (6.5% and 5.1%;
-  2.7% for duck B with the box blocking), as expected with the partner 90 degrees to the side. See
-  [visibility-check/README.md](visibility-check/README.md).
-
-![D2 with exact partner info (left) wins in 29 steps; D2 with chirps (right) runs out of time](finetune-2s-30deg/results/start08_side_by_side.gif)
-
-- **The two diagnostic runs** ([diagnostics/README.md](diagnostics/README.md)): with the true heading the policy gets 72%
-  and behaves like D2 again (idle share 8.8% against 20 to 30%, 5 of 17 on the hard side); a second seed of Part 2
-  gets 62%, so 60% is not a fluke of one seed. **Caveat:** each rate is 50 starts (about 7 points of error), and on the
-  check set (a different 50 starts) the same policies come out in the opposite order (Run 1 64%, Part 2 68%, Run 2 72%).
-  Over all 100 starts the three are within 4 points. The heading is the best-supported explanation, not a proven one.
-- **Clip:** Part 2 (left) against the true-heading diagnostic (right) on test start 8:
+  2.7% for duck B with the box blocking). See [visibility-check/README.md](visibility-check/README.md).
+- **Clip (test start 8):** Part 2 (left) against the true-heading diagnostic (right). One start, for illustration only:
 
 ![Part 2 chirps with the heading removed (left) runs out of time; the diagnostic with the true heading (right) wins in 32 steps](diagnostics/results/start08_side_by_side.gif)
 
-**Proposed next step (not decided):** first evaluate these same policies on more starts (no training) to confirm the
-heading effect. If it holds, build the heading into the chirp (a coarse heading, say 8 bins, sent with each chirp by the
-duck that knows its own heading), before step 2 (missed chirps and flips). Estimating the heading from how the chirp
-direction changes over time is the weaker option: ducks pushing together keep the same bearing, and a duck pivoting in
-place changes heading without moving. Details in [diagnostics/README.md](diagnostics/README.md).
+**Proposed next steps (not decided):**
+1. Re-evaluate the key earlier policies (central stage 1, stage 1b, D2, D1) on the 200-start set; several headline gaps
+   measured on 50 starts may be partly noise.
+2. Move the ducks-start-apart setup (step 4) ahead of missed chirps and box mass: on stage 1 partner info barely matters
+   (D1 = D2), so realistic sensing cannot show an effect there. Compare D1, D2 exact and chirps on it.
+3. The heading-in-the-chirp idea is not needed for success; keep it only if idling matters.
 
 ## Ideas (not started)
 
