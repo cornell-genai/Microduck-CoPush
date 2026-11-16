@@ -45,22 +45,31 @@ walk to the box and push it into the target together.
 
 ### Decentralized (Ashwin)
 
-- **Controller:** D2. **Branch:** `d2-from-scratch`. **Folder:**
-  `experiments/d2-from-scratch-comparison/`.
+- **Controller:** D2. **Branches:** `d2-from-scratch` and `chirp-partner-sensing` (both merged). **Folders:**
+  `experiments/d2-from-scratch-comparison/`, `experiments/chirp-partner-sensing/`.
 - **Status:** fixed-start comparison done, and all stage 1 policies re-evaluated on 200 held-out starts. D2
   (copied from the central controller, then trained) wins 66% (60 to 73), D1 64% and central stage 1 58%: no
   measurable difference between D2 and D1 (the 50-start 74% against 60% for D1 was noise), and central with the same
   extra training (stage 1b A) reaches 70%. Trained from scratch on the fixed start, D2 matches central from
   scratch (40% against 45%, 10 seeds each, no measurable difference), with more idling and over-turning;
-  distilled D2 reaches 52% (3 seeds).
+  distilled D2 reaches 52% (3 seeds). Partner sensing by chirps (D2 fine-tuned with a noisy partner direction
+  every 2 s and no partner heading) wins 63% of 200 held-out starts with both seeds, the same as D1 (64%) and D2
+  with exact info (66%): no measurable effect on stage 1. The partner's true heading, a diagnostic, adds nothing
+  measurable either (64%, +0.5 points, -3.6 to +4.6); it only changes how much the ducks idle.
 - **Next steps:**
   1. Ducks start apart (reusing the rendezvous settings when available): compare D1, D2 with exact info and
      central there. On stage 1, where the ducks start side by side, partner info does not measurably
      matter (D1 = D2 on 200 starts), so this is where it could.
-  2. Partner sensing tests (chirps, then vision) come after step 1, on that setup: stage 1 cannot show a
-     difference from the ducks' sensing. Partner sensing by chirps: each duck hears a noisy direction to its
-     partner every few seconds instead of its exact position and heading. First checks are on the
-     `chirp-partner-sensing` branch (chirps cost nothing measurable on stage 1: 63% against 66% for exact info).
+  2. Partner sensing tests come after step 1, on that setup (stage 1 cannot show a difference from the ducks'
+     sensing), in this order: chirps (done on stage 1: no measurable effect), then missed chirps and front-back
+     direction flips, then a randomized box mass with a short observation history, then vision with the box
+     blocking the view (side by side the partner is about 90 degrees to the side, outside a front camera's view;
+     each duck sees its partner on under 10% of steps), mixing about 30% earlier starts into training to avoid
+     forgetting. The settings for these are built and off by default (`chirp.miss_prob`,
+     `chirp.front_back_flip_prob`, `box.mass_range`, `obs.history_steps`, `vision.*`), with placeholder values
+     until measured on the real ducks; `experiments/chirp-partner-sensing/` has the results and the plan.
+  3. Last: distill the combined central controller (from steering and rendezvous) into these realistic-sensing
+     ducks.
 
 ## Decisions so far
 
@@ -81,6 +90,12 @@ walk to the box and push it into the target together.
   24%), while the learned policies win 52 to 99% of the two easier sides.
 - 2026-11-15: Partner-sensing tests (chirps, vision) move to after the ducks-start-apart setup, since on stage 1
   partner info does not measurably matter.
+- 2026-11-15: The decentralized track focuses on realistic sensing (chirps, vision) as the student side of a
+  privileged-teacher pipeline: the central controller sees everything, and the per-duck controllers only get what a
+  real duck could sense.
+- 2026-11-15: Chirps (and the partner's true heading) have no measurable effect on stage 1: 63 to 64% against 66% with
+  exact info on 200 held-out starts (`experiments/chirp-partner-sensing/`). Vision and the box blocking the view come
+  after the apart-start step, since side by side each duck sees its partner on under 10% of steps.
 - 2026-11-15 (corrections from the 200-start re-evaluation, `experiments/stage1-reevaluation/`): (1) D2 does not
   beat D1 by a measurable amount (D2 66%, D1 64%; the 50-start 74% against 60% was noise), so "seeing the partner
   helps" is not supported. D2 and D1 are above central stage 1 (58%) but had 1.4M more training steps, and central stage
