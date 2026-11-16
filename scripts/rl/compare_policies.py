@@ -20,6 +20,12 @@ Per episode:
     cooperation        fraction of steps where both ducks touch the box; lazy-duck episodes, where one
                        duck has less than LAZY_SHARE of the box contact time
 Writes <out>/comparison.md and <out>/comparison.json.
+
+--workers N      evaluate each policy's starts on N worker processes (the starts are dealt out round robin, each
+                 worker builds its env and loads the policy once), one policy after another, and report the wall
+                 time per policy (also in comparison.json as wall_s). The results are identical to the sequential
+                 run (every episode is seeded by its start). Without it, one process per policy, as before.
+--baseline NAME  a scripted controller (stand, random, push_forward, push_steer, pivot_push) instead of a model.
 """
 from __future__ import annotations
 
@@ -28,6 +34,7 @@ import json
 import math
 import os
 import sys
+import time
 from multiprocessing import Pool
 
 import numpy as np
@@ -47,7 +54,8 @@ def side_of(dyaw: float) -> str:
 
 
 def _run(job):
-    cfg_path, ts_path, name, spec = job
+    cfg_path, ts_path, name, spec, *rest = job
+    only = rest[0] if rest else None                 # with --workers: the start indices this worker evaluates
     from copush.env import CoPushEnv, action_to_cmd
     from test_set import make_act_factory
     from copush.state import wrap_angle
@@ -60,6 +68,8 @@ def _run(job):
     seed0 = cfg["env"]["heldout_seeds"][0]
     out = []
     for i, s in enumerate(starts):
+        if only is not None and i not in only:
+            continue
         act = make_act(env, seed0 + i)
         obs, _ = env.reset(seed=seed0 + i, options={"box": s})
         st = env.state
@@ -107,7 +117,9 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--config", required=True, help="the env config the episodes run under")
     p.add_argument("--test-set", required=True)
-    p.add_argument("--policy", action="append", required=True, help="name=path/to/model.zip")
+    p.add_argument("--policy", action="append", default=[], help="name=path/to/model.zip")
+    p.add_argument("--baseline", action="append", default=[], help="a scripted controller name")
+    p.add_argument("--workers", type=int, default=0, help="processes per policy (one start per task); 0 = one process per policy")
     p.add_argument("--out", required=True)
     args = p.parse_args()
     jobs = []
@@ -121,12 +133,25 @@ def main() -> int:
             jobs.append((args.config, args.test_set, name, {"path": path, "decentral": dc} if dc else path))
         else:
             print(f"skipping {name}: {path} not found")
-    with Pool(len(jobs)) as pool:
-        res = dict(pool.map(_run, jobs))
-    res = {j[2]: res[j[2]] for j in jobs}
+    jobs += [(args.config, args.test_set, b, None) for b in args.baseline]
+    walls = {}
+    if args.workers > 1:
+        n = len(load_test_set(args.test_set)["starts"])
+        res = {}
+        with Pool(args.workers) as pool:
+            for job in jobs:
+                t0 = time.time()
+                parts = pool.map(_run, [job + (set(range(w, n, args.workers)),) for w in range(args.workers)])
+                res[job[2]] = sorted((r for _, part in parts for r in part), key=lambda r: r["id"])
+                walls[job[2]] = round(time.time() - t0, 1)
+                print(f"{job[2]}: {n} starts on {args.workers} workers in {walls[job[2]]} s", flush=True)
+    else:
+        with Pool(len(jobs)) as pool:
+            res = dict(pool.map(_run, jobs))
+        res = {j[2]: res[j[2]] for j in jobs}
     os.makedirs(repo_path(args.out), exist_ok=True)
     with open(os.path.join(repo_path(args.out), "comparison.json"), "w") as f:
-        json.dump({"test_set": args.test_set, "config": args.config, "episodes": res}, f, indent=1)
+        json.dump({"test_set": args.test_set, "config": args.config, "wall_s": walls, "episodes": res}, f, indent=1)
 
     md = [f"# Policy comparison on {args.test_set}", "",
           f"One deterministic episode per start, env from `{args.config}`. Success is compared, not return.", "",
