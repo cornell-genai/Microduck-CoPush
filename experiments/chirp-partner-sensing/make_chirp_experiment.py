@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-"""chirp_experiment.svg: what each duck knows about its partner, and when (D2 today vs chirps)."""
+"""chirp_experiment.svg: what each duck knows about its partner, and when (D2 today vs chirps). Lives next to the
+experiment; uses the shared diagram kit in docs/media/diagrams/ and writes the SVG into this folder:
+
+    python3 experiments/chirp-partner-sensing/make_chirp_experiment.py
+"""
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "..", "docs", "media", "diagrams"))
+import diagram_kit  # noqa: E402
 from diagram_kit import *  # noqa: E402,F403
+
+diagram_kit.OUT_DIR = HERE                          # save() writes here, not into docs/media/diagrams/
 
 W, H = 960, 680
 body = [card(30, 30, 430, 290), card(500, 30, 430, 290), card(30, 350, 900, 300)]

@@ -5,5 +5,5 @@ import subprocess
 import sys
 
 here = os.path.dirname(os.path.abspath(__file__))
-for name in ("system_loop", "training_loop", "curriculum", "chirps", "data_flow"):
+for name in ("system_loop", "training_loop", "curriculum", "data_flow"):
     subprocess.run([sys.executable, os.path.join(here, f"make_{name}.py")], check=True)

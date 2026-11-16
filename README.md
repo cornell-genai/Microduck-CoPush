@@ -106,7 +106,7 @@ One row per track. Each track updates its own row (rules in [AGENTS.md](AGENTS.m
 | **Stage 1: random box pose.** Push a box that starts at a random spot and angle. | done: on 200 held-out starts central 58% (51 to 65) and decentralized D2 66% (60 to 73), a difference the data cannot measure (50-start numbers, superseded: 60% and 74%) | [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md) |
 | **Steering.** Turn the box on hard starts, then at wider angles. | in progress: the long-turn side is still mostly lost (every policy wins 0 to 24% of those starts on 200 held-out starts) | [ROADMAP.md](ROADMAP.md#steering-anmol), [stage 1b](experiments/stage1b-turn-direction-fix/README.md) |
 | **Rendezvous.** The ducks start apart and meet at the box. | starting | [ROADMAP.md](ROADMAP.md#rendezvous-winston) |
-| **Partner sensing by chirps.** Each duck hears a rough direction to its partner now and then, instead of knowing its exact position. | in progress: on 200 held-out starts, ducks with chirps win 63%, the same as ducks with no partner info (64%) and ducks with exact info (66%) within the noise; the next step is a setup where partner info matters | [experiments/chirp-partner-sensing/](experiments/chirp-partner-sensing/README.md) |
+| **Partner sensing by chirps.** Each duck hears a rough direction to its partner now and then, not its exact position. | tested: no measurable effect when the ducks start side by side (63% against 66% with exact info on 200 held-out starts) | [experiments/chirp-partner-sensing/](experiments/chirp-partner-sensing/README.md) |
 
 ## Next steps
 
@@ -116,8 +116,7 @@ The full plan, per track, is in [ROADMAP.md](ROADMAP.md).
   24% of those starts), then widen the box angle range.
 - **Rendezvous:** start the ducks away from the box, so they walk to it and push together.
 - **Decentralized:** test partner info where it could matter, with the ducks starting apart (on stage 1,
-  side by side, it does not measurably matter), then partner sensing by chirps (planned): ducks hear a noisy
-  direction to their partner every few seconds instead of seeing it exactly.
+  side by side, it does not measurably matter).
 
 ## Progress
 
