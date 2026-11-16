@@ -1,0 +1,43 @@
+# D2 steering, Run B: Run A plus duck START NOISE (one change from Run A); early stop on the noisy check set.
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-steering/run-b/config.yaml
+#   (scripts/rl/overnight_steering.py runs it, then evaluates it)
+#
+# D2 phase 2 (experiments/decentralized-control/p2-d2) with env.stand_still turned on: a duck whose commanded forward
+# speed is below the threshold (0.02 m/s, the lowest few percent of its speed range) is held on velstand at zero speed
+# with no turning, so it can truly hold while its partner pushes; it comes back to automatic walk/push switching when
+# it commands more. The only change is that setting. Warm start from the trained D2 stage 1 policy, stage 1's random
+# box starts, reward v1.1, the same budget as D2 phase 2 (2,000,000 duck steps = 1M simulator steps, 2 per sim step),
+# early stopping on the stage 1 check set. Question: can two independent ducks learn to pivot the box (one holds, the
+# other pushes) on long-turn starts?
+name: d2-steering-run-b
+change: "Run A plus duck start noise (start_noise: heading 5 deg, spacing 0.02 m, setback 0.01 m)"
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/decentral-p2-d2/model.zip            # D2 stage 1 (policies-v1 release, stage1-d2): 66% on stage1_large, 15% on > +15 deg
+out: runs/d2-steering/run-b
+results: experiments/d2-steering/run-b/results
+test_set: experiments/test_sets/stage1_noisy_large.json
+check_set: experiments/test_sets/stage1_noisy_checks.json
+
+overrides:
+  controller: {mode: decentral, include_partner: true}
+  rl: {eval_every: 20000}
+  ppo: {seed: 1}                          # the training seed, the same in Run A and Run B
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}   # stage 1's range
+    stand_still: {enabled: true, vx_threshold: 0.02}              # as in Run A
+  start_noise: {duck_heading_std_deg: 5.0, duck_spacing_std_m: 0.02, duck_setback_std_m: 0.01}   # THE change from A
+
+steps: 2000000                            # duck entries = 1M simulator steps, as D2 phase 2
+checkpoint_every: 200000
+max_videos: 12
+
+widen:                                    # no widening (full range); checks on the fixed check set
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 100000                      # duck entries = every 50k simulator steps
+  episodes: 50
+  seed0: 10050
+
+early_stop: {success: 0.80, evals: 3}     # check-set success, 3 checks in a row
