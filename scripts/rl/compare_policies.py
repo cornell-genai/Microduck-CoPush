@@ -36,6 +36,7 @@ Per episode the hold state is also recorded: hold_a_frac / hold_b_frac (share of
 both_hold_steps, one_hold_steps (exactly one duck held), hold_a_alone / hold_b_alone (which duck holds while the
 other does not), rot_one_hold_deg (box rotation toward the needed direction during those steps) and max_pivot_run
 (the longest run of steps with exactly one duck held). Scripted controllers such as pivot_push hold too.
+--max-steps N    the episode time limit in env steps (the config's, 100, when not given); 150 is a diagnostic only
 --baseline NAME  a scripted controller (stand, random, push_forward, push_steer, pivot_push) instead of a model.
 """
 from __future__ import annotations
@@ -68,11 +69,14 @@ def side_of(dyaw: float) -> str:
 def _run(job):
     cfg_path, ts_path, name, spec, *rest = job
     only = rest[0] if rest else None                 # with --workers: the start indices this worker evaluates
+    max_steps = rest[1] if len(rest) > 1 else None   # --max-steps: the episode time limit
     from copush.env import CoPushEnv, action_to_cmd
     from test_set import make_act_factory
     from copush.state import wrap_angle
     from diagnose_turn import needed
     _, cfg = load_stage(cfg_path)
+    if max_steps:
+        cfg["env"]["max_steps"] = int(max_steps)
     if isinstance(spec, dict) and spec.get("standstill"):
         cfg["env"]["stand_still"] = {**cfg["env"]["stand_still"], "enabled": True}
     ch = spec["decentral"].get("chirp") if isinstance(spec, dict) and spec.get("decentral") else None
@@ -153,6 +157,7 @@ def main() -> int:
     p.add_argument("--policy", action="append", default=[], help="name=path/to/model.zip")
     p.add_argument("--baseline", action="append", default=[], help="a scripted controller name")
     p.add_argument("--workers", type=int, default=0, help="processes per policy (one start per task); 0 = one process per policy")
+    p.add_argument("--max-steps", type=int, default=None, help="episode time limit in env steps (diagnostics, e.g. 150)")
     p.add_argument("--out", required=True)
     args = p.parse_args()
     jobs = []
@@ -185,6 +190,8 @@ def main() -> int:
         else:
             print(f"skipping {name}: {path} not found")
     jobs += [(args.config, args.test_set, b, None) for b in args.baseline]
+    if args.max_steps:
+        jobs = [j + (None, args.max_steps) for j in jobs]
     walls = {}
     if args.workers > 1:
         n = len(load_test_set(args.test_set)["starts"])
@@ -192,7 +199,7 @@ def main() -> int:
         with Pool(args.workers) as pool:
             for job in jobs:
                 t0 = time.time()
-                parts = pool.map(_run, [job + (set(range(w, n, args.workers)),) for w in range(args.workers)])
+                parts = pool.map(_run, [job[:4] + (set(range(w, n, args.workers)), args.max_steps) for w in range(args.workers)])
                 res[job[2]] = sorted((r for _, part in parts for r in part), key=lambda r: r["id"])
                 walls[job[2]] = round(time.time() - t0, 1)
                 print(f"{job[2]}: {n} starts on {args.workers} workers in {walls[job[2]]} s", flush=True)

@@ -47,3 +47,12 @@ def test_a_learned_policy_without_stand_still_never_holds():
         pytest.skip("D2 stage 1 policy missing (scripts/get_policies.sh)")
     rows = cp._run((CFG, TS, "d2", {"path": path, "decentral": {"include_partner": True}}, set(sorted(idx)[:2])))[1]
     assert all(r["one_hold_steps"] == 0 and r["both_hold_steps"] == 0 and r["hold_a_frac"] == 0.0 for r in rows)
+
+
+def test_max_steps_changes_the_episode_time_limit():
+    idx, _ = _long_turn_indices()
+    pick = set(sorted(idx)[:2])
+    short = cp._run((CFG, TS, "stand", None, pick, 7))[1]                  # 'stand' never finishes: it runs to the limit
+    default = cp._run((CFG, TS, "stand", None, pick))[1]
+    assert all(r["steps"] == 7 and r["reason"] == "timeout" for r in short)
+    assert all(r["steps"] == 100 for r in default)
