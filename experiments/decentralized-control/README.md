@@ -1,8 +1,14 @@
 # Decentralized control: each duck runs its own controller
 
-**Status:** done (2026-11-12). With random box starts, **D2 (own view plus partner) gets 74%** on stage 1's
-50-start test set. The centralized stage 1 policy gets 60%, and **D1 (own view only) also gets 60%**. D2 is
-the only policy so far to win 5 of the 17 long-turn starts (box turned more than +15°). One seed each.
+**Status:** done (2026-11-12), re-evaluated on 200 starts (2026-11-15). With random box starts, **D2 (own view plus
+partner) gets 66% (60 to 73) of 200 held-out starts, D1 (own view only) 64% (57 to 70) and the centralized stage 1 policy
+58% (51 to 65)**: no measurable difference between D2 and D1 (+2.5 points, -2.2 to +7.2). D2 and D1 are above the central
+stage 1 policy, but they had 1.4M more training steps, and central with similar extra training (stage 1b A) reaches 70%
+(64 to 76). One seed each. *Original 50-start numbers, superseded: D2 74%, D1 60%, central 60%, and "D2 is the only policy to
+win 5 of the 17 long-turn starts". A 14-point gap on 50 starts is inside the +-13 points of error; see
+[../stage1-reevaluation/](../stage1-reevaluation/README.md).*
+
+> Tables marked "50-start" below are the original numbers, kept for the record and superseded by the 200-start numbers.
 
 ## The one change
 
@@ -46,6 +52,8 @@ both ducks are. Full table: [distill/results/distill.md](distill/results/distill
 
 ## 1. Phase 1: fixed start
 
+*(50-start numbers in this table, superseded: on 200 starts the phase 1 D2 policy gets 51% (44 to 58), the old 48%.)*
+
 The gate passed. Both variants succeed from the fixed start at every training check (3 episodes every 50k
 steps, 8 checks each) and in the final run. 01_reference is the centralized PPO policy trained on this start.
 
@@ -58,7 +66,18 @@ steps, 8 checks each) and in the final run. 01_reference is the centralized PPO 
 Both variants match the centralized policy on the start they trained on. Fine-tuning on one start cost them
 the generality they had copied: 62% → 38% (D1) and 64% → 48% (D2) on random starts. Phase 2 won it back.
 
-## 2. Phase 2: random box starts (stage 1 test set, 50 starts)
+## 2. Phase 2: random box starts
+
+**200 held-out starts (current), 95% intervals** (`experiments/test_sets/stage1_large.json`):
+
+| policy | overall | < −15° | −15° to +15° | > +15° (long turn) | idle share | falls | box lost |
+|---|---|---|---|---|---|---|---|
+| stage1 (centralized) | 58% (51 to 65) | 81% | 88% | 5% (2 to 13) | 14% | 13 | 3 |
+| D1 (own view) | 64% (57 to 70) | 96% | 87% | 9% (4 to 18) | 21% | 8 | 3 |
+| **D2 (own view + partner)** | **66%** (60 to 73) | 97% | 87% | **15%** (8 to 26) | 15% | 16 | 8 |
+| stage 1b A (central, same extra training) | 70% (64 to 76) | 99% | 91% | 21% (13 to 33) | 9% | 9 | 1 |
+
+**50 starts (stage 1 test set), superseded:**
 
 | policy | overall | < −15° | −15° to +15° | > +15° (long turn) | mean steps (successes) |
 |---|---|---|---|---|---|
@@ -70,7 +89,7 @@ Training checks (50 fixed check-set starts every 50k steps) never reached 80%, s
 D1 ranged from 50% to 68%; D2 from 50% to 74%, at 64% to 74% for most of the second half. Its final check was 66%,
 and the test set gave 74%. Both are 50-start estimates of the same policy, so treat the luck range as about ±7 points.
 
-### Cooperation and failures (all 50 starts)
+### Cooperation and failures (all 50 starts, superseded; on 200 starts both ducks touch the box on 87%, 93% and 89% of steps for stage 1, D1 and D2, with 6, 0 and 1 lazy-duck episodes)
 
 | policy | push share A | both ducks touching | lazy duck | falls | box lost | overshoot | timeouts | idle steps |
 |---|---|---|---|---|---|---|---|---|
@@ -93,13 +112,15 @@ and the test set gave 74%. Both are 50-start estimates of the same policy, so tr
 
 ### Does seeing the partner help?
 
-Yes, in every measure here: a closer copy (R² 0.95 against 0.92), a smaller loss in phase 1 (48% against 38%), and
-14 points more in phase 2 (74% against 60%), mostly on the long-turn side (5/17 against 1/17). One seed per variant, though.
+**No measurable difference.** On 200 held-out starts D2 minus D1 is +2.5 points (95% interval -2.2 to +7.2), and D2 wins the
+long-turn side only 6 points more often (-3 to +15). The earlier answer, "yes, in every measure here" (a closer copy, R² 0.95
+against 0.92; 48% against 38% in phase 1; 74% against 60% in phase 2; **50-start numbers, superseded**), rested on 50 starts,
+where a 14-point gap is inside the noise. The closer copy is a real but small effect on what the networks imitate, not on how
+often they win.
 
-**Caveat on D2 against centralized:** D2 had 1.4M more training steps than stage 1 (400k + 1M). Stage 1b's
-experiment A, centralized with 1M more steps, reached 72% (4/17 long-turn). So D2's gain over stage 1 is within
-what extra training alone gives. What it shows is that decentralized control **costs nothing** here, and that the
-partner's position is the useful extra input.
+**Caveat on D2 against centralized (still true, and now measured):** D2 had 1.4M more training steps than stage 1. On 200
+starts stage 1b A (centralized, 1M more steps) reaches 70% (64 to 76), above D2's 66%, so D2's gain over stage 1 (+8.5
+points) is what extra training alone gives. What the data shows is that decentralized control **costs nothing** here.
 
 ## Side-by-side video
 

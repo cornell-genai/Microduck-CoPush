@@ -22,10 +22,10 @@ the box and push it into the target together.
 - **Current stage: Stage 1, random box start.** The box starts in a random spot (up to 15 cm off in
   each direction) and at a random angle (up to 45 degrees). The ducks still start touching it.
 - **Last finished result:** trained from scratch, ducks that each decide for themselves do as well as
-  one central controller (40% against 46% of 50 test starts, 10 training runs each). See
-  [Central vs decentralized](#central-vs-decentralized).
-- **Still unsolved:** starts where the box is turned more than 15 degrees to the positive side (5 of
-  17 at best). Earlier tries are in [stage 1](experiments/stage1-random-box-pose/README.md) and
+  one central controller (40% against 45% of 200 held-out starts, 10 training runs each; no measurable
+  difference). See [Central vs decentralized](#central-vs-decentralized).
+- **Still unsolved:** starts where the box is turned more than 15 degrees to the positive side (every
+  policy wins 0 to 24% of them on 200 held-out starts). Earlier tries are in [stage 1](experiments/stage1-random-box-pose/README.md) and
   [stage 1b](experiments/stage1b-turn-direction-fix/README.md).
 
 ## How it works
@@ -52,42 +52,50 @@ Optimization), a standard RL algorithm.
 ### Main result: trained from scratch, 10 seeds each
 
 Both start from random weights and train on the same fixed start. A seed is one training run with a
-different random start. Each is then tested on 50 random box starts it never trained on.
+different random start. Each is then tested on 200 random box starts it never trained on (one episode
+per start; the intervals are across the 10 seeds).
 
-| setup | test starts won (mean) | range across the 10 seeds |
-|---|---|---|
-| central, from scratch | **46%** | 28% to 64% |
-| decentralized (D2), from scratch | **40%** | 28% to 60% |
+| setup | test starts won (mean) | 95% interval of the mean | range across the 10 seeds |
+|---|---|---|---|
+| central, from scratch | **45%** | 40% to 51% | 34% to 55% |
+| decentralized (D2), from scratch | **40%** | 33% to 47% | 28% to 56% |
 
-**No measurable difference:** the 6-point gap is much smaller than the spread between seeds of the same
-setup. The style differs: decentralized ducks idle more (29% of steps against 9%) and over-turn the
-box, but share the pushing more evenly (1 lazy-duck episode in 500, against 7).
+*50-start numbers, superseded: 46% and 40% (ranges 28% to 64% and 28% to 60%).*
 
-![Success on 50 new starts, one dot per training run: central from scratch (10 seeds, mean 46%), D2 from scratch (10 seeds, mean 40%) and D2 distilled (3 seeds, mean 51%). The dots overlap, so no measurable difference between one brain and two.](docs/media/diagrams/seed_comparison.svg)
+**No measurable difference:** central minus decentralized is +5.3 points, with a 95% interval of -3.5 to
++14.0, and the two ranges overlap almost completely. The style differs: decentralized ducks idle more (29%
+of steps against 10%) and over-turn the box on the long-turn starts (108 degrees of total turn against 18),
+but share the pushing more evenly (1 lazy-duck episode in 2,000, against 35).
 
-Each dot is one training run, tested on 50 random box starts it never trained on. Per-seed table, the
+![Success on 200 new starts, one dot per training run: central from scratch (10 seeds, mean 45%), D2 from scratch (10 seeds, mean 40%) and D2 distilled (3 seeds, mean 52%). The dots overlap, so no measurable difference between one brain and two.](docs/media/diagrams/seed_comparison.svg)
+
+Each dot is one training run, tested on 200 random box starts it never trained on. Per-seed table, the
 learning curves and all plots: [experiments/d2-from-scratch-comparison/](experiments/d2-from-scratch-comparison/README.md).
+Old against new for every policy, and which earlier claims held:
+[experiments/stage1-reevaluation/](experiments/stage1-reevaluation/README.md).
 
 ### Earlier result: decentralized ducks that copied the central brain
 
-Distillation (copying the central brain first) got **74%** on the same 50 test starts, against 60% for
-the central controller. We plan to use distillation again at the end of the project.
+Distillation (copying the central brain first, then training further on random starts) was first measured on
+50 starts: D2 74%, D1 and central 60% (**50-start, superseded**). On 200 held-out starts:
 
-| controller | success (50 test starts) | hard-side wins (of 17) | both ducks pushing | lazy-duck episodes |
-|---|---|---|---|---|
-| central (one controller for both ducks) | 60% | 2 | 86% of steps | 2 |
-| D1: own view only | 60% | 1 | 92% of steps | 0 |
-| **D2: own view + partner** | **74%** | **5** | **94% of steps** | **0** |
+| controller | success, 200 starts (95% interval) | old, 50 starts (superseded) | long-turn side (box turned > +15 deg) | both ducks pushing | lazy-duck episodes |
+|---|---|---|---|---|---|
+| central stage 1 (one controller for both ducks) | 58% (51 to 65) | 60% | 5% | 87% of steps | 6 of 200 |
+| D1: own view only | 64% (57 to 70) | 60% | 9% | 93% | 0 |
+| **D2: own view + partner** | **66%** (60 to 73) | 74% | 15% | 89% | 1 |
+| central, same extra training (stage 1b A) | 70% (64 to 76) | 72% | 21% | 93% | 0 |
 
-**Seeing the partner matters:** D1, without the partner in view, gets 60%, like the central controller.
-
-Caveat: one seed each, D2 started by copying the central controller, and central with similar extra
-training reached 72%, so this says "no worse than central", not "better".
+**Seeing the partner: no measurable difference.** D2 minus D1 is +2.5 points (95% interval -2.2 to +7.2), so
+the 74% against 60% was noise. D1 and D2 beat the central stage 1 policy, but they had 1.4M more training
+steps, and central with similar extra training (stage 1b A) does as well or better (70%): this says
+"decentralized control costs nothing here", not "better". One seed each. We plan to use distillation again at
+the end of the project.
 
 [![central (left) vs D2 (right), box turned +32 degrees](docs/media/decentral_stage1_vs_d2_hard_start.gif)](docs/media/decentral_stage1_vs_d2_hard_start.mp4)
 
-Box turned +32 degrees: central (left) runs out of time, D2 (right) finishes in 41 steps. Full
-results: [experiments/decentralized-control/](experiments/decentralized-control/README.md).
+Box turned +32 degrees: central (left) runs out of time, D2 (right) finishes in 41 steps (one start, for
+illustration). Full results: [experiments/decentralized-control/](experiments/decentralized-control/README.md).
 
 ## Behaviors we're teaching
 
@@ -95,8 +103,8 @@ One row per track. Each track updates its own row (rules in [AGENTS.md](AGENTS.m
 
 | behavior | status | where |
 |---|---|---|
-| **Stage 1: random box pose.** Push a box that starts at a random spot and angle. | done: central 60%, decentralized 74% (copied) | [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md) |
-| **Steering.** Turn the box on hard starts, then at wider angles. | in progress: the long-turn side is still mostly lost | [ROADMAP.md](ROADMAP.md#steering-anmol), [stage 1b](experiments/stage1b-turn-direction-fix/README.md) |
+| **Stage 1: random box pose.** Push a box that starts at a random spot and angle. | done: on 200 held-out starts central 58% (51 to 65) and decentralized D2 66% (60 to 73), a difference the data cannot measure (50-start numbers, superseded: 60% and 74%) | [experiments/stage1-random-box-pose/](experiments/stage1-random-box-pose/README.md) |
+| **Steering.** Turn the box on hard starts, then at wider angles. | in progress: the long-turn side is still mostly lost (every policy wins 0 to 24% of those starts on 200 held-out starts) | [ROADMAP.md](ROADMAP.md#steering-anmol), [stage 1b](experiments/stage1b-turn-direction-fix/README.md) |
 | **Rendezvous.** The ducks start apart and meet at the box. | starting | [ROADMAP.md](ROADMAP.md#rendezvous-winston) |
 | **Partner sensing by chirps.** Each duck hears a rough direction to its partner now and then, instead of knowing its exact position. | planned | [ROADMAP.md](ROADMAP.md#decentralized-ashwin) |
 
@@ -104,13 +112,12 @@ One row per track. Each track updates its own row (rules in [AGENTS.md](AGENTS.m
 
 The full plan, per track, is in [ROADMAP.md](ROADMAP.md).
 
-- **Steering:** win the hard side (box turned more than 15 degrees the positive way, 5 of 17 at best),
-  then widen the box angle range.
+- **Steering:** win the hard side (box turned more than 15 degrees the positive way; every policy wins 0 to
+  24% of those starts), then widen the box angle range.
 - **Rendezvous:** start the ducks away from the box, so they walk to it and push together.
-- **Decentralized:** repeat the from-scratch comparison on harder starts (random box starts, ducks
-  starting apart).
-- **Partner sensing by chirps (planned):** ducks hear a noisy direction to their partner every
-  few seconds instead of seeing it exactly.
+- **Decentralized:** test partner info where it could matter, with the ducks starting apart (on stage 1,
+  side by side, it does not measurably matter), then partner sensing by chirps (planned): ducks hear a noisy
+  direction to their partner every few seconds instead of seeing it exactly.
 
 ## Progress
 
@@ -127,7 +134,7 @@ Clips play at 2x speed. Click one for the sharper video.
 | [![solo push](docs/media/overnight_solo_push.gif)](docs/media/overnight_solo_push.mp4) | [![box lost](docs/media/overnight_box_lost.gif)](docs/media/overnight_box_lost.mp4) |
 | **Bug: one duck quits.** Allowed to stand still, duck B walks away and duck A pushes alone. | **Bug: crooked and lost.** Mid-training, the box reaches the target turned 65 degrees, then both ducks leave. |
 | [![pivot_push vs stage 1](docs/media/stage1_pivot_push_vs_ppo_hard_start.gif)](docs/media/stage1_pivot_push_vs_ppo_hard_start.mp4) | |
-| **7. Stage 1: random box starts.** On a hard start, the script (left) fails and the learned controller (right) succeeds. 60% on 50 test starts. | |
+| **7. Stage 1: random box starts.** On a hard start, the script (left) fails and the learned controller (right) succeeds. 58% on 200 held-out starts (60% on 50 starts, superseded). | |
 
 ## The reward function
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """seed_comparison.svg: test-set success of every training run, one dot per run, in three columns (central from
-scratch, D2 from scratch, D2 distilled) with a short line at each mean. Reads the numbers from
-experiments/d2-from-scratch-comparison/comparison/summary.json, so rebuild it after new seeds finish:
+scratch, D2 from scratch, D2 distilled) with a short line at each mean. Reads the numbers from the 200-start
+re-evaluation, experiments/stage1-reevaluation/results/comparison.json (one episode per start of stage1_large.json), so
+rebuild it after new seeds are evaluated:
 
     python3 docs/media/diagrams/make_seed_comparison.py
 
@@ -14,14 +15,14 @@ import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
-SUMMARY = os.path.join(ROOT, "experiments", "d2-from-scratch-comparison", "comparison", "summary.json")
+RESULTS = os.path.join(ROOT, "experiments", "stage1-reevaluation", "results", "comparison.json")
 
 CREAM, AMBER, INK, INK2 = "#FFF8EC", "#BA7517", "#412402", "#633806"
 FONT = 'font-family="Helvetica, Arial, sans-serif"'
-COLUMNS = [  # summary.json key, label, dot fill, dot outline
-    ("central-scratch", "Central from scratch", "#8DBBEE", "#185FA5"),
-    ("d2-scratch", "D2 from scratch", "#F2A68B", "#993C1D"),
-    ("d2-distilled", "D2 distilled", "#BDB8F2", "#534AB7"),
+COLUMNS = [  # policy name prefix in comparison.json, label, dot fill, dot outline
+    ("central_scratch_s", "Central from scratch", "#8DBBEE", "#185FA5"),
+    ("d2_scratch_s", "D2 from scratch", "#F2A68B", "#993C1D"),
+    ("d2_distilled_s", "D2 distilled", "#BDB8F2", "#534AB7"),
 ]
 
 W, H = 780, 610
@@ -50,9 +51,10 @@ def swarm(pcts, cx):
     return placed
 
 
-summary = json.load(open(SUMMARY))
+episodes = json.load(open(RESULTS))["episodes"]
+n_starts = len(next(iter(episodes.values())))
 body = [f'<rect x="20" y="20" width="{W - 40}" height="{H - 40}" rx="16" fill="{CREAM}" stroke="{AMBER}" stroke-width="1.5"/>',
-        text(W / 2, 66, "Success on 50 new starts, one dot per training run", 21, 700)]
+        text(W / 2, 66, f"Success on {n_starts} new starts, one dot per training run", 21, 700)]
 
 # y axis: 0 to 100 %
 for pct in range(0, 101, 20):
@@ -63,8 +65,8 @@ for pct in range(0, 101, 20):
 n_cols = len(COLUMNS)
 for i, (key, label, fill, edge) in enumerate(COLUMNS):
     cx = PLOT_L + (PLOT_R - PLOT_L) * (i + 0.5) / n_cols - 10
-    seeds = summary[key]["seeds"]
-    pcts = [100 * s["test"]["success"] for s in seeds.values() if "test" in s]
+    pcts = [100.0 * sum(e["reason"] == "success" for e in rows) / len(rows)
+            for name, rows in episodes.items() if name.startswith(key)]
     mean = sum(pcts) / len(pcts)
     for x, y in swarm(pcts, cx):
         body.append(f'<circle cx="{x:g}" cy="{y:g}" r="{R}" fill="{fill}" fill-opacity="0.9" stroke="{edge}" stroke-width="2"/>')
@@ -78,7 +80,7 @@ body.append(text(W / 2, 534, "Dots overlap: no measurable difference between one
 body.append(text(W / 2, 560, "Distilled had 1.38M steps of prior training.", 16, 400, INK2))
 
 svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img">'
-       "<title>Test-set success of each training run: central from scratch, decentralized (D2) from scratch and D2 distilled, "
+       "<title>Success on 200 new starts of each training run: central from scratch, decentralized (D2) from scratch and D2 distilled, "
        "one dot per run, with the mean marked. The dots overlap, so no measurable difference between one brain and two.</title>\n"
        + "\n".join(body) + "\n</svg>\n")
 out = os.path.join(HERE, "seed_comparison.svg")
