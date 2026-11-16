@@ -47,15 +47,20 @@ walk to the box and push it into the target together.
 
 - **Controller:** D2. **Branch:** `d2-from-scratch`. **Folder:**
   `experiments/d2-from-scratch-comparison/`.
-- **Status:** fixed-start comparison done. D2 copied from the central controller reached 74% on the
-  stage 1 test set (central 60%). Trained from scratch on the fixed start, D2 matches central from
-  scratch on the test set (40% against 46%, 10 seeds each, no measurable difference), with more idling
-  and over-turning; distilled D2 reaches 51% (3 seeds).
+- **Status:** fixed-start comparison done, and all stage 1 policies re-evaluated on 200 held-out starts. D2
+  (copied from the central controller, then trained) wins 66% (60 to 73), D1 64% and central stage 1 58%: no
+  measurable difference between D2 and D1 (the 50-start 74% against 60% for D1 was noise), and central with the same
+  extra training (stage 1b A) reaches 70%. Trained from scratch on the fixed start, D2 matches central from
+  scratch (40% against 45%, 10 seeds each, no measurable difference), with more idling and over-turning;
+  distilled D2 reaches 52% (3 seeds).
 - **Next steps:**
-  1. Rerun the comparison on harder setups (random box starts, ducks starting apart).
-  2. Partner sensing by chirps (planned): each duck hears a noisy direction to its partner every few
-     seconds instead of its exact position and heading. First checks are on the
-     `chirp-partner-sensing` branch.
+  1. Ducks start apart (reusing the rendezvous settings when available): compare D1, D2 with exact info and
+     central there. On stage 1, where the ducks start side by side, partner info does not measurably
+     matter (D1 = D2 on 200 starts), so this is where it could.
+  2. Partner sensing tests (chirps, then vision) come after step 1, on that setup: stage 1 cannot show a
+     difference from the ducks' sensing. Partner sensing by chirps: each duck hears a noisy direction to its
+     partner every few seconds instead of its exact position and heading. First checks are on the
+     `chirp-partner-sensing` branch (chirps cost nothing measurable on stage 1: 63% against 66% for exact info).
 
 ## Decisions so far
 
@@ -68,6 +73,20 @@ walk to the box and push it into the target together.
 - 2026-11-13: Anmol and Winston work on the central controller; Ashwin on decentralized.
 - 2026-11-13: The default controller in `configs/copush.yaml` is central again; D2 stays selectable.
 - 2026-11-14: 10 seeds: D2 from scratch matches central; distillation still planned for the end.
+- 2026-11-15: Results are reported on the 200-start stage 1 set (`stage1_large.json`) with 95% intervals.
+  The 50-start comparisons were mostly noise (a rate on 50 starts is good to about +-13 points); the re-evaluation
+  is in `experiments/stage1-reevaluation/`.
+- 2026-11-15: The long-turn side (box turned more than +15 degrees) is every policy's bottleneck: on 200 held-out
+  starts every policy wins 0 to 24% of these starts (stage 1 5%, stage 1b A 21%, D2 15%, the pivot_push script
+  24%), while the learned policies win 52 to 99% of the two easier sides.
+- 2026-11-15: Partner-sensing tests (chirps, vision) move to after the ducks-start-apart setup, since on stage 1
+  partner info does not measurably matter.
+- 2026-11-15 (corrections from the 200-start re-evaluation, `experiments/stage1-reevaluation/`): (1) D2 does not
+  beat D1 by a measurable amount (D2 66%, D1 64%; the 50-start 74% against 60% was noise), so "seeing the partner
+  helps" is not supported. D2 and D1 are above central stage 1 (58%) but had 1.4M more training steps, and central stage
+  1b A (same extra training) reaches 70%; the 2026-11-12 decision above that read D2 as matching central stands. (2) Stage 1b's fixes did
+  help the long-turn side (A from 5% to 21%, B to 12%), though it is still mostly lost; the 2026-11-12 line calling them
+  failures came from 17 starts. The Steering section above still carries the 50-start numbers (Anmol's section, not edited).
 
 ## Open questions
 
