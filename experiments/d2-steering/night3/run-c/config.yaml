@@ -1,0 +1,40 @@
+# D2 steering, night 3, Run C (stand-still + both-held penalty). Identical to night 2's Run A except for ONE change:
+# reward v1.4 (v1.1 plus -0.05 per env step while both ducks hold at once and the episode is not in a success state).
+# Fixed budget, no early stopping; the seed is set by the overnight script (--seed 1 or 2, which names the run folder c-s1, c-s2).
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-steering/night3/run-c/config.yaml --seed 1
+#   (scripts/rl/overnight_steering_3.py runs it, then evaluates it)
+#
+# Why: night 2 showed the remaining failures are an absorbing state (both ducks commanding 0.00 m/s for the last 10 steps).
+# Warm start, stand-still threshold (0.02 m/s), budget (2,000,000 duck steps), box starts (stage 1 range, no start noise) are
+# all as in night 2's Run A.
+name: d2-steering-night3-run-c
+change: reward v1.4 (both-held penalty 0.05) on top of night 2 Run A (stand-still D2, warm start from D2 stage 1, stage 1 random box starts)
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/decentral-p2-d2/model.zip            # D2 stage 1 (policies-v1 release, stage1-d2): 66% on stage1_large, 15% on > +15 deg
+out: runs/d2-steering-night3/c-s1
+results: experiments/d2-steering/night3/run-c/results
+test_set: experiments/test_sets/stage1_large.json
+check_set: experiments/test_sets/stage1_checks.json
+
+overrides:
+  reward: {version: v1.4}                                         # THE change (night 2 Run A used v1.1)
+  controller: {mode: decentral, include_partner: true}
+  rl: {eval_every: 20000}
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}   # stage 1's range
+    stand_still: {enabled: true, vx_threshold: 0.02}              # as in night 2
+
+steps: 2000000                            # duck entries = 1M simulator steps, always the full budget
+checkpoint_every: 200000
+max_videos: 12
+
+widen:                                    # no widening (full range); checks on the fixed check set
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 200000                      # duck entries: the check set every checkpoint (logging only)
+  episodes: 50
+  seed0: 10050
+
+early_stop: {success: 0.80, evals: 0}     # evals: 0 = NEVER stop early: always the full 2M duck steps
