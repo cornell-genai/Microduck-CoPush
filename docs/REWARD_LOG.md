@@ -331,7 +331,9 @@ Success is compared, not return, because the rewards differ.
 **Video:** `runs/stage1b-b-lower-time-penalty/videos/side_by_side/start44_stage1_vs_b_time_penalty.mp4`
 (stage 1 left, B right). Both get within about 0.3 m of the target, then the box drifts off while the ducks wait.
 
-## v1.4 (2026-11-16)
+## v1.4 (2026-11-16): tried and rejected
+
+**Status: tried and rejected.** Night 3 showed no drop in both-idle stalls ([results](../experiments/d2-steering/night3/SUMMARY.md)): 9.0 and 8.5 episodes on average for A and C on the no-noise set. Night 4 goes back to v1.1.
 
 **What changed from v1.1** (one change): a penalty of −0.05 per env step while both ducks hold at once (both
 command a forward speed below the stand-still threshold of 0.02 m/s) and the success condition does not hold.
