@@ -142,6 +142,10 @@ start_noise:                # copush.env: noise on the in-contact start (all 0 =
   duck_heading_std_deg: 0.0 # each duck's starting heading, independently (on: 5)
   duck_spacing_std_m: 0.0   # the distance between the ducks (on: 0.02)
   duck_setback_std_m: 0.0   # each duck's distance behind the box (on: 0.01)
+  duck_heading_limit_deg: null        # hard limits on each draw; null = clip at 3 std (the original behavior)
+  duck_spacing_limit_m: null          #   symmetric: +-limit
+  duck_setback_back_limit_m: null     #   setback is asymmetric: + = farther back from the box (this limit)
+  duck_setback_forward_limit_m: null  #   - = forward into the box (this limit, given as a positive distance)
   max_resamples: 20         # starts where a duck overlaps the box or the other duck, or is not upright after settling, are redrawn
 
 obs:                        # what the controller sees (copush.env, copush.decentral)

@@ -82,3 +82,52 @@ def test_noisy_starts_pass_the_check_most_of_the_time():
         st = env.state
         assert not st["duck_a"]["down"] and not st["duck_b"]["down"]
     assert env.start_resamples / env.start_draws < 0.5
+
+
+# ── per-term limits (night 5) ────────────────────────────────────────────────
+L2 = {"duck_heading_std_deg": 15.0, "duck_spacing_std_m": 0.04, "duck_setback_std_m": 0.02,
+      "duck_heading_limit_deg": 30.0, "duck_spacing_limit_m": 0.08,
+      "duck_setback_back_limit_m": 0.06, "duck_setback_forward_limit_m": 0.02}
+
+
+def test_without_limits_the_draws_are_exactly_the_old_3_sigma_clip():
+    env = _env(ON)
+    assert all(v is None for v in env.start_noise_limits.values())
+    env.reset(seed=11)
+    rng = np.random.Generator(np.random.PCG64())
+    rng.bit_generator.state = env.np_random.bit_generator.state           # the same RNG state, replayed by hand
+    for _ in range(200):
+        got = env._draw_start_noise()
+        c = lambda std: float(np.clip(rng.normal(0.0, std), -3 * std, 3 * std))   # noqa: E731
+        want = {"heading": {"duck_a": c(5.0), "duck_b": c(5.0)}, "spacing": c(0.02),
+                "setback": {"duck_a": c(0.01), "duck_b": c(0.01)}}
+        assert got == want
+
+
+def test_limits_equal_to_3_sigma_give_identical_draws():
+    a = _env(ON)
+    b = _env({**ON, "duck_heading_limit_deg": 15.0, "duck_spacing_limit_m": 0.06,
+              "duck_setback_back_limit_m": 0.03, "duck_setback_forward_limit_m": 0.03})
+    a.reset(seed=4)
+    b.reset(seed=4)
+    assert _ducks(a) == _ducks(b)
+    assert [a._draw_start_noise() for _ in range(100)] == [b._draw_start_noise() for _ in range(100)]
+
+
+def test_limits_are_respected_including_the_asymmetric_setback():
+    env = _env(L2)
+    env.reset(seed=2)
+    d = [env._draw_start_noise() for _ in range(5000)]
+    h = np.array([x["heading"][k] for x in d for k in ("duck_a", "duck_b")])
+    s = np.array([x["spacing"] for x in d])
+    b = np.array([x["setback"][k] for x in d for k in ("duck_a", "duck_b")])
+    assert np.abs(h).max() <= 30.0 and np.abs(s).max() <= 0.08
+    assert b.min() >= -0.02 and b.max() <= 0.06
+    assert np.isclose(b.min(), -0.02) and (b == -0.02).mean() > 0.10      # forward limit is 1 std: ~16% clipped there
+    assert (b == 0.06).mean() < 0.01 and b.max() > 0.04                   # back limit is 3 std: rarely reached
+    assert np.isclose(np.abs(h).max(), 30.0)                              # 2 std: some draws hit it
+
+
+def test_negative_limits_are_refused():
+    with pytest.raises(ValueError):
+        _env({**ON, "duck_setback_forward_limit_m": -0.02})

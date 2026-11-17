@@ -122,6 +122,12 @@ class CoPushEnv(gym.Env):
         if min(self.start_noise.values()) < 0:
             raise ValueError("start_noise standard deviations must not be negative")
         self.start_noise_on = max(self.start_noise.values()) > 0
+        # optional hard limits per term (None = the 3-sigma clip, as before); setback has separate back (+) and forward (-) limits
+        lim = {k: sn.get(k) for k in ("duck_heading_limit_deg", "duck_spacing_limit_m",
+                                      "duck_setback_back_limit_m", "duck_setback_forward_limit_m")}
+        if any(v is not None and float(v) < 0 for v in lim.values()):
+            raise ValueError("start_noise limits must not be negative (the forward setback limit is a distance, e.g. 0.02)")
+        self.start_noise_limits = {k: None if v is None else float(v) for k, v in lim.items()}
         self.max_resamples = int(sn.get("max_resamples", 20))
         self.start_draws = self.start_resamples = 0                 # resample rate = start_resamples / start_draws
         mr = self.cfg["box"].get("mass_range")                # randomized box mass (each reset), or None
@@ -185,13 +191,23 @@ class CoPushEnv(gym.Env):
         return self.box_scale
 
     def _draw_start_noise(self) -> dict:
-        """Gaussian start noise from the episode's RNG, each draw clipped at 3 standard deviations: a heading offset per
-        duck (deg), one change to the distance between the ducks (m), a setback change per duck (m)."""
-        def g(std):
-            return float(np.clip(self.np_random.normal(0.0, std), -3 * std, 3 * std)) if std > 0 else 0.0
-        sn = self.start_noise
-        return {"heading": {d: g(sn["duck_heading_std_deg"]) for d in DUCKS}, "spacing": g(sn["duck_spacing_std_m"]),
-                "setback": {d: g(sn["duck_setback_std_m"]) for d in DUCKS}}
+        """Gaussian start noise from the episode's RNG: a heading offset per duck (deg), one change to the distance between
+        the ducks (m), a setback change per duck (m; + = farther back from the box, - = forward into it). Each draw is
+        clipped at its start_noise limit when one is given, else at 3 standard deviations (the original behavior; the
+        RNG draws are the same either way, so configs without limits reproduce exactly)."""
+        def g(std, lo=None, hi=None):
+            if std <= 0:
+                return 0.0
+            lo = -3 * std if lo is None else lo
+            hi = 3 * std if hi is None else hi
+            return float(np.clip(self.np_random.normal(0.0, std), lo, hi))
+        sn, lm = self.start_noise, self.start_noise_limits
+        sym = lambda v: (None, None) if v is None else (-v, v)                       # noqa: E731
+        fwd, back = lm["duck_setback_forward_limit_m"], lm["duck_setback_back_limit_m"]
+        sb = (None if fwd is None else -fwd, back)
+        return {"heading": {d: g(sn["duck_heading_std_deg"], *sym(lm["duck_heading_limit_deg"])) for d in DUCKS},
+                "spacing": g(sn["duck_spacing_std_m"], *sym(lm["duck_spacing_limit_m"])),
+                "setback": {d: g(sn["duck_setback_std_m"], *sb) for d in DUCKS}}
 
     def _start_ok(self, st: dict) -> bool:
         """A noisy start is kept when both ducks are upright after settling, the ducks are not on top of each other,

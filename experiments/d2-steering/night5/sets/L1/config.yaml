@@ -1,0 +1,20 @@
+# The stage 1 env with L1 duck start noise: the env config for evaluating on experiments/test_sets/stage1_L1_large.json
+# (scripts/rl/compare_policies.py --config). That set has the SAME 200 box poses as stage1_large.json, and every episode uses
+# the same per-start seed (heldout_seeds[0] + i = 10000 + i), so only the duck start noise differs. The noise is drawn from
+# that seed when the episode starts, so every evaluation of a start sees the same noise.
+# L1: heading std 10 deg (limit +-25), spacing std 3 cm (limit +-6), setback std
+# 1.5 cm (limit +4.5 back / -2 forward). Built by scripts/rl/overnight_steering_5.py.
+name: stage1-L1
+change: stage 1 box starts plus L1 duck start noise, evaluation only
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+out: runs/d2-steering-night5/sets-L1                # unused: nothing is trained
+results: experiments/d2-steering/night5/sets/L1/results
+test_set: experiments/test_sets/stage1_L1_large.json
+
+overrides:
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}     # stage 1's FINAL range
+  start_noise: {duck_heading_std_deg: 10, duck_heading_limit_deg: 25,
+                duck_spacing_std_m: 0.03, duck_spacing_limit_m: 0.06,
+                duck_setback_std_m: 0.015, duck_setback_back_limit_m: 0.045, duck_setback_forward_limit_m: 0.02}

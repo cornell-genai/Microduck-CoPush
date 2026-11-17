@@ -75,6 +75,8 @@ def main() -> int:
     p.add_argument("--out", default=None, help="override the stage's out (smoke tests)")
     p.add_argument("--seed", type=int, default=None,
                    help="ppo.seed; out becomes the stage's out with its -s<N> suffix (if any) replaced by -s<seed>")
+    p.add_argument("--warm-start", default=None,
+                   help="override the stage's warm_start (e.g. a matching seed's policy); recorded in results.json")
     args = p.parse_args()
 
     from stable_baselines3 import PPO
@@ -84,6 +86,8 @@ def main() -> int:
     from copush.rl_callbacks import BoxRangeCallback, VideoEvalCallback, behaviors, decide, run_episode
 
     stage, cfg = load_stage(args.config)
+    if args.warm_start:
+        stage["warm_start"] = args.warm_start
     if stage.get("gate"):
         passed = [g for g in stage["gate"] if ((read_json(repo_path(g), {}) or {}).get("eval_curve") or [[0, 0, ""]])[-1][2] == "success"]
         if not passed:

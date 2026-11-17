@@ -70,6 +70,8 @@ DEFAULTS = {
               "miss_prob": 0.0, "front_back_flip_prob": 0.0},
     "obs": {"history_steps": 1},
     "start_noise": {"duck_heading_std_deg": 0.0, "duck_spacing_std_m": 0.0, "duck_setback_std_m": 0.0,
+                    "duck_heading_limit_deg": None, "duck_spacing_limit_m": None,
+                    "duck_setback_back_limit_m": None, "duck_setback_forward_limit_m": None,
                     "max_resamples": 20},
     "vision": {"enabled": False, "fov_deg": 120.0, "range_m": 0.8, "occlusion": False},
 }
