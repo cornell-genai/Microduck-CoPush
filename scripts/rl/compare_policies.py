@@ -36,6 +36,8 @@ Per episode the hold state is also recorded: hold_a_frac / hold_b_frac (share of
 both_hold_steps, one_hold_steps (exactly one duck held), hold_a_alone / hold_b_alone (which duck holds while the
 other does not), rot_one_hold_deg (box rotation toward the needed direction during those steps) and max_pivot_run
 (the longest run of steps with exactly one duck held). Scripted controllers such as pivot_push hold too.
+@sample:K        (the very last tag, after @standstill) SAMPLE the policy's actions from its Gaussian instead of using
+                 the mean; K is the sampling seed (torch is seeded per episode from K and the episode seed)
 --max-steps N    the episode time limit in env steps (the config's, 100, when not given); 150 is a diagnostic only
 --baseline NAME  a scripted controller (stand, random, push_forward, push_steer, pivot_push) instead of a model.
 """
@@ -164,6 +166,9 @@ def main() -> int:
     for spec in args.policy:
         name, path = spec.split("=", 1)
         dc = None
+        smp = re.search(r"@sample:(\d+)$", path)
+        if smp:
+            path = path[: smp.start()]
         stand = path.endswith("@standstill")
         if stand:
             path = path[: -len("@standstill")]
@@ -185,8 +190,9 @@ def main() -> int:
                            "distance": chirp[3] is not None, **({"distance_noise": float(chirp[3])} if chirp[3] else {})}
         if os.path.exists(repo_path(path)):
             jobs.append((args.config, args.test_set, name,
-                         {"path": path, **({"decentral": dc} if dc else {}), **({"standstill": True} if stand else {})}
-                         if (dc or stand) else path))
+                         {"path": path, **({"decentral": dc} if dc else {}), **({"standstill": True} if stand else {}),
+                          **({"sample": int(smp[1])} if smp else {})}
+                         if (dc or stand or smp) else path))
         else:
             print(f"skipping {name}: {path} not found")
     jobs += [(args.config, args.test_set, b, None) for b in args.baseline]

@@ -50,17 +50,26 @@ def policy_path(spec) -> str:
 
 def make_act_factory(name: str, path=None):
     """-> make_act(env, seed) for test_set_episodes. path: a model.zip, or {path, decentral:
-    {include_partner}} for a decentralized policy (copush.decentral, run once per duck)."""
+    {include_partner}} for a decentralized policy (copush.decentral, run once per duck). With {..., sample: k} the
+    actions are SAMPLED from the policy's Gaussian instead of its mean; torch is seeded per episode from (k, the
+    episode seed), so a sampled run is reproducible and independent of worker order."""
     from copush.env import baseline
     if path is None:
         return lambda env, seed: baseline(name, env, seed=seed)
     from stable_baselines3 import PPO
     model = PPO.load(repo_path(policy_path(path)), device="cpu")
+    sample = path.get("sample") if isinstance(path, dict) else None
+    det = sample is None
+
+    def seeded(seed):
+        if not det:
+            import torch
+            torch.manual_seed(int(sample) * 1_000_003 + int(seed))
     if isinstance(path, dict) and path.get("decentral") is not None:
         from copush.decentral import decentral_action
         ip = bool(path["decentral"].get("include_partner"))
-        return lambda env, seed: (lambda obs: decentral_action(model, env.state, ip))
-    return lambda env, seed: (lambda obs: model.predict(obs, deterministic=True)[0])
+        return lambda env, seed: (seeded(seed), lambda obs: decentral_action(model, env.state, ip, det))[1]
+    return lambda env, seed: (seeded(seed), lambda obs: model.predict(obs, deterministic=det)[0])[1]
 
 
 def _eval_one(job):

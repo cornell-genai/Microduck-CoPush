@@ -1,0 +1,48 @@
+# D2 steering, night 4, Run E (bounded exploration). Identical to night 2's Run A except for ONE change: the bounded action
+# head (copush.bounded_policy). The speed and turn means are the identity on [-1, 1] and soft-bounded to +-1.5 outside it
+# (so the warm start's deterministic behavior is unchanged: 133/200 on stage1_large, every episode identical); the policy
+# std is capped at 0.5 and set to 0.5 at warm start; ent_coef goes from the warm start's 0.01 to 0.
+# Fixed budget, no early stopping; the seed is set by the overnight script (--seed 1 or 2: run folders e-s1, e-s2).
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-steering/night4/run-e/config.yaml --seed 1
+#   (scripts/rl/overnight_steering_4.py runs it, then evaluates it)
+#
+# Why: night 3's diagnostic showed the stalls are a train/eval mismatch. Training samples the speed action with a std of
+# 2.5 to 3 (so sampled actions often leave the hold), but deterministic eval takes the mean, which sits at -1 to -8 at the
+# stall states, far below the hold cutoff (-0.867). Reward v1.1, stand-still threshold 0.02 m/s, no start noise: as night 2's A.
+name: d2-steering-night4-run-e
+change: bounded exploration (mean soft-bounded to +-1.5, std capped at 0.5, ent_coef 0) on top of night 2 Run A (stand-still D2, reward v1.1)
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/decentral-p2-d2/model.zip            # D2 stage 1 (policies-v1 release, stage1-d2): 66% on stage1_large, 15% on > +15 deg
+out: runs/d2-steering-night4/e-s1
+results: experiments/d2-steering/night4/run-e/results
+test_set: experiments/test_sets/stage1_large.json
+check_set: experiments/test_sets/stage1_checks.json
+
+overrides:
+  reward: {version: v1.1}                                         # as night 2 Run A (v1.4 rejected)
+  controller: {mode: decentral, include_partner: true}
+  rl: {eval_every: 20000}
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}   # stage 1's range
+    stand_still: {enabled: true, vx_threshold: 0.02}              # as in night 2
+
+steps: 2000000                            # duck entries = 1M simulator steps, always the full budget
+checkpoint_every: 200000
+max_videos: 12
+
+widen:                                    # no widening (full range); checks on the fixed check set
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 200000                      # duck entries: the check set every checkpoint (logging only)
+  episodes: 50
+  seed0: 10050
+
+early_stop: {success: 0.80, evals: 0}     # evals: 0 = NEVER stop early: always the full 2M duck steps
+
+bounded_action:                           # THE change (scripts/rl/stage.py, copush/bounded_policy.py)
+  mean_bound: 1.5                         # mean = raw on [-1, 1], soft tanh shoulder to +-1.5 outside
+  std_cap: 0.5                            # std = exp(min(log_std, log 0.5))
+  init_std: 0.5                           # log_std set to log 0.5 at warm start
+  ent_coef: 0.0                           # the warm start has 0.01
