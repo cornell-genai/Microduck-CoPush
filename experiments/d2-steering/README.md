@@ -13,6 +13,9 @@ Results land in [SUMMARY.md](SUMMARY.md) (rewritten after every step) and `resul
 | Run A | + the stand-still action (`env.stand_still`, default threshold 0.02 m/s) | [run-a/config.yaml](run-a/config.yaml) |
 | Run B | Run A + duck start noise (`start_noise`: heading 5 deg per duck, spacing 0.02 m, setback 0.01 m per duck) | [run-b/config.yaml](run-b/config.yaml) |
 
+Later nights: [night 2](night2/SUMMARY.md) fixed budget and two seeds; [night 3](night3/SUMMARY.md) both-held penalty (reward v1.4, rejected);
+[night 4](night4/SUMMARY.md) bounded exploration (rejected: measurably worse than night 2's Run A, about 3x the both-idle stalls).
+
 Both runs: warm start from D2 stage 1, stage 1 random box starts, reward v1.1, 2M duck steps, the same training seed
 (ppo.seed 1); Run A stops early on the stage 1 check set, Run B on the noisy check set. Evaluation on `stage1_large.json`
 and `stage1_noisy_large.json` (200 starts each; the noisy env and its sets: [noisy-sets/config.yaml](noisy-sets/config.yaml)).

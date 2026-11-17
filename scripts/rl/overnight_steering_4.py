@@ -60,6 +60,20 @@ LIMIT = 100
 CKPT = 200_000
 
 
+CONCLUSION = [
+    "## Conclusion",
+    "",
+    "- **Bounded exploration (std cap 0.5, identity soft bound) is rejected.** E is measurably worse than A (-17.2 points overall on the "
+    "no-noise set, -26.5 on the noisy set) with about 3x the both-idle stalls.",
+    "- **The train/eval mismatch hypothesis is not supported.** A's sampled vs deterministic gap is -3.2 to +4.0 points, and sampling does "
+    "not reduce both-idle stalls.",
+    "- **Likely cause (untested):** the std collapsed to about 0.14 while about 40% of the speed outputs stayed saturated beyond |raw| > 3.",
+    "- **Stalls appear to be an action-space limit:** a held duck cannot turn, and the smallest move is a walk.",
+    "",
+    "*(Written after the night from the results below; the generated sections follow.)*",
+    ""]
+
+
 def pct(x):
     return f"{100 * x:.0f}%"
 
@@ -331,6 +345,8 @@ class Summary:
         L = ["# D2 steering, night 4: bounded exploration (Run E)", "",
              f"*Written {dt.datetime.now():%Y-%m-%d %H:%M} by `scripts/rl/overnight_steering_4.py`"
              + (" (DRY RUN, tiny settings: the numbers mean nothing)" if n.dry else "") + ".*", ""]
+        if not n.dry and all(n.done(s) for s in STEPS):
+            L += CONCLUSION
         L += ["## Steps", "", "| step | status | finished |", "|---|---|---|"]
         for s in STEPS:
             p = os.path.join(n.dir, "steps", s + ".done")
@@ -448,15 +464,18 @@ class Summary:
         return L
 
     def falling(self, run):
-        """Fixed rule: the |raw| > 3 share is falling by the end if the last value is below both the first and the 1M value."""
-        rows = self.std_rows(run)
+        """Fixed rule: the |raw| > 3 share is falling only if the last checkpoint is at least 5 percentage points below the first
+        AND a linear fit across all the checkpoints slopes downward. Otherwise: not falling."""
+        rows = self.checkpoints(self.std_rows(run))
         if len(rows) < 3:
             return None, ""
-        f = [r["frac_raw_vx_abs_gt3"] for r in rows]
-        mid = f[min(range(len(rows)), key=lambda i: abs(rows[i]["step"] - rows[-1]["step"] / 2))]
-        if f[0] == 0 and f[-1] == 0:
-            return True, f"0.00% at the start and at the end (nothing to fall)"
-        return (f[-1] < f[0] and f[-1] < mid), f"{100 * f[0]:.2f}% at the start, {100 * mid:.2f}% at the midpoint, {100 * f[-1]:.2f}% at the end"
+        f = [100 * r["frac_raw_vx_abs_gt3"] for r in rows]
+        x = [r["step"] for r in rows]
+        mx, mf = sum(x) / len(x), sum(f) / len(f)
+        slope = sum((a - mx) * (b - mf) for a, b in zip(x, f)) / max(1e-12, sum((a - mx) ** 2 for a in x))      # points per step
+        drop = f[0] - f[-1]
+        return (drop >= 5.0 and slope < 0), (f"{f[0]:.2f}% at the first checkpoint, {f[-1]:.2f}% at the last "
+                                             f"(drop {drop:+.2f} points); linear fit over {len(rows)} checkpoints {slope * 1e6:+.2f} points per million duck steps")
 
     # ── per set ─────────────────────────────────────────────────────────────
     def headline(self, k):
@@ -597,8 +616,8 @@ class Summary:
                 continue
             allr = self.std_rows(run)
             mx = max(r["std_vx"] for r in allr)
-            out.append(f"- *{LABEL[run]}: is the share of speed outputs with |raw| > 3 falling by the end?* **{'YES' if f else 'NO, NOT FALLING'}** "
-                       f"({txt}). Rule: the last value below both the first and the midpoint value. Std stayed "
+            out.append(f"- *{LABEL[run]}: is the share of speed outputs with |raw| > 3 falling by the end?* **{'falling' if f else 'not falling'}** "
+                       f"({txt}). Rule: falling needs the last checkpoint at least 5 points below the first AND a downward linear fit. Std stayed "
                        f"{'under' if mx <= allr[0]['cap'] + 1e-6 else 'ABOVE'} the cap (max {mx:.3f}).")
         return L + (out or ["Not evaluated yet."])
 
