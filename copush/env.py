@@ -352,6 +352,7 @@ class CoPushEnv(gym.Env):
     def step(self, action):
         st0 = self.state
         cmds = action_to_cmd(action)
+        both_held = False
         if self.stand_still["enabled"]:                  # commanded vx below the threshold = stand on velstand
             for d, L in (("duck_a", "A"), ("duck_b", "B")):
                 still = cmds[L][0] < self.stand_still["vx_threshold"]
@@ -359,6 +360,7 @@ class CoPushEnv(gym.Env):
                     cmds[L] = (0.0, 0.0, 0.0)
                 if still != self.hold[d]:
                     self.set_hold(d, still)
+            both_held = cmds["A"] == (0.0, 0.0, 0.0) and cmds["B"] == (0.0, 0.0, 0.0)
         push = {d: 0.0 for d in DUCKS}
         force = {d: 0.0 for d in DUCKS}
         ctime = {d: 0.0 for d in DUCKS}
@@ -399,7 +401,8 @@ class CoPushEnv(gym.Env):
                               yaw_before=st0["yaw_error"], yaw_after=st["yaw_error"],
                               success_held_s=self.success_held,
                               fell=newly_fell, down_s=down_s, box_tilt_deg=st["box"]["tilt_deg"], box_lost=lost,
-                              inside=st["inside"], off_box_s=dict(self.no_contact), push=push)
+                              inside=st["inside"], off_box_s=dict(self.no_contact), push=push,
+                              both_held=both_held, in_success_state=ok)
         terms, terminated, reason = self.task.step(summary)
         reward = float(sum(terms.values()))
         flags += self.monitor.update(st, reward=reward)[1]
