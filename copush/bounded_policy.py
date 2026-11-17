@@ -7,7 +7,7 @@ policies had means of -1 to -8 at their stall states and a sampling std of 2.5 t
          = sign(raw) * (1 + (bound - 1) * tanh((|raw| - 1) / (bound - 1)))   otherwise (bound 1.5: never leaves [-1.5, 1.5])
     std  = exp(min(log_std, log(std_cap)))   (std never above std_cap)
 
-STATUS: tested and rejected in night 4 (experiments/d2-steering/night4/SUMMARY.md). Run E (this head, std cap 0.5, ent_coef 0) was
+STATUS: tested and rejected in night 4 (now at experiments/d2-steering/negative-results/night4-bounded-exploration/SUMMARY.md). Run E (this head, std cap 0.5, ent_coef 0) was
 measurably worse than night 2's Run A (-17.2 points overall on the no-noise set, -26.5 on the noisy set) with about 3x the
 both-idle stalls. Kept so the experiment reproduces.
 

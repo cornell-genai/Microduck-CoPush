@@ -13,7 +13,7 @@ Steps, in this order (each is a subprocess with its own log):
   eval        the D2 reference, A seeds 1 and 2, E seeds 1 and 2, deterministic (the headline), plus E sampled (sampling seeds
               1, 2, 3), on both 200-start sets, 100-step limit; 8 workers per policy
   gifs        start 185, A seed 1 against E seed 1, plus one stall clip per E seed if any stalls remain
-experiments/d2-steering/night4/SUMMARY.md is rewritten after every step, so a partial night still has results.
+experiments/d2-steering/negative-results/night4-bounded-exploration/SUMMARY.md is rewritten after every step, so a partial night still has results.
 
 Restart-safe: a finished step leaves <run dir>/steps/<name>.done and is skipped; a training step resumes from its last
 checkpoint (scripts/rl/stage.py); a failing step goes to <run dir>/crash.log. progress.log, crash.log, lock and STOP live in
@@ -40,7 +40,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ci_report import mean_ci, wilson, won  # noqa: E402
 
-E = "experiments/d2-steering/night4"
+E = "experiments/d2-steering/negative-results/night4-bounded-exploration"
 SETS = {"large": ("experiments/test_sets/stage1_large.json", "experiments/stage1-random-box-pose/config.yaml"),
         "noisy": ("experiments/test_sets/stage1_noisy_large.json", "experiments/d2-steering/noisy-sets/config.yaml")}
 REF = "runs/decentral-p2-d2/model.zip"              # the policies-v1 release's stage1-d2 policy

@@ -138,3 +138,11 @@ Added by hand after the night. Run A had 29 episodes where both ducks were held 
 ![start 48](results/gifs/both_idle/start48_side_by_side.gif)
 
 **Review note (from watching the clips, not measured):** the 29 "both idle" episodes are near-misses that time out at 100 steps: the box is touching the target zone or passing through it, rather than the ducks standing around. Night 2 tests this directly with a 150-step time limit (a diagnostic only, `diag_150`): how many of these time-outs become successes when the episode is allowed to run longer.
+
+## Rejected approaches (after night 2)
+
+Both kept for the record in [negative-results/](negative-results/).
+
+- **Night 3, both-held penalty (reward v1.4)** ([negative-results/night3-v1.4-penalty/](negative-results/night3-v1.4-penalty/SUMMARY.md)): rejected, because both-idle stalls did not drop (9.0 and 8.5 episodes on average, Run A and Run C, no-noise set) and success on the noisy set went measurably down.
+- **Night 4, bounded exploration** ([negative-results/night4-bounded-exploration/](negative-results/night4-bounded-exploration/SUMMARY.md)): rejected, because Run E was measurably worse than night 2's Run A (-17.2 points overall on the no-noise set, -26.5 on the noisy set) with about 3x the both-idle stalls.
+

@@ -333,7 +333,7 @@ Success is compared, not return, because the rewards differ.
 
 ## v1.4 (2026-11-16): tried and rejected
 
-**Status: tried and rejected.** Night 3 showed no drop in both-idle stalls ([results](../experiments/d2-steering/night3/SUMMARY.md)): 9.0 and 8.5 episodes on average for A and C on the no-noise set. Night 4 goes back to v1.1.
+**Status: tried and rejected.** Night 3 showed no drop in both-idle stalls ([results](../experiments/d2-steering/negative-results/night3-v1.4-penalty/SUMMARY.md)): 9.0 and 8.5 episodes on average for A and C on the no-noise set. Night 4 goes back to v1.1.
 
 **What changed from v1.1** (one change): a penalty of −0.05 per env step while both ducks hold at once (both
 command a forward speed below the stand-still threshold of 0.02 m/s) and the success condition does not hold.
@@ -346,5 +346,5 @@ so the policy never leaves it. The penalty makes both-held cost more than the ti
 a single duck holding (which pivoting needs).
 
 **Setting:** `both_held_penalty` in `reward_versions.v1.4` (default 0 elsewhere, so older versions reproduce).
-Results: [experiments/d2-steering/night3/](../experiments/d2-steering/night3/) (pending).
+Results: [experiments/d2-steering/negative-results/night3-v1.4-penalty/](../experiments/d2-steering/negative-results/night3-v1.4-penalty/).
 

@@ -4,7 +4,7 @@
 # std is capped at 0.5 and set to 0.5 at warm start; ent_coef goes from the warm start's 0.01 to 0.
 # Fixed budget, no early stopping; the seed is set by the overnight script (--seed 1 or 2: run folders e-s1, e-s2).
 #
-#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-steering/night4/run-e/config.yaml --seed 1
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-steering/negative-results/night4-bounded-exploration/run-e/config.yaml --seed 1
 #   (scripts/rl/overnight_steering_4.py runs it, then evaluates it)
 #
 # Why: night 3's diagnostic showed the stalls are a train/eval mismatch. Training samples the speed action with a std of
@@ -16,7 +16,7 @@ base: configs/copush.yaml
 reference: configs/overnight.yaml
 warm_start: runs/decentral-p2-d2/model.zip            # D2 stage 1 (policies-v1 release, stage1-d2): 66% on stage1_large, 15% on > +15 deg
 out: runs/d2-steering-night4/e-s1
-results: experiments/d2-steering/night4/run-e/results
+results: experiments/d2-steering/negative-results/night4-bounded-exploration/run-e/results
 test_set: experiments/test_sets/stage1_large.json
 check_set: experiments/test_sets/stage1_checks.json
 
