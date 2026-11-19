@@ -78,6 +78,58 @@ Almost every L2 redraw was a duck turned more than 15 deg AND placed 1.5 to 2 cm
 
 - **The direct jump worked**: L2 training is measurably better than A on the L2 set and not measurably worse on clean. Rule: worked = L2 vs A on the L2 set is "up" AND L2 vs A on clean is not "down"; step = L1 is up on L1 while L2 is not up on L2.
 
+## Push share (is one duck doing all the work?)
+
+Push share = the fraction of the episode's total pushing done by duck A (duck B's share is 1 minus this), from the per-episode files in `runs/d2-steering/night5/results/`. 200 starts per seed, both seeds pooled.
+
+| set | policy | duck A's push share, mean (seed 1 / seed 2) | spread (std over episodes) | successes where one duck pushes > 80% | of those, duck A / duck B |
+|---|---|---|---|---|---|
+| clean | A (night 2) | 0.68 (0.64 / 0.71) | 0.28 | 40% (153 of 381) | 153 / 0 |
+| clean | L1 training | 0.72 (0.68 / 0.76) | 0.26 | 46% (176 of 384) | 176 / 0 |
+| clean | L2 training | 0.70 (0.64 / 0.77) | 0.28 | 44% (167 of 380) | 163 / 4 |
+| noisy | A (night 2) | 0.68 (0.65 / 0.71) | 0.28 | 43% (163 of 382) | 162 / 1 |
+| noisy | L1 training | 0.72 (0.68 / 0.76) | 0.27 | 46% (174 of 380) | 174 / 0 |
+| noisy | L2 training | 0.71 (0.65 / 0.77) | 0.29 | 46% (170 of 371) | 167 / 3 |
+| L1 | A (night 2) | 0.67 (0.64 / 0.70) | 0.29 | 41% (144 of 354) | 144 / 0 |
+| L1 | L1 training | 0.71 (0.68 / 0.75) | 0.28 | 46% (168 of 363) | 168 / 0 |
+| L1 | L2 training | 0.70 (0.63 / 0.77) | 0.30 | 45% (162 of 357) | 158 / 4 |
+| L2 | A (night 2) | 0.69 (0.66 / 0.73) | 0.28 | 38% (125 of 327) | 125 / 0 |
+| L2 | L1 training | 0.74 (0.70 / 0.78) | 0.27 | 47% (162 of 347) | 161 / 1 |
+| L2 | L2 training | 0.72 (0.66 / 0.78) | 0.28 | 45% (159 of 353) | 157 / 2 |
+
+This is a role split, not lopsided cooperation: duck A pushes and steers, and duck B holds still as the pivot the box turns around. On L2 starts with the L2-trained policies, B is held for 97% of the first ten steps on long-turn starts, 39% on middle starts and 2% on easy starts (see the placement check below). So duck A does about 70% of the pushing on average, on every set and for every policy, and in about 40 to 47% of successes one duck does more than 80% of it, almost always duck A (at most 4 successes per policy and set are led by duck B). Wider-noise training keeps the same split (A 0.67 to 0.69, L1 and L2 training 0.70 to 0.74).
+
+## Placement check (first ten steps, L2 set)
+
+The policy has no separate fix-then-push phase: it corrects while pushing. The box starts moving at step 2 and covers 13.6 cm of the 67.6 cm average starting distance by step 10. Duck A removes three-quarters of a large heading error while already pushing (19.5 to 4.2 degrees by step 3; 5.1 by step 10). Duck B's error grows on purpose, because it is held as the pivot.
+
+L2-trained policies (both seeds), 399 L2 starts that last more than 10 steps, replayed deterministically (all 400 episodes identical to the evaluation above). Error = mean absolute error against each duck's noise-free spot on the box (9.5 cm behind the box centre on the push side, 10 cm either side, facing the push direction), moved with the box; each step is 0.2 s.
+
+| duck | starting error | heading, step 0 to 10 | position, step 0 to 10 |
+|---|---|---|---|
+| A | large (top third) | 19.5 to 5.1 deg, shrinks (mostly by step 3) | 3.7 to 3.6 cm, flat |
+| A | small (bottom third) | 2.6 to 3.7 deg, flat | 0.8 to 3.5 cm, grows |
+| B | large (top third) | 20.3 to 27.1 deg, grows | 3.5 to 7.7 cm, grows |
+| B | small (bottom third) | 2.8 to 14.1 deg, grows | 0.8 to 5.3 cm, grows |
+
+Both ducks' positions settle about 3.5 cm from the start spot, probably the pose they push from rather than a placement error (the start spot is only a reference).
+
+| start type | duck B held, steps 1 to 10 | B's heading error, step 0 to 10 |
+|---|---|---|
+| long-turn (> +15 deg) | 97% | 11.5 to 35.2 deg |
+| middle (-15 to +15 deg) | 39% | 10.4 to 16.8 deg |
+| easy (< -15 deg) | 2% | 10.5 to 8.8 deg |
+
+Duck A is never held in these steps. Full data (all thirds, every step, the stalled episodes one by one): `runs/d2-steering/night5/placement/report.md`, git-ignored; regenerate with `scripts/rl.sh scripts/rl/placement.py`.
+
+## What it means and next step
+
+- **Wider start noise is worth training on.** The night 2 policy (A) drops 13.5 points on L2 starts. Training on L2 directly recovers +6.5 points overall and +14.4 on the long-turn side, with nothing measurable lost on clean or noisy starts. No gradual step through L1 was needed.
+- **What still fails:** mostly both ducks holding still. On L2 starts, 38 of the L2-trained runs' 47 failures are time-outs with both ducks held on 30% or more of the steps. They stop about 70% of the way to the target, then sit idle for the rest of the episode (median stop at step 38 of 100). Of the 38, 10 end with the box inside the target and fail on the 15-degree angle test or the 1-second hold, and 18 more end within 5 cm of it. A held duck cannot turn, so it has no small correction move.
+- **Next (night 6):** let a held duck turn in place (speed zero, the turn command passes through), trained on L2 starts, warm-started from the L2 seeds.
+- **Later:** a separate approach skill to bring each duck from anywhere to its docking spot, so the two chain into fully random starts.
+- **Also worth watching:** duck A does about 70% of the pushing because B's job on turning starts is to anchor, not to push.
+
 ## clean (stage1_large)
 
 **Success (200 starts, 95% intervals)**

@@ -45,8 +45,9 @@ walk to the box and push it into the target together.
 
 ### Decentralized (Ashwin)
 
-- **Controller:** D2. **Branches:** `d2-from-scratch` and `chirp-partner-sensing` (both merged). **Folders:**
-  `experiments/d2-from-scratch-comparison/`, `experiments/chirp-partner-sensing/`.
+- **Controller:** D2. **Branches:** `d2-steering` (current; renamed from `d2-from-scratch`, whose work is merged) and
+  `chirp-partner-sensing` (merged). **Folders:** `experiments/d2-steering/`, `experiments/d2-from-scratch-comparison/`,
+  `experiments/chirp-partner-sensing/`.
 - **Status:** fixed-start comparison done, and all stage 1 policies re-evaluated on 200 held-out starts. D2
   (copied from the central controller, then trained) wins 66% (60 to 73), D1 64% and central stage 1 58%: no
   measurable difference between D2 and D1 (the 50-start 74% against 60% for D1 was noise), and central with the same
@@ -70,6 +71,29 @@ walk to the box and push it into the target together.
      until measured on the real ducks; `experiments/chirp-partner-sensing/` has the results and the plan.
   3. Last: distill the combined central controller (from steering and rendezvous) into these realistic-sensing
      ducks.
+
+#### Steering and start noise (d2-steering)
+
+Results: [experiments/d2-steering/](experiments/d2-steering/README.md); rejected nights in
+[negative-results/](experiments/d2-steering/negative-results/). All numbers are on 200 held-out starts.
+
+- **Night 1:** added a stand-still action, so one duck can wait while the other pivots. The long-turn side went
+  from 15% to 74%.
+- **Night 2:** fixed 2M-step budgets, 2 seeds. Run A reaches 94-96% overall. Training with start noise (run B) was
+  measurably worse (-7.8 points overall).
+- **Night 3 (rejected):** a -0.05 penalty when both ducks hold did not reduce stalls.
+- **Night 4 (rejected):** capping exploration made the policy measurably worse (-17.2 points). Stalls are not
+  caused by deterministic evaluation: sampling actions instead changes success by only -3.2 to +4.0 points.
+- **Night 5:** wider start noise. A drops 13.5 points on L2 starts. Training on L2 directly recovers +6.5 overall
+  and +14.4 on the long-turn side. No gradual step through L1 was needed.
+- **Remaining failures:** mostly both ducks holding still (38 of the 47 failures on L2 starts). They stop about 70% of the
+  way to the target, then sit idle for the rest of the episode (median stop at step 38 of 100). Of the 38, 10 end
+  with the box inside the target and fail on the 15-degree angle test or the 1-second hold, and 18 more end within
+  5 cm of it. A held duck cannot turn, so it has no small correction move.
+- **Next (night 6):** let a held duck turn in place (speed zero, turn command passes through), trained on L2
+  starts, warm-started from the L2 seeds.
+- **Later:** a separate approach skill to bring each duck from anywhere to its docking spot, so the two chain into
+  fully random starts.
 
 ## Decisions so far
 

@@ -28,7 +28,10 @@ angle, and the ducks walk to the box and push it into the target together.
 |---|---|---|---|---|
 | Anmol | steering: turn the box on hard starts, then wider box angles | central | `steering` | `experiments/steering/` |
 | Winston | rendezvous: ducks start apart and come together at the box | central | `rendezvous` | `experiments/rendezvous/` |
-| Ashwin | decentralized from scratch, compared with distilled D2 | D2 | `d2-from-scratch` | `experiments/d2-from-scratch-comparison/` |
+| Ashwin | Decentralized pushing with shared weights (D2), warm-started from the distilled policy; currently widening start noise toward random starts. | D2 | `d2-steering` | `experiments/d2-steering/` |
+
+`d2-steering` supersedes `d2-from-scratch`: same track, renamed branch. Older notes and links that name
+`d2-from-scratch` mean this track; its finished comparison stays in `experiments/d2-from-scratch-comparison/`.
 
 ## Read first
 
