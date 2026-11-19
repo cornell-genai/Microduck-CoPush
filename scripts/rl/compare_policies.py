@@ -30,6 +30,15 @@ Writes <out>/comparison.md and <out>/comparison.json.
                  worker builds its env and loads the policy once), one policy after another, and report the wall
                  time per policy (also in comparison.json as wall_s). The results are identical to the sequential
                  run (every episode is seeded by its start). Without it, one process per policy, as before.
+@standstill      (last tag) run that policy with the stand-still action on (env.stand_still: a commanded forward speed
+                 below the threshold holds that duck on velstand at zero speed); the other policies run without it.
+Per episode the hold state is also recorded: hold_a_frac / hold_b_frac (share of steps a duck is held),
+both_hold_steps, one_hold_steps (exactly one duck held), hold_a_alone / hold_b_alone (which duck holds while the
+other does not), rot_one_hold_deg (box rotation toward the needed direction during those steps) and max_pivot_run
+(the longest run of steps with exactly one duck held). Scripted controllers such as pivot_push hold too.
+@sample:K        (the very last tag, after @standstill) SAMPLE the policy's actions from its Gaussian instead of using
+                 the mean; K is the sampling seed (torch is seeded per episode from K and the episode seed)
+--max-steps N    the episode time limit in env steps (the config's, 100, when not given); 150 is a diagnostic only
 --baseline NAME  a scripted controller (stand, random, push_forward, push_steer, pivot_push) instead of a model.
 """
 from __future__ import annotations
@@ -62,11 +71,16 @@ def side_of(dyaw: float) -> str:
 def _run(job):
     cfg_path, ts_path, name, spec, *rest = job
     only = rest[0] if rest else None                 # with --workers: the start indices this worker evaluates
+    max_steps = rest[1] if len(rest) > 1 else None   # --max-steps: the episode time limit
     from copush.env import CoPushEnv, action_to_cmd
     from test_set import make_act_factory
     from copush.state import wrap_angle
     from diagnose_turn import needed
     _, cfg = load_stage(cfg_path)
+    if max_steps:
+        cfg["env"]["max_steps"] = int(max_steps)
+    if isinstance(spec, dict) and spec.get("standstill"):
+        cfg["env"]["stand_still"] = {**cfg["env"]["stand_still"], "enabled": True}
     ch = spec["decentral"].get("chirp") if isinstance(spec, dict) and spec.get("decentral") else None
     if ch:
         cfg["chirp"] = {**cfg["chirp"], "enabled": True, **ch}
@@ -87,6 +101,8 @@ def _run(job):
         sign = 1.0 if need[s["id"]]["aim_deg"] >= 0 else -1.0
         turned = before = path_len = 0.0
         pushed, idle, n, both = False, 0, 0, 0
+        hold_a = hold_b = both_hold = one_hold = a_alone = b_alone = run = max_run = 0
+        rot_one = 0.0
         touch = {"duck_a": 0.0, "duck_b": 0.0}
         while True:
             a = act(obs)
@@ -94,8 +110,19 @@ def _run(job):
             idle += c["A"][0] < IDLE_VX and c["B"][0] < IDLE_VX
             obs, _, te, tr, info = env.step(a)
             st = env.state
-            turned += math.degrees(wrap_angle(st["box"]["yaw"] - yaw))
+            dyaw = math.degrees(wrap_angle(st["box"]["yaw"] - yaw))
+            turned += dyaw
             yaw = st["box"]["yaw"]
+            ha, hb = env.hold["duck_a"], env.hold["duck_b"]            # held on velstand during this step
+            hold_a, hold_b, both_hold = hold_a + ha, hold_b + hb, both_hold + (ha and hb)
+            if ha != hb:                                               # one duck holds while the other works
+                one_hold += 1
+                a_alone, b_alone = a_alone + ha, b_alone + hb
+                rot_one += sign * dyaw
+                run += 1
+                max_run = max(max_run, run)
+            else:
+                run = 0
             path_len += math.dist(pos, st["box"]["position"])
             pos = st["box"]["position"]
             n += 1
@@ -114,7 +141,10 @@ def _run(job):
                     "reached_push": pushed, "total_turn": sign * turned, "overshoot": st["box_to_target"] > d0,
                     "idle_frac": idle / n, "box_path_m": path_len, "box_net_m": math.dist(p0, pos),
                     "steps": es["steps"], "final_dist": es["final_dist"], "both_touch_frac": both / n,
-                    "lazy": min(touch.values()) < LAZY_SHARE * max(1e-9, sum(touch.values()))})
+                    "lazy": min(touch.values()) < LAZY_SHARE * max(1e-9, sum(touch.values())),
+                    "hold_a_frac": hold_a / n, "hold_b_frac": hold_b / n, "both_hold_steps": int(both_hold),
+                    "one_hold_steps": one_hold, "hold_a_alone": int(a_alone), "hold_b_alone": int(b_alone),
+                    "rot_one_hold_deg": rot_one, "max_pivot_run": max_run})
     return name, out
 
 
@@ -129,12 +159,19 @@ def main() -> int:
     p.add_argument("--policy", action="append", default=[], help="name=path/to/model.zip")
     p.add_argument("--baseline", action="append", default=[], help="a scripted controller name")
     p.add_argument("--workers", type=int, default=0, help="processes per policy (one start per task); 0 = one process per policy")
+    p.add_argument("--max-steps", type=int, default=None, help="episode time limit in env steps (diagnostics, e.g. 150)")
     p.add_argument("--out", required=True)
     args = p.parse_args()
     jobs = []
     for spec in args.policy:
         name, path = spec.split("=", 1)
         dc = None
+        smp = re.search(r"@sample:(\d+)$", path)
+        if smp:
+            path = path[: smp.start()]
+        stand = path.endswith("@standstill")
+        if stand:
+            path = path[: -len("@standstill")]
         heading = "zero"
         for tag, mode in (("@trueheading", "true"), ("@heldheading", "true_held")):
             if path.endswith(tag):
@@ -152,10 +189,15 @@ def main() -> int:
                            "heading": heading,
                            "distance": chirp[3] is not None, **({"distance_noise": float(chirp[3])} if chirp[3] else {})}
         if os.path.exists(repo_path(path)):
-            jobs.append((args.config, args.test_set, name, {"path": path, "decentral": dc} if dc else path))
+            jobs.append((args.config, args.test_set, name,
+                         {"path": path, **({"decentral": dc} if dc else {}), **({"standstill": True} if stand else {}),
+                          **({"sample": int(smp[1])} if smp else {})}
+                         if (dc or stand or smp) else path))
         else:
             print(f"skipping {name}: {path} not found")
     jobs += [(args.config, args.test_set, b, None) for b in args.baseline]
+    if args.max_steps:
+        jobs = [j + (None, args.max_steps) for j in jobs]
     walls = {}
     if args.workers > 1:
         n = len(load_test_set(args.test_set)["starts"])
@@ -163,7 +205,7 @@ def main() -> int:
         with Pool(args.workers) as pool:
             for job in jobs:
                 t0 = time.time()
-                parts = pool.map(_run, [job + (set(range(w, n, args.workers)),) for w in range(args.workers)])
+                parts = pool.map(_run, [job[:4] + (set(range(w, n, args.workers)), args.max_steps) for w in range(args.workers)])
                 res[job[2]] = sorted((r for _, part in parts for r in part), key=lambda r: r["id"])
                 walls[job[2]] = round(time.time() - t0, 1)
                 print(f"{job[2]}: {n} starts on {args.workers} workers in {walls[job[2]]} s", flush=True)

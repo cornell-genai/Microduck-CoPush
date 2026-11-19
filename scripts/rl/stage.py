@@ -21,6 +21,10 @@ for `steps` steps, counted from 0.
                  entries (2 per sim step) and checks / videos run the policy once per duck
     seeds        --seed N sets ppo.seed and trains into <out>-sN (a -s<M> suffix on out is replaced), so
                  every seed of a setup shares one config
+    bounded      with `bounded_action: {mean_bound, std_cap, init_std, ent_coef}` the warm start gets the bounded action
+                 head (copush.bounded_policy: mean identity on [-1, 1], soft-bounded to +-mean_bound; std capped at
+                 std_cap and set to init_std; ent_coef replaced when given); the std and the share of speed outputs
+                 with |raw| > 3 are logged after every rollout to <out>/std.jsonl. Off when the key is absent.
     gate         with `gate: [results.json, ...]` training starts only if at least one of those runs
                  ended its last (fixed-start) eval in success; otherwise exit code 3 (the queue marks
                  the run "gated")
@@ -71,6 +75,8 @@ def main() -> int:
     p.add_argument("--out", default=None, help="override the stage's out (smoke tests)")
     p.add_argument("--seed", type=int, default=None,
                    help="ppo.seed; out becomes the stage's out with its -s<N> suffix (if any) replaced by -s<seed>")
+    p.add_argument("--warm-start", default=None,
+                   help="override the stage's warm_start (e.g. a matching seed's policy); recorded in results.json")
     args = p.parse_args()
 
     from stable_baselines3 import PPO
@@ -80,6 +86,8 @@ def main() -> int:
     from copush.rl_callbacks import BoxRangeCallback, VideoEvalCallback, behaviors, decide, run_episode
 
     stage, cfg = load_stage(args.config)
+    if args.warm_start:
+        stage["warm_start"] = args.warm_start
     if stage.get("gate"):
         passed = [g for g in stage["gate"] if ((read_json(repo_path(g), {}) or {}).get("eval_curve") or [[0, 0, ""]])[-1][2] == "success"]
         if not passed:
@@ -113,6 +121,8 @@ def main() -> int:
     video_cfg["env"]["box_start"]["hard_frac"] = 0.0                # the same video start for every stage
     vec = make_vec_env(train_cfg, pc["n_envs"])
     tb = os.path.join(out, "tb")
+    ba = stage.get("bounded_action")
+    ent_before = None
     if ckpt:
         model = PPO.load(ckpt, env=vec, device="cpu", tensorboard_log=tb)
         vec.seed(pc["seed"] + model.num_timesteps)
@@ -126,6 +136,16 @@ def main() -> int:
                         tensorboard_log=tb, verbose=0)
         else:
             model = PPO.load(repo_path(stage["warm_start"]), env=vec, device="cpu", tensorboard_log=tb)
+            if ba:
+                from copush.bounded_policy import load_bounded
+                ent_before = float(model.ent_coef)
+                model = load_bounded(repo_path(stage["warm_start"]), env=vec, mean_bound=ba["mean_bound"],
+                                     std_cap=ba["std_cap"], init_std=ba["init_std"], ent_coef=ba.get("ent_coef"),
+                                     tensorboard_log=tb)
+                if os.path.exists(os.path.join(out, "std.jsonl")):
+                    os.remove(os.path.join(out, "std.jsonl"))
+                print(f"bounded action head: mean bound {ba['mean_bound']}, std cap {ba['std_cap']}, std set to "
+                      f"{ba['init_std']}, ent_coef {ent_before} -> {model.ent_coef}", flush=True)
             model.set_random_seed(pc["seed"])
         vec.seed(pc["seed"])
         _prune_after(os.path.join(out, "videos"), -1)          # a fresh start: no stale evals
@@ -196,9 +216,16 @@ def main() -> int:
     widen.level, widen.last_eval, widen.streak = level, ws.get("last_eval", 0), ws.get("streak", 0)
     widen.history, widen.reached_full_at = list(ws.get("history", [])), ws.get("reached_full_at")
     video = StageVideoCallback()
+    cbs = [video, widen]
+    if ba:
+        from copush.bounded_policy import StdCapCallback
+        cbs.append(StdCapCallback(os.path.join(out, "std.jsonl")))
+        bstate = os.path.join(out, "bounded.json")              # survives restarts: the ent_coef the warm start had
+        if ent_before is not None or not os.path.exists(bstate):
+            write_json(bstate, {"ent_coef_before": ent_before, "ent_coef_after": float(model.ent_coef), **ba})
     remaining = total - (model.num_timesteps if ckpt else 0)
     if remaining > 0:
-        model.learn(total_timesteps=remaining, callback=CallbackList([video, widen]), tb_log_name="ppo",
+        model.learn(total_timesteps=remaining, callback=CallbackList(cbs), tb_log_name="ppo",
                     reset_num_timesteps=ckpt is None)
     else:                                                        # killed between the last step and results.json
         from stable_baselines3.common.logger import configure
@@ -223,6 +250,8 @@ def main() -> int:
         "reached_full_at": widen.reached_full_at, "box_start": cfg["env"]["box_start"],
         "check_set": stage.get("check_set"), "reward_version": cfg["reward"]["version"], "seed": pc["seed"],
         "controller": cfg["controller"], "gate": stage.get("gate"),
+        "bounded_action": read_json(os.path.join(out, "bounded.json"), None) if ba else None,
+        "ent_coef": float(model.ent_coef),
         "widen_history": widen.history, "eval_flags": sorted(k[5:] for k in video.seen if k.startswith("flag:")),
         "eval_endings": sorted(k[4:] for k in video.seen if k.startswith("end:")),
         "eval_curve": [(e["step"], e["return"], e["reason"]) for e in evals],

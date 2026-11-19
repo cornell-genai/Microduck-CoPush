@@ -1,0 +1,31 @@
+# The stage 1 env with START NOISE on, and its two held-out sets (made once):
+#
+#   scripts/rl.sh scripts/rl/test_set.py make --config experiments/d2-steering/noisy-sets/config.yaml            # 200-start set
+#   scripts/rl.sh scripts/rl/test_set.py make --config experiments/d2-steering/noisy-sets/config.yaml --checks   # 50-start check set
+#
+# The box is randomized as in stage 1 (the sets store the box poses, Latin hypercube, even in box angle). The duck start
+# noise (heading 5 deg per duck, spacing 0.02 m, setback 0.01 m per duck, Gaussian, clipped at 3x) is drawn from each
+# episode's seed when the episode starts, so every evaluation of the same start gets the same noise. This file is also
+# the env config for evaluating on the noisy sets (scripts/rl/compare_policies.py --config).
+name: stage1-noisy
+change: stage 1 box starts plus duck start noise (start_noise), evaluation sets only
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+out: runs/d2-steering/noisy-sets                    # unused: nothing is trained
+results: experiments/d2-steering/noisy-sets/results
+test_set: experiments/test_sets/stage1_noisy_large.json
+check_set: experiments/test_sets/stage1_noisy_checks.json
+
+overrides:
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}     # stage 1's FINAL range
+  start_noise: {duck_heading_std_deg: 5.0, duck_spacing_std_m: 0.02, duck_setback_std_m: 0.01}
+
+test:
+  n: 200
+  rng_seed: 20261116                                  # box poses of stage1_noisy_large.json (used once)
+  controllers: []
+  policies: {}
+check:
+  n: 50
+  rng_seed: 20261117                                  # box poses of stage1_noisy_checks.json (used once)

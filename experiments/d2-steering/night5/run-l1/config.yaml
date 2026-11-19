@@ -1,0 +1,39 @@
+# D2 steering, night 5, Run L1 (wider start noise). Identical to night 2's Run A (reward v1.1, standard policy head, the
+# warm start's hyperparameters and ent_coef 0.01, stand-still threshold 0.02 m/s, fixed 2M duck steps, no early stopping)
+# except for ONE change: duck start noise at level L1 in training. Each seed warm-starts from the MATCHING night 2 A seed
+# (scripts/rl/overnight_steering_5.py passes --warm-start runs/d2-steering/night2/a-s<N>/model.zip and --seed <N>).
+#
+#   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-steering/night5/run-l1/config.yaml --seed 1 --warm-start runs/d2-steering/night2/a-s1/model.zip
+name: d2-steering-night5-run-l1
+change: "L1 duck start noise in training, warm start from night 2 Run A (same seed)"
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/d2-steering/night2/a-s1/model.zip     # replaced per seed by --warm-start
+out: runs/d2-steering-night5/l1-s1
+results: experiments/d2-steering/night5/run-l1/results
+test_set: experiments/test_sets/stage1_L1_large.json
+check_set: experiments/test_sets/stage1_checks.json
+
+overrides:
+  reward: {version: v1.1}
+  controller: {mode: decentral, include_partner: true}
+  rl: {eval_every: 20000}
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}   # stage 1's range
+    stand_still: {enabled: true, vx_threshold: 0.02}              # as in night 2 Run A
+  start_noise: {duck_heading_std_deg: 10, duck_heading_limit_deg: 25,
+                duck_spacing_std_m: 0.03, duck_spacing_limit_m: 0.06,
+                duck_setback_std_m: 0.015, duck_setback_back_limit_m: 0.045, duck_setback_forward_limit_m: 0.02}   # THE change
+
+steps: 2000000                            # duck entries = 1M simulator steps, always the full budget
+checkpoint_every: 200000
+max_videos: 12
+
+widen:                                    # no widening (full range); checks on the fixed check set
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 200000                      # duck entries: the check set every checkpoint (logging only)
+  episodes: 50
+  seed0: 10050
+
+early_stop: {success: 0.80, evals: 0}     # evals: 0 = NEVER stop early: always the full 2M duck steps

@@ -51,7 +51,7 @@ REWARDS: Dict[str, RewardFn] = {"progress": progress_reward}
 
 # ── RL reward (copush.env) ───────────────────────────────────────────────────
 
-TERMS = ("pos", "yaw", "success", "time", "fall", "box_fail", "coop", "contact")
+TERMS = ("pos", "yaw", "success", "time", "fall", "box_fail", "coop", "contact", "both_held")
 
 
 def balance(f_a: float, f_b: float) -> float:
@@ -79,6 +79,8 @@ class StepSummary:
     push: Dict[str, float] = field(default_factory=lambda: {"duck_a": 0.0, "duck_b": 0.0})
     # push[duck]: contact force on the box along box->target, clipped >= 0 per physics substep,
     # averaged over every substep of the env step (N)
+    both_held: bool = False             # both ducks commanded stand-still (vx below the threshold) this step
+    in_success_state: bool = False      # the success condition (box in target, yaw ok, ducks up) holds at the end
 
 
 class TaskReward:
@@ -93,6 +95,7 @@ class TaskReward:
       box_fail -box_fail_penalty, ends the episode, if the box tips > box_tilt_deg or is lost
       coop     gated_balanced: coop_lambda * max(0, dist_before - dist_after) * balance(F_A, F_B)
       contact  -contact_penalty per duck off the box for > contact_off_s, unless the box is inside
+      both_held -both_held_penalty when both ducks hold (stand-still) and the success condition does not hold
 
     `step()` returns (terms, terminated, reason); every term in TERMS is present (0 if unused),
     so logs always have the same columns. Failures are checked before success.
@@ -113,6 +116,8 @@ class TaskReward:
         if c.get("contact_penalty", 0.0) and not s.inside:
             n_off = sum(1 for v in s.off_box_s.values() if v > c["contact_off_s"] + 1e-9)
             t["contact"] = -c["contact_penalty"] * n_off
+        if c.get("both_held_penalty", 0.0) and s.both_held and not s.in_success_state:
+            t["both_held"] = -c["both_held_penalty"]
         reason = None
         if c["fall_mode"] == "terminate":
             if s.fell:

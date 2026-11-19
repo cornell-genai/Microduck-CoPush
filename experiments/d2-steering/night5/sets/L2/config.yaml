@@ -1,0 +1,23 @@
+# The stage 1 env with L2 duck start noise: the env config for evaluating on experiments/test_sets/stage1_L2_large.json
+# (scripts/rl/compare_policies.py --config). That set has the SAME 200 box poses as stage1_large.json, and every episode uses
+# the same per-start seed (heldout_seeds[0] + i = 10000 + i), so only the duck start noise differs. The noise is drawn from
+# that seed when the episode starts, so every evaluation of a start sees the same noise.
+# L2: heading std 15 deg (limit +-30), spacing std 4 cm (limit +-8), setback std
+# 2 cm (limit +6 back / -1 forward; forward limit tightened from 2 cm, see below). Built by scripts/rl/overnight_steering_5.py.
+# L2 forward setback limit: 1 cm, not the 2 cm first specified. The 500-reset check (scripts/rl/start_noise_check.py) gave 7.4%
+# redraws with 2 cm (a duck turned > 15 deg AND placed 1.5 to 2 cm forward nudges the box while settling); tightening the heading
+# limit did not pass until +-10 deg (narrower than L1). With heading +-30 and forward 1 cm: 0.0% redraws, 0 down (500 resets).
+name: stage1-L2
+change: stage 1 box starts plus L2 duck start noise, evaluation only
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+out: runs/d2-steering-night5/sets-L2                # unused: nothing is trained
+results: experiments/d2-steering/night5/sets/L2/results
+test_set: experiments/test_sets/stage1_L2_large.json
+
+overrides:
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}     # stage 1's FINAL range
+  start_noise: {duck_heading_std_deg: 15, duck_heading_limit_deg: 30,
+                duck_spacing_std_m: 0.04, duck_spacing_limit_m: 0.08,
+                duck_setback_std_m: 0.02, duck_setback_back_limit_m: 0.06, duck_setback_forward_limit_m: 0.01}

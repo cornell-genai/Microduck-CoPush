@@ -96,6 +96,11 @@ def cmd_to_action(vx_a, vyaw_a, vx_b, vyaw_b) -> np.ndarray:
                      vx_b / (0.5 * VX_MAX) - 1, vyaw_b / VYAW_MAX], dtype=np.float32)
 
 
+START_MIN_DUCK_GAP_M = 0.12        # start noise: duck centers closer than this = the ducks overlap
+START_MAX_BOX_SHIFT_M = 0.01       # start noise: the box moved more than this while settling = a duck was placed into it
+START_MAX_BOX_TURN_DEG = 2.0
+
+
 class CoPushEnv(gym.Env):
     metadata = {"render_modes": []}
 
@@ -112,6 +117,19 @@ class CoPushEnv(gym.Env):
         self.task = TaskReward(self.rcfg)
         self.sim = CoPushSim(self.cfg)                       # shares self.cfg (randomize edits its box)
         self.box0 = dict(self.cfg["box"])
+        sn = self.cfg.get("start_noise") or {}
+        self.start_noise = {k: float(sn.get(k, 0.0)) for k in ("duck_heading_std_deg", "duck_spacing_std_m", "duck_setback_std_m")}
+        if min(self.start_noise.values()) < 0:
+            raise ValueError("start_noise standard deviations must not be negative")
+        self.start_noise_on = max(self.start_noise.values()) > 0
+        # optional hard limits per term (None = the 3-sigma clip, as before); setback has separate back (+) and forward (-) limits
+        lim = {k: sn.get(k) for k in ("duck_heading_limit_deg", "duck_spacing_limit_m",
+                                      "duck_setback_back_limit_m", "duck_setback_forward_limit_m")}
+        if any(v is not None and float(v) < 0 for v in lim.values()):
+            raise ValueError("start_noise limits must not be negative (the forward setback limit is a distance, e.g. 0.02)")
+        self.start_noise_limits = {k: None if v is None else float(v) for k, v in lim.items()}
+        self.max_resamples = int(sn.get("max_resamples", 20))
+        self.start_draws = self.start_resamples = 0                 # resample rate = start_resamples / start_draws
         mr = self.cfg["box"].get("mass_range")                # randomized box mass (each reset), or None
         self.mass_range = None if mr is None else (float(mr[0]), float(mr[1]))
         if self.mass_range and not 0 < self.mass_range[0] <= self.mass_range[1]:
@@ -172,8 +190,40 @@ class CoPushEnv(gym.Env):
         self.box_scale = max(0.0, min(1.0, float(scale)))
         return self.box_scale
 
-    def _place_in_contact(self) -> None:
-        """Both ducks against the box's long face on the side away from the target, facing it."""
+    def _draw_start_noise(self) -> dict:
+        """Gaussian start noise from the episode's RNG: a heading offset per duck (deg), one change to the distance between
+        the ducks (m), a setback change per duck (m; + = farther back from the box, - = forward into it). Each draw is
+        clipped at its start_noise limit when one is given, else at 3 standard deviations (the original behavior; the
+        RNG draws are the same either way, so configs without limits reproduce exactly)."""
+        def g(std, lo=None, hi=None):
+            if std <= 0:
+                return 0.0
+            lo = -3 * std if lo is None else lo
+            hi = 3 * std if hi is None else hi
+            return float(np.clip(self.np_random.normal(0.0, std), lo, hi))
+        sn, lm = self.start_noise, self.start_noise_limits
+        sym = lambda v: (None, None) if v is None else (-v, v)                       # noqa: E731
+        fwd, back = lm["duck_setback_forward_limit_m"], lm["duck_setback_back_limit_m"]
+        sb = (None if fwd is None else -fwd, back)
+        return {"heading": {d: g(sn["duck_heading_std_deg"], *sym(lm["duck_heading_limit_deg"])) for d in DUCKS},
+                "spacing": g(sn["duck_spacing_std_m"], *sym(lm["duck_spacing_limit_m"])),
+                "setback": {d: g(sn["duck_setback_std_m"], *sb) for d in DUCKS}}
+
+    def _start_ok(self, st: dict) -> bool:
+        """A noisy start is kept when both ducks are upright after settling, the ducks are not on top of each other,
+        and the box did not move while settling (a duck placed into the box shoves it)."""
+        if any(st[d]["down"] for d in DUCKS):
+            return False
+        if math.dist(st["duck_a"]["position"], st["duck_b"]["position"]) < START_MIN_DUCK_GAP_M:
+            return False
+        box = self.cfg["box"]
+        moved = math.dist(st["box"]["position"], (box["x"], box["y"]))
+        turned = abs(math.degrees(wrap_angle(st["box"]["yaw"] - math.radians(box["yaw"]))))
+        return moved <= START_MAX_BOX_SHIFT_M and turned <= START_MAX_BOX_TURN_DEG
+
+    def _place_in_contact(self, noise: Optional[dict] = None) -> None:
+        """Both ducks against the box's long face on the side away from the target, facing it (with start noise:
+        each duck's heading and setback, and their spacing, offset by `noise`)."""
         box, tg, e = self.cfg["box"], self.cfg["target"], self.ecfg
         b = math.radians(box["yaw"])
         t = (math.cos(b), math.sin(b))                     # long (28 cm) axis
@@ -181,13 +231,15 @@ class CoPushEnv(gym.Env):
         side = 1.0 if (tg["x"] - box["x"]) * n[0] + (tg["y"] - box["y"]) * n[1] >= 0 else -1.0
         face = (side * n[0], side * n[1])                  # push direction
         yaw = math.degrees(math.atan2(face[1], face[0]))
-        cx, cy = box["x"] - face[0] * e["contact_setback"], box["y"] - face[1] * e["contact_setback"]
-        half = e["contact_spacing"] / 2
+        half = (e["contact_spacing"] + (noise["spacing"] if noise else 0.0)) / 2
         # duck A on the left of the push direction, as in the approach layout
         left = (-face[1], face[0])
         sgn = 1.0 if left[0] * t[0] + left[1] * t[1] >= 0 else -1.0
         for duck, k in (("duck_a", +1), ("duck_b", -1)):
-            self.cfg[duck].update({"x": cx + k * sgn * half * t[0], "y": cy + k * sgn * half * t[1], "yaw": yaw})
+            back = e["contact_setback"] + (noise["setback"][duck] if noise else 0.0)
+            cx, cy = box["x"] - face[0] * back, box["y"] - face[1] * back
+            self.cfg[duck].update({"x": cx + k * sgn * half * t[0], "y": cy + k * sgn * half * t[1],
+                                   "yaw": yaw + (noise["heading"][duck] if noise else 0.0)})
 
     def is_heldout(self, seed: int) -> bool:
         return self.heldout[0] <= seed <= self.heldout[1]
@@ -225,12 +277,20 @@ class CoPushEnv(gym.Env):
         if self.mass_range:                               # a different box mass every episode (seeded by reset)
             self.sim.set_box_mass(float(self.np_random.uniform(*self.mass_range)))
         if self.start_mode == "in_contact":
-            self._place_in_contact()
-            self.sim.reset()
-            self.sim.step({"A": (0, 0, 0), "B": (0, 0, 0)}, duration=self.ecfg["settle_s"])
-            for d in DUCKS:
-                self.sim.set_policy(d, "shoepush")
-            st = self.sim.mark_start()
+            for attempt in range(self.max_resamples + 1):          # start noise: redraw starts that fail the check
+                noise = self._draw_start_noise() if self.start_noise_on else None
+                self._place_in_contact(noise)
+                self.sim.reset()
+                self.sim.step({"A": (0, 0, 0), "B": (0, 0, 0)}, duration=self.ecfg["settle_s"])
+                for d in DUCKS:
+                    self.sim.set_policy(d, "shoepush")
+                st = self.sim.mark_start()
+                if noise is None:
+                    break
+                self.start_draws += 1
+                if self._start_ok(st):
+                    break
+                self.start_resamples += 1
         else:
             st = self.sim.reset()
         self.state = st
@@ -308,6 +368,7 @@ class CoPushEnv(gym.Env):
     def step(self, action):
         st0 = self.state
         cmds = action_to_cmd(action)
+        both_held = False
         if self.stand_still["enabled"]:                  # commanded vx below the threshold = stand on velstand
             for d, L in (("duck_a", "A"), ("duck_b", "B")):
                 still = cmds[L][0] < self.stand_still["vx_threshold"]
@@ -315,6 +376,7 @@ class CoPushEnv(gym.Env):
                     cmds[L] = (0.0, 0.0, 0.0)
                 if still != self.hold[d]:
                     self.set_hold(d, still)
+            both_held = cmds["A"] == (0.0, 0.0, 0.0) and cmds["B"] == (0.0, 0.0, 0.0)
         push = {d: 0.0 for d in DUCKS}
         force = {d: 0.0 for d in DUCKS}
         ctime = {d: 0.0 for d in DUCKS}
@@ -355,7 +417,8 @@ class CoPushEnv(gym.Env):
                               yaw_before=st0["yaw_error"], yaw_after=st["yaw_error"],
                               success_held_s=self.success_held,
                               fell=newly_fell, down_s=down_s, box_tilt_deg=st["box"]["tilt_deg"], box_lost=lost,
-                              inside=st["inside"], off_box_s=dict(self.no_contact), push=push)
+                              inside=st["inside"], off_box_s=dict(self.no_contact), push=push,
+                              both_held=both_held, in_success_state=ok)
         terms, terminated, reason = self.task.step(summary)
         reward = float(sum(terms.values()))
         flags += self.monitor.update(st, reward=reward)[1]

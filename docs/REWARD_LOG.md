@@ -330,3 +330,21 @@ Success is compared, not return, because the rewards differ.
 
 **Video:** `runs/stage1b-b-lower-time-penalty/videos/side_by_side/start44_stage1_vs_b_time_penalty.mp4`
 (stage 1 left, B right). Both get within about 0.3 m of the target, then the box drifts off while the ducks wait.
+
+## v1.4 (2026-11-16): tried and rejected
+
+**Status: tried and rejected.** Night 3 showed no drop in both-idle stalls ([results](../experiments/d2-steering/negative-results/night3-v1.4-penalty/SUMMARY.md)): 9.0 and 8.5 episodes on average for A and C on the no-noise set. Night 4 goes back to v1.1.
+
+**What changed from v1.1** (one change): a penalty of −0.05 per env step while both ducks hold at once (both
+command a forward speed below the stand-still threshold of 0.02 m/s) and the success condition does not hold.
+Everything else is v1.1. (v1.2 and v1.3 were already taken, so this is v1.4.)
+
+**Why:** night 2 of the D2 steering work showed stand-still works (95% overall, 90% on the long-turn side), but
+the remaining failures are an absorbing state: 41 of 44 yaw-only stalls and most position stalls end with both
+ducks commanding exactly 0.00 m/s for the last 10 steps, a few centimetres or degrees short. Holding is free there,
+so the policy never leaves it. The penalty makes both-held cost more than the time penalty, without touching
+a single duck holding (which pivoting needs).
+
+**Setting:** `both_held_penalty` in `reward_versions.v1.4` (default 0 elsewhere, so older versions reproduce).
+Results: [experiments/d2-steering/negative-results/night3-v1.4-penalty/](../experiments/d2-steering/negative-results/night3-v1.4-penalty/).
+

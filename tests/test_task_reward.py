@@ -143,3 +143,18 @@ def test_contact_penalty_is_off_while_the_box_is_inside_and_in_v11():
     assert t["contact"] == 0.0
     t, _, _ = TaskReward(V1).step(S(off_box_s={"duck_a": 2.0, "duck_b": 2.0}))
     assert t["contact"] == 0.0
+
+
+# ── v1.4: both-held penalty ──────────────────────────────────────────────────
+def test_both_held_penalty_only_when_both_hold_and_not_in_success_state():
+    c = {**V1, **DEFAULTS["reward_versions"]["v1.4"]}
+    r = TaskReward(c)
+    assert r.step(S(both_held=True))[0]["both_held"] == pytest.approx(-0.05)
+    assert r.step(S(both_held=False))[0]["both_held"] == 0.0
+    assert r.step(S(both_held=True, in_success_state=True))[0]["both_held"] == 0.0
+
+
+def test_both_held_penalty_off_by_default_and_in_older_versions():
+    for v in ("v1", "v1.1", "v1.2", "v1.3"):
+        c = {**V1, **DEFAULTS["reward_versions"][v]}
+        assert TaskReward(c).step(S(both_held=True))[0]["both_held"] == 0.0

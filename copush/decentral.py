@@ -101,10 +101,10 @@ def pair_obs(st: dict, include_partner: bool) -> np.ndarray:
     return np.stack([local_obs(st, d, include_partner) for d in DUCK_ORDER])
 
 
-def decentral_action(model, st: dict, include_partner: bool) -> np.ndarray:
+def decentral_action(model, st: dict, include_partner: bool, deterministic: bool = True) -> np.ndarray:
     """The central 4-vector [A vx, A vyaw, B vx, B vyaw]: the shared policy run once per duck on that
-    duck's own observation (deterministic)."""
-    a, _ = model.predict(pair_obs(st, include_partner), deterministic=True)
+    duck's own observation (deterministic by default; deterministic=False samples from the policy's Gaussian)."""
+    a, _ = model.predict(pair_obs(st, include_partner), deterministic=deterministic)
     return np.clip(np.asarray(a, dtype=np.float32), -1.0, 1.0).reshape(4)
 
 
