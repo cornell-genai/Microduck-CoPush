@@ -7,8 +7,9 @@
         --right "D2 with chirps (2 s, 30 deg)=runs/chirp-partner-sensing/finetune-2s-30deg/model.zip@partner@chirp:2:30" \
         --out experiments/chirp-partner-sensing/finetune-2s-30deg/results
 
-A spec is label=path@partner or @own, optionally followed by @chirp:<interval_s>:<direction_noise_deg>[:<distance_noise>]
-and @trueheading or @heldheading, and a last @standstill (as in scripts/rl/compare_policies.py). The outcome of each episode is written under its label. Writes
+A spec is label=path for a central policy, or label=path@partner / @own for a decentralized policy,
+optionally followed by @chirp:<interval_s>:<direction_noise_deg>[:<distance_noise>] and @trueheading
+or @heldheading, and a last @standstill (as in scripts/rl/compare_policies.py). The outcome of each episode is written under its label. Writes
 <out>/start<N>_side_by_side.gif and .mp4 (GIF under 1 MB).
 """
 from __future__ import annotations
@@ -38,14 +39,19 @@ def parse(spec: str):
     chirp = re.search(r"@chirp:([\d.]+):([\d.]+)(?::([\d.]+))?$", path)
     if chirp:
         path = path[: chirp.start()]
-    own = path.endswith("@own")
-    path = path[: path.rindex("@")]
-    dc = {"include_partner": not own}
+    own, partner = path.endswith("@own"), path.endswith("@partner")
+    if own:
+        path = path[: -len("@own")]
+    elif partner:
+        path = path[: -len("@partner")]
+    dc = {"include_partner": partner} if (own or partner) else None
     if chirp:
+        if not (dc and dc["include_partner"]):
+            raise ValueError("chirps require a decentralized @partner policy")
         dc["chirp"] = {"interval_s": float(chirp[1]), "direction_noise_deg": float(chirp[2]), "heading": heading,
                        "distance": chirp[3] is not None,
                        **({"distance_noise": float(chirp[3])} if chirp[3] else {})}
-    return label, {"path": path, "decentral": dc, "standstill": stand}
+    return label, {"path": path, **({"decentral": dc} if dc else {}), "standstill": stand}
 
 
 def main() -> int:
@@ -70,7 +76,7 @@ def main() -> int:
     for i, spec in enumerate((a.left, a.right)):
         label, pol = parse(spec)
         cfg = dict(cfg0)
-        if "chirp" in pol["decentral"]:
+        if pol.get("decentral", {}).get("chirp"):
             cfg["chirp"] = {**cfg0["chirp"], "enabled": True, **pol["decentral"]["chirp"]}
         if pol["standstill"]:
             cfg["env"] = {**cfg0["env"], "stand_still": {**cfg0["env"]["stand_still"], "enabled": True}}
