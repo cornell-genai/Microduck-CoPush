@@ -25,13 +25,16 @@ walk to the box and push it into the target together.
 ### Steering (Anmol)
 
 - **Controller:** central. **Branch:** `steering`. **Folder:** `experiments/steering/`.
-- **Status:** starting. Stage 1 (random box starts up to 15 cm and 45 deg) succeeds on 60% of its
-  50 test starts; the long-turn side (box turned more than +15 deg) only 2 of 17. Stage 1b's two
-  fixes (oversampling hard starts, a smaller time penalty) did not fix it (4 of 17 and 1 of 17).
+- **Status:** the long-turn blind spot is fixed on the Stage 1 range. With a real stand-still action,
+  two central-policy seeds win 96% and 98% overall and 92% and 97% on the long-turn side, against
+  66% and 68% overall and 21% and 18% long-turn for matched continued-training controls (200
+  held-out starts). Both learned policies pivot on all 66 long-turn starts. Results:
+  [experiments/steering/](experiments/steering/README.md).
 - **Next steps:**
-  1. Stand-still action (lets one duck hold so the other pivots the box) on the stage 1 hard starts.
-  2. If that is not enough: a reward for pointing the push face at the target.
-  3. Widen the box angle range beyond ±45 deg with auto-widen.
+  1. Keep stand-still and widen the box angle range beyond ±45 deg with auto-widen.
+  2. Check every wider-angle policy on the Stage 1 set for forgetting.
+  3. Track the anchor/pusher role split (duck A currently does 77-80% of pushing), both-held stalls
+     and the remaining near-target time-outs as the range grows.
 
 ### Rendezvous (Winston)
 
@@ -96,6 +99,10 @@ Results: [experiments/d2-steering/](experiments/d2-steering/README.md); rejected
   fully random starts.
 
 ## Decisions so far
+
+- 2026-11-21: keep the central stand-still action. Against matched fixed-budget controls it raises
+  success by 30.2 points overall (+24.2 to +36.3) and 75.0 points on the long-turn side (+65.2 to
+  +84.8), with 96-98% overall success across two seeds. Widen the box-angle range next.
 
 - 2026-11-12: Stage 1b's two fixes for the long-turn side failed (4 of 17 and 1 of 17 against 2 of
   17); keep the tooling and the negative result.
