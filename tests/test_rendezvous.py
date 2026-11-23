@@ -20,7 +20,8 @@ if not all(os.path.exists(policy_path(load_config(), n)) for n in ("velstand", "
 from copush.env import docking_spots  # noqa: E402
 from copush.experiments import load_stage, repo_path  # noqa: E402
 from copush.rendezvous import (Rendezvous, RendezvousPairEnv, RendezvousVecEnv, ScriptedRendezvous,  # noqa: E402
-                               approach_reward, assign_spots, plan_path, sample_start, segment_hits_box, settings)
+                               approach_reward, assign_spots, dock_payout, plan_path, sample_start, segment_hits_box,
+                               settings)
 
 CONFIG = "experiments/d2-rendezvous/config.yaml"
 NOISE = {"heading": {"duck_a": 7.0, "duck_b": -4.0}, "spacing": 0.03, "setback": {"duck_a": 0.02, "duck_b": -0.01}}
@@ -229,6 +230,38 @@ def test_r4_reward_is_r3_plus_approach_without_partial_or_arrive():
             if te or tr:
                 break
     assert seen_approach
+
+
+def test_dock_payout_formula():
+    assert dock_payout(20, 50, {"dock_payout": 0.5}) == pytest.approx(15.0)   # the example: docking at step 20 pays 15
+    assert dock_payout(50, 50, {"dock_payout": 0.5}) == 0.0
+    assert dock_payout(60, 50, {"dock_payout": 0.5}) == 0.0                     # never negative
+    assert dock_payout(10, 50, {}) == 0.0                                       # runs r1-r5 reward dicts: off
+
+
+def test_r6_reward_is_r5_plus_the_docking_payout_only_on_docking():
+    """r6: the same scripted episode gives r5's reward on every step, except the docking step, which adds
+    0.5 x (max_steps - steps) to each duck. Timeouts and falls get nothing extra."""
+    _, cfg5 = load_stage("experiments/d2-rendezvous/r5-bc-warmstart.yaml")
+    _, cfg6 = load_stage("experiments/d2-rendezvous/r6-dock-payout.yaml")
+    e5, e6 = RendezvousPairEnv(cfg5), RendezvousPairEnv(cfg6)
+    assert e5.rw["dock_payout"] == 0.0 and e6.rw["dock_payout"] == 0.5
+    assert {k: v for k, v in e6.rw.items() if k != "dock_payout"} == {k: v for k, v in e5.rw.items() if k != "dock_payout"}
+    docked = 0
+    for seed in range(6):
+        e5.reset(seed=seed)
+        e6.reset(seed=seed)
+        a5, a6 = ScriptedRendezvous(e5.rv), ScriptedRendezvous(e6.rv)
+        for _ in range(60):
+            _, r5, te5, tr5, i5 = e5.step(a5(None))
+            _, r6, te6, tr6, i6 = e6.step(a6(None))
+            assert (te5, tr5, i5["reason"], i5["steps"]) == (te6, tr6, i6["reason"], i6["steps"])
+            extra = 0.5 * (e6.rv.r["max_steps"] - i6["steps"]) if i6["reason"] == "arrived" else 0.0
+            assert r6 == pytest.approx(r5 + extra, abs=1e-5)
+            if te5 or tr5:
+                docked += i6["reason"] == "arrived"
+                break
+    assert docked > 0                                                          # the payout path was exercised
 
 
 def test_curriculum_advances_after_a_window_of_mostly_arrivals_and_not_before():

@@ -63,9 +63,12 @@ DEFAULTS = {
     # Final-approach reward (r4; approach 0 = off): +approach x max(0, 1 - distance / approach_m) x max(0, 1 -
     # heading error / approach_yaw_rad) per duck per step, a smooth pull through the last few cm and degrees that is
     # nonzero only inside approach_m and approach_yaw_rad and peaks at approach when exactly on the spot.
+    # Docking payout (r6; dock_payout 0 = off): on docking (the episode ends), each duck also gets dock_payout x
+    # (max_steps - steps taken), the steps it can no longer earn. With dock_payout at the approach term's maximum,
+    # docking now pays at least as much as staying near the spot until the time limit, so hovering never wins.
     "reward": {"w_dist": 1.0, "w_yaw": 0.3, "time": 0.02, "collision": 1.0, "partial": 2.0, "partial_m": 0.10,
                "arrive": 5.0, "timeout": 2.0, "hold_bonus": 0.0, "hold_yaw_deg": 15.0, "hold_min_steps": 3,
-               "approach": 0.0, "approach_m": 0.10, "approach_yaw_rad": 0.35},
+               "approach": 0.0, "approach_m": 0.10, "approach_yaw_rad": 0.35, "dock_payout": 0.0},
     # Curriculum (training only; disabled by default so old configs reproduce): start distance begins at levels[0] and
     # advances to the next level once the docking rate over the last window_steps duck-steps of completed episodes
     # exceeds advance_rate. Bearing and heading stay uniform over 360 deg at every level. Per training worker (each
@@ -554,6 +557,12 @@ def approach_reward(dist_m: float, yaw_err_rad: float, rw: dict) -> float:
     return a * max(0.0, 1.0 - dist_m / rw["approach_m"]) * max(0.0, 1.0 - yaw_err_rad / rw["approach_yaw_rad"])
 
 
+def dock_payout(steps: int, max_steps: int, rw) -> float:
+    """r6's lump sum per duck on docking: dock_payout x the steps left in the episode (0 when rw["dock_payout"] is 0 or
+    missing, as in runs r1-r5)."""
+    return rw.get("dock_payout", 0.0) * max(0, max_steps - steps)
+
+
 class RendezvousPairEnv(gym.Env):
     """Rendezvous training: one simulation as two agents sharing a policy. Observation (2, 14), action (2, 2), reward
     (2,): each duck's own reward per step,
@@ -562,7 +571,8 @@ class RendezvousPairEnv(gym.Env):
         within partial_m of its spot this episode + hold_bonus while its heading error has stayed under
         hold_yaw_deg for hold_min_steps consecutive steps or more + approach_reward (inside approach_m and
         approach_yaw_rad of its spot)
-    plus arrive to both when both ducks are within pos_tol_m and yaw_tol_deg of their spots for hold_s (terminated),
+    plus arrive + dock_payout x (max_steps - steps) to both when both ducks are within pos_tol_m and yaw_tol_deg of
+    their spots for hold_s (terminated),
     and -timeout to both at max_steps (truncated) or when a duck falls (terminated, info reason "fall").
     Starts: options={"start": ...} (an eval-set entry), else sample_start from the env's own seeded RNG, at the
     current curriculum level's distance range when curriculum.enabled (training split only; an explicit start
@@ -630,7 +640,7 @@ class RendezvousPairEnv(gym.Env):
                     - rw["time"] - rw["collision"] * float(info["hit_box"][d] or info["hit_ducks"]) + bonus)
         terminated, truncated, reason = False, False, None
         if info["arrived"]:
-            r += rw["arrive"]
+            r += rw["arrive"] + dock_payout(self.rv.steps, self.rv.r["max_steps"], rw)
             terminated, reason = True, "arrived"
         elif info["fell"]:
             r -= rw["timeout"]
