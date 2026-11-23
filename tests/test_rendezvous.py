@@ -20,7 +20,7 @@ if not all(os.path.exists(policy_path(load_config(), n)) for n in ("velstand", "
 from copush.env import docking_spots  # noqa: E402
 from copush.experiments import load_stage, repo_path  # noqa: E402
 from copush.rendezvous import (Rendezvous, RendezvousPairEnv, RendezvousVecEnv, ScriptedRendezvous,  # noqa: E402
-                               assign_spots, plan_path, sample_start, segment_hits_box, settings)
+                               approach_reward, assign_spots, plan_path, sample_start, segment_hits_box, settings)
 
 CONFIG = "experiments/d2-rendezvous/config.yaml"
 NOISE = {"heading": {"duck_a": 7.0, "duck_b": -4.0}, "spacing": 0.03, "setback": {"duck_a": 0.02, "duck_b": -0.01}}
@@ -187,6 +187,48 @@ def test_holding_bonus_needs_three_consecutive_steps_under_15_degrees():
                 assert r[k] == pytest.approx(0.1 if run[d] >= 3 else 0.0, abs=1e-6)
                 seen_bonus |= run[d] >= 3
     assert seen_bonus                                   # the scripted controller holds heading in some start
+
+
+def test_approach_reward_formula_and_range():
+    rw = {"approach": 0.5, "approach_m": 0.10, "approach_yaw_rad": 0.35}
+    assert approach_reward(0.0, 0.0, rw) == pytest.approx(0.5)
+    assert approach_reward(0.05, 0.175, rw) == pytest.approx(0.5 * 0.5 * 0.5)
+    assert approach_reward(0.10, 0.0, rw) == 0.0 and approach_reward(0.3, 0.0, rw) == 0.0
+    assert approach_reward(0.0, 0.35, rw) == 0.0 and approach_reward(0.0, 3.0, rw) == 0.0
+    assert approach_reward(0.0, 0.0, {"approach": 0.0, "approach_m": 0.1, "approach_yaw_rad": 0.35}) == 0.0
+    assert approach_reward(0.0, 0.0, {}) == 0.0                     # nights 1-3 reward dicts have no approach key
+
+
+def test_night4_reward_is_night3_plus_approach_without_partial_or_arrive():
+    """Night 4: each non-terminal step's reward is night 3's (partial 0) plus the approach term; on handoff no bonus."""
+    _, cfg = load_stage("experiments/d2-rendezvous/night4.yaml")
+    env = RendezvousPairEnv(cfg)
+    rw = env.rw
+    assert (rw["w_yaw"], rw["hold_bonus"], rw["partial"], rw["arrive"], rw["approach"]) == (0.8, 0.1, 0.0, 0.0, 0.5)
+    _, cfg2 = load_stage(CONFIG)
+    assert RendezvousPairEnv(cfg2).rw["approach"] == 0.0               # night 2's config unchanged
+    seen_approach = False
+    for seed in range(4):
+        env.reset(seed=seed)
+        act = ScriptedRendezvous(env.rv)
+        hits = 0
+        for _ in range(50):
+            hold_before = dict(env._hold_count)
+            _, r, te, tr, info = env.step(act(None))
+            new_hits = sum(info["collisions"]["box"].values()) + info["collisions"]["ducks"]
+            clean, hits = new_hits == hits, new_hits
+            for k, d in enumerate(("duck_a", "duck_b")):
+                dist, yaw = info["errors"][d]
+                hold = hold_before[d] + 1 if yaw < math.radians(rw["hold_yaw_deg"]) else 0
+                ap = approach_reward(dist, yaw, rw)
+                exp = (-rw["w_dist"] * dist / env.max_start_dist - rw["w_yaw"] * yaw / math.pi - rw["time"]
+                       + (rw["hold_bonus"] if hold >= rw["hold_min_steps"] else 0.0) + ap)
+                if clean and not tr and not (te and info["reason"] != "arrived"):
+                    assert r[k] == pytest.approx(exp, abs=1e-5)     # arrival adds nothing now
+                seen_approach |= ap > 0
+            if te or tr:
+                break
+    assert seen_approach
 
 
 def test_curriculum_advances_after_a_window_of_mostly_arrivals_and_not_before():

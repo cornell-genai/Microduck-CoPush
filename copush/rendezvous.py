@@ -60,8 +60,12 @@ DEFAULTS = {
     # Holding bonus (night 3; hold_bonus 0 = off, night 2's reward): +hold_bonus per step once a duck's heading error
     # has been under hold_yaw_deg for hold_min_steps consecutive steps (counting this one); the count resets when the
     # error reaches hold_yaw_deg. Rewards keeping a good heading, not just passing through it.
+    # Final-approach reward (night 4; approach 0 = off): +approach x max(0, 1 - distance / approach_m) x max(0, 1 -
+    # heading error / approach_yaw_rad) per duck per step, a smooth pull through the last few cm and degrees that is
+    # nonzero only inside approach_m and approach_yaw_rad and peaks at approach when exactly on the spot.
     "reward": {"w_dist": 1.0, "w_yaw": 0.3, "time": 0.02, "collision": 1.0, "partial": 2.0, "partial_m": 0.10,
-               "arrive": 5.0, "timeout": 2.0, "hold_bonus": 0.0, "hold_yaw_deg": 15.0, "hold_min_steps": 3},
+               "arrive": 5.0, "timeout": 2.0, "hold_bonus": 0.0, "hold_yaw_deg": 15.0, "hold_min_steps": 3,
+               "approach": 0.0, "approach_m": 0.10, "approach_yaw_rad": 0.35},
     # Curriculum (training only; disabled by default so old configs reproduce): start distance begins at levels[0] and
     # advances to the next level once the docking rate over the last window_steps duck-steps of completed episodes
     # exceeds advance_rate. Bearing and heading stay uniform over 360 deg at every level. Per training worker (each
@@ -542,19 +546,29 @@ def policy_act(model, rv: Rendezvous, deterministic: bool = True):
     return act
 
 
+def approach_reward(dist_m: float, yaw_err_rad: float, rw: dict) -> float:
+    """Night 4's final-approach term for one duck (0 when rw["approach"] is 0 or missing, as in nights 1-3)."""
+    a = rw.get("approach", 0.0)
+    if not a:
+        return 0.0
+    return a * max(0.0, 1.0 - dist_m / rw["approach_m"]) * max(0.0, 1.0 - yaw_err_rad / rw["approach_yaw_rad"])
+
+
 class RendezvousPairEnv(gym.Env):
     """Rendezvous training: one simulation as two agents sharing a policy. Observation (2, 14), action (2, 2), reward
     (2,): each duck's own reward per step,
         -w_dist x (its distance to its spot / the start distribution's max distance) - w_yaw x (its heading error /
         pi) - time - collision (if it touched the box or its partner this step) + partial the first time it is
         within partial_m of its spot this episode + hold_bonus while its heading error has stayed under
-        hold_yaw_deg for hold_min_steps consecutive steps or more
+        hold_yaw_deg for hold_min_steps consecutive steps or more + approach_reward (inside approach_m and
+        approach_yaw_rad of its spot)
     plus arrive to both when both ducks are within pos_tol_m and yaw_tol_deg of their spots for hold_s (terminated),
     and -timeout to both at max_steps (truncated) or when a duck falls (terminated, info reason "fall").
     Starts: options={"start": ...} (an eval-set entry), else sample_start from the env's own seeded RNG, at the
     current curriculum level's distance range when curriculum.enabled (training split only; an explicit start
     always bypasses it, as does split "eval"/"check"). info["curriculum_level"] reports the level every step, for a
-    training script to log level changes."""
+    training script to log level changes; info["episode_level"] is the level the current episode was played at (on
+    the final step, before any advance it triggered), for per-level docking rates."""
     metadata = {"render_modes": []}
 
     def __init__(self, cfg: dict, split: str = "train"):
@@ -611,6 +625,7 @@ class RendezvousPairEnv(gym.Env):
             self._hold_count[d] = self._hold_count[d] + 1 if err[d][1] < math.radians(rw["hold_yaw_deg"]) else 0
             if self._hold_count[d] >= rw["hold_min_steps"]:
                 bonus += rw["hold_bonus"]
+            bonus += approach_reward(err[d][0], err[d][1], rw)
             r[k] = (-rw["w_dist"] * (err[d][0] / self.max_start_dist) - rw["w_yaw"] * (err[d][1] / math.pi)
                     - rw["time"] - rw["collision"] * float(info["hit_box"][d] or info["hit_ducks"]) + bonus)
         terminated, truncated, reason = False, False, None
@@ -623,10 +638,12 @@ class RendezvousPairEnv(gym.Env):
         elif self.rv.steps >= self.rv.r["max_steps"]:
             r -= rw["timeout"]
             truncated, reason = True, "timeout"
+        episode_level = self.cur_level                   # the level this episode was played at (before any advance)
         if (terminated or truncated) and self.cur_on:
             self._advance_curriculum(reason == "arrived", self.rv.steps * 2)
         info = {"reason": reason, "steps": self.rv.steps, "collisions": self.rv.collisions,
-                "curriculum_level": self.cur_level, "errors": {d: [float(v) for v in err[d]] for d in DUCKS}}
+                "curriculum_level": self.cur_level, "episode_level": episode_level,
+                "errors": {d: [float(v) for v in err[d]] for d in DUCKS}}
         return pair_obs(self.rv, st), r, terminated, truncated, info
 
     def close(self):

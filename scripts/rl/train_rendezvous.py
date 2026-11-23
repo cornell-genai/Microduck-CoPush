@@ -15,7 +15,8 @@ error, then lower position error).
 --early-stop-step (0 disables, the default): if an eval at or after this step finds 0 arrivals, training stops there
 (not a crash: results.json is still written, with "aborted": true, and <out>/abort.json with the reason) instead of
 running to the full step budget. Curriculum level changes (copush.rendezvous RendezvousPairEnv, cfg rendezvous.
-curriculum.enabled) are printed as "curriculum: ..." lines when any worker's level changes.
+curriculum.enabled) are printed as "curriculum: ..." lines when any worker's level changes, and each eval prints and
+logs (evals.jsonl "train_by_level", "train_by_level_total") the training episodes' docking rate per curriculum level.
 """
 from __future__ import annotations
 
@@ -107,6 +108,8 @@ def main() -> int:
         print(f"scratch: training {total} duck steps, seed {pc['seed']}, {pc['n_envs']} envs, eval every {every}", flush=True)
     wall0, t0 = state.get("wall_s", 0.0), time.perf_counter()
     abort = {"reason": None}
+    by_level = {}                                       # training episodes since the last eval: level -> [episodes, arrived]
+    by_level_total = {}                                 # the same over the whole run
 
     def evaluate(path, step):
         d = os.path.join(out, "evals", f"step_{step}")
@@ -120,7 +123,13 @@ def main() -> int:
         row = {"step": step, "arrival_rate": s["arrival_rate"], "arrived": s["arrived"], "n": s["n"],
                "mean_steps_to_arrive": s["mean_steps_to_arrive"], "pos_err_cm_mean": s["pos_err_cm_mean"],
                "yaw_err_deg_mean": s["yaw_err_deg_mean"], "duck_box_hits": s["duck_box_hits"],
-               "duck_duck_hits": s["duck_duck_hits"], "falls": s["falls_rv"], "wall_s": round(wall0 + time.perf_counter() - t0, 1)}
+               "duck_duck_hits": s["duck_duck_hits"], "falls": s["falls_rv"], "wall_s": round(wall0 + time.perf_counter() - t0, 1),
+               "train_by_level": {str(k): {"episodes": v[0], "arrived": v[1]} for k, v in sorted(by_level.items())},
+               "train_by_level_total": {str(k): {"episodes": v[0], "arrived": v[1]} for k, v in sorted(by_level_total.items())}}
+        if by_level:
+            print("training docking by curriculum level since the last eval: " + ", ".join(
+                f"level {k}: {v[1]}/{v[0]} ({100 * v[1] / max(v[0], 1):.1f}%)" for k, v in sorted(by_level.items())), flush=True)
+        by_level.clear()
         with open(os.path.join(out, "evals.jsonl"), "a") as f:
             f.write(json.dumps(row) + "\n")
         best = read_json(os.path.join(out, "best.json"))
@@ -161,6 +170,11 @@ def main() -> int:
                 if prev != lvl:
                     print(f"curriculum: worker {w} level {prev} -> {lvl} at step {self.num_timesteps}", flush=True)
                 self.last_level[w] = lvl
+                if i % 2 == 0 and info.get("reason") is not None and "episode_level" in info:
+                    for tally in (by_level, by_level_total):
+                        c = tally.setdefault(int(info["episode_level"]), [0, 0])
+                        c[0] += 1
+                        c[1] += int(info["reason"] == "arrived")
             if self.num_timesteps - self.last >= every:
                 self.last = self.num_timesteps
                 evaluate(checkpoint(self.num_timesteps), self.num_timesteps)
