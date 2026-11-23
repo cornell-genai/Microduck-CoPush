@@ -52,6 +52,15 @@ pushing, both ducks touch the box on 42% to 50% of steps, and one duck has under
 97 and 111 of 200 episodes. On turning starts this is often the intended anchor-and-pusher behavior,
 not one duck quitting, but it should not grow into a permanent one-duck solution.
 
+### Before and after
+
+Original Stage 1 left, trained stand-still right, same +44.8-degree start. Stage 1 runs out of time;
+stand-still holds one duck as the pivot and wins in 46 steps.
+
+![Before: Stage 1 times out. After: stand-still wins.](results/gifs/before_after/start186_side_by_side.gif)
+
+### Against the matched control
+
 Control left, stand-still right, same +39.8-degree start: the control times out; stand-still pivots
 and wins in 56 steps.
 
