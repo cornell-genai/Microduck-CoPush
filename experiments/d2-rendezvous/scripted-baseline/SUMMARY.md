@@ -8,7 +8,7 @@ and [results.md](results.md) (full per-kind tables).*
 The push policy (night 5 `l2-s2`, `runs/d2-steering-night5/l2-s2/model.zip`, sha256 `ab82e344...`) only works from the
 spots it was trained on: a 3 cm shift costs it 11 to 22 points (docking sweep, branch `docking-sweep`). Can a simple
 script bring two ducks from anywhere near the box to those spots precisely enough, and fast enough, for the push to
-work? This is the reference a learned rendezvous coordinator (night 1, `scripts/rl/overnight_rendezvous_1.py`) has to beat.
+work? This is the reference a learned rendezvous coordinator (r1-delta-reward, `scripts/rl/run_r1_delta_reward.py`) has to beat.
 
 ## Setup
 
@@ -58,7 +58,7 @@ work? This is the reference a learned rendezvous coordinator (night 1, `scripts/
 ## What it means
 
 A script gets the ducks to the spots precisely; it is just slow, and slowest exactly where the ducks must walk around
-the box or untangle a near-symmetric start. The learned rendezvous coordinator (night 1) has the same action space and
+the box or untangle a near-symmetric start. The learned rendezvous coordinator (r1-delta-reward) has the same action space and
 walking policy, so it cannot walk faster; it can only win by choosing better routes (fewer in-place turns, no
 stop-and-go at the box corners, less yielding). The 50-step handoff budget is also a choice: 104 of the 200 starts hand
 off undocked, and those succeed only 38% of the time, so a longer budget would raise the baseline too.

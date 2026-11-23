@@ -119,8 +119,8 @@ def test_pair_env_gives_each_duck_its_own_reward():
 
 
 def test_reward_is_absolute_distance_and_heading_not_their_improvement():
-    """Night 2: a duck that stands still still gets a nonzero (negative) reward every step, since the term is its
-    current distance/heading, not whether it improved -- night 1's reward vanished once a duck stopped moving."""
+    """r2: a duck that stands still still gets a nonzero (negative) reward every step, since the term is its
+    current distance/heading, not whether it improved -- r1's reward vanished once a duck stopped moving."""
     _, cfg = load_stage(CONFIG)
     env = RendezvousPairEnv(cfg)
     obs, info = env.reset(seed=7)
@@ -163,11 +163,11 @@ def test_partial_arrival_bonus_is_given_once_per_duck_per_episode():
 
 
 def test_holding_bonus_needs_three_consecutive_steps_under_15_degrees():
-    """Night 3: +hold_bonus only once a duck's heading error has been under hold_yaw_deg for hold_min_steps steps in a
-    row; the count resets when the error reaches hold_yaw_deg. Night 2's config has it off."""
+    """r3: +hold_bonus only once a duck's heading error has been under hold_yaw_deg for hold_min_steps steps in a
+    row; the count resets when the error reaches hold_yaw_deg. r2's config has it off."""
     _, cfg2 = load_stage(CONFIG)
     assert RendezvousPairEnv(cfg2).rw["hold_bonus"] == 0.0
-    _, cfg = load_stage("experiments/d2-rendezvous/night3.yaml")
+    _, cfg = load_stage("experiments/d2-rendezvous/r3-heading-bonus.yaml")
     env = RendezvousPairEnv(cfg)
     assert env.rw["w_yaw"] == 0.8 and env.rw["hold_bonus"] == 0.1
     env.rw = dict(env.rw, w_dist=0.0, w_yaw=0.0, time=0.0, collision=0.0, partial=0.0)   # isolate the holding bonus
@@ -196,17 +196,17 @@ def test_approach_reward_formula_and_range():
     assert approach_reward(0.10, 0.0, rw) == 0.0 and approach_reward(0.3, 0.0, rw) == 0.0
     assert approach_reward(0.0, 0.35, rw) == 0.0 and approach_reward(0.0, 3.0, rw) == 0.0
     assert approach_reward(0.0, 0.0, {"approach": 0.0, "approach_m": 0.1, "approach_yaw_rad": 0.35}) == 0.0
-    assert approach_reward(0.0, 0.0, {}) == 0.0                     # nights 1-3 reward dicts have no approach key
+    assert approach_reward(0.0, 0.0, {}) == 0.0                     # runs r1-r3 reward dicts have no approach key
 
 
-def test_night4_reward_is_night3_plus_approach_without_partial_or_arrive():
-    """Night 4: each non-terminal step's reward is night 3's (partial 0) plus the approach term; on handoff no bonus."""
-    _, cfg = load_stage("experiments/d2-rendezvous/night4.yaml")
+def test_r4_reward_is_r3_plus_approach_without_partial_or_arrive():
+    """r4: each non-terminal step's reward is r3's (partial 0) plus the approach term; on handoff no bonus."""
+    _, cfg = load_stage("experiments/d2-rendezvous/r4-approach-bonus.yaml")
     env = RendezvousPairEnv(cfg)
     rw = env.rw
     assert (rw["w_yaw"], rw["hold_bonus"], rw["partial"], rw["arrive"], rw["approach"]) == (0.8, 0.1, 0.0, 0.0, 0.5)
     _, cfg2 = load_stage(CONFIG)
-    assert RendezvousPairEnv(cfg2).rw["approach"] == 0.0               # night 2's config unchanged
+    assert RendezvousPairEnv(cfg2).rw["approach"] == 0.0               # r2's config unchanged
     seen_approach = False
     for seed in range(4):
         env.reset(seed=seed)
@@ -298,12 +298,12 @@ def test_sampled_and_eval_starts_follow_the_rules():
 
 
 def test_bc_demonstrations_are_the_scripted_actions_with_training_rewards_and_returns():
-    """Night 5: bc_rendezvous collect records each duck's observation, the scripted action, and the discounted
-    return-to-go of the training reward; night5.yaml's reward is night 4's."""
+    """r5: bc_rendezvous collect records each duck's observation, the scripted action, and the discounted
+    return-to-go of the training reward; r5-bc-warmstart.yaml's reward is r4's."""
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", "rl"))
     import bc_rendezvous as bcr
-    stage, cfg = load_stage("experiments/d2-rendezvous/night5.yaml")
-    _, cfg4 = load_stage("experiments/d2-rendezvous/night4.yaml")
+    stage, cfg = load_stage("experiments/d2-rendezvous/r5-bc-warmstart.yaml")
+    _, cfg4 = load_stage("experiments/d2-rendezvous/r4-approach-bonus.yaml")
     assert cfg["rendezvous"]["reward"] == cfg4["rendezvous"]["reward"]
     bc = bcr.bc_settings(stage)
     dcfg = bcr.demo_config(cfg, bc["dist_m"])

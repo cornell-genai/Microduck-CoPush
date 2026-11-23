@@ -2,8 +2,8 @@
 """Side-by-side clip of one rendezvous-set start through the whole pipeline (rendezvous, handoff, push): left and right
 are two rendezvous controllers (scripted, or a model.zip), both followed by the same push policy. 2x speed.
 
-    scripts/rl.sh scripts/rl/rendezvous_gif.py --start 7 --left scripted --right runs/d2-rendezvous-night1/s1/model.zip \
-        --out runs/d2-rendezvous-night1/gifs
+    scripts/rl.sh scripts/rl/rendezvous_gif.py --start 7 --left scripted --right runs/d2-rendezvous-r1-delta-reward/s1/model.zip \
+        --out runs/d2-rendezvous-r1-delta-reward/gifs
 
 Writes <out>/start<N>_side_by_side.gif (small) and .mp4.
 """

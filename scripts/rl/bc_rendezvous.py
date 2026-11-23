@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """Behavioral cloning of the scripted rendezvous coordinator (copush.rendezvous.ScriptedRendezvous) into the same
-shared per-duck PPO network that train_rendezvous.py trains, as a warm start for PPO (rendezvous night 5).
+shared per-duck PPO network that train_rendezvous.py trains, as a warm start for PPO (rendezvous r5).
 
-    scripts/rl.sh scripts/rl/bc_rendezvous.py collect --config experiments/d2-rendezvous/night5.yaml \
-        --out runs/d2-rendezvous-night5/bc/demos.npz
-    scripts/rl.sh scripts/rl/bc_rendezvous.py train --config experiments/d2-rendezvous/night5.yaml \
-        --data runs/d2-rendezvous-night5/bc/demos.npz --out runs/d2-rendezvous-night5/bc
+    scripts/rl.sh scripts/rl/bc_rendezvous.py collect --config experiments/d2-rendezvous/r5-bc-warmstart.yaml \
+        --out runs/d2-rendezvous-r5-bc-warmstart/bc/demos.npz
+    scripts/rl.sh scripts/rl/bc_rendezvous.py train --config experiments/d2-rendezvous/r5-bc-warmstart.yaml \
+        --data runs/d2-rendezvous-r5-bc-warmstart/bc/demos.npz --out runs/d2-rendezvous-r5-bc-warmstart/bc
 
 collect  runs the scripted coordinator in RendezvousPairEnv (training split, the config's reward, curriculum off) on
          randomized training starts (sample_start, never the eval set) at the stage's bc.dist_m distances, and records
          every step's per-duck observation (exactly what the RL policy sees), the scripted per-duck action (in the
          policy's [-1, 1] action space), the reward, and each duck's discounted return-to-go (ppo gamma) from that step.
          Episodes end as in training: both docked (arrived), a fall, or max_steps.
-train    fits a fresh MlpPolicy (configs/copush.yaml's PPO architecture, as nights 1-4) by supervised learning: MSE
+train    fits a fresh MlpPolicy (configs/copush.yaml's PPO architecture, as runs r1-r4) by supervised learning: MSE
          between the policy's mean action and the scripted action (the action head), plus MSE between its value
          estimate and the return-to-go (the value head, so PPO does not start with a random critic). 80/20 split by
          episode (never by step, so near-identical steps of one episode do not land on both sides). Adam, minibatches,

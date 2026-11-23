@@ -3,7 +3,7 @@
 duck, and check it on the fixed rendezvous eval set every eval_every steps.
 
     scripts/rl.sh scripts/rl/train_rendezvous.py --config experiments/d2-rendezvous/config.yaml --seed 1 \
-        --out runs/d2-rendezvous-night1/s1
+        --out runs/d2-rendezvous-r1-delta-reward/s1
 
 PPO hyperparameters: the config's ppo block (random weights; no warm start, this is a new behavior). Steps count duck
 entries (2 per simulator step), as scripts/rl/stage.py counts decentral runs. Every eval_every steps: a checkpoint

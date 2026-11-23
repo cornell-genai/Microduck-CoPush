@@ -24,9 +24,9 @@ same way. The push policy runs one shared network per duck, so which duck takes 
 RendezvousPairEnv is the training environment (two agents sharing a policy, per-duck rewards); RendezvousVecEnv
 flattens N of them for Stable-Baselines3 like copush.decentral.DuckVecEnv, keeping each duck's own reward.
 
-Night 1 (10 x delta-distance reward, 100-step episodes, full start range from the first step) never docked once in
+r1 (10 x delta-distance reward, 100-step episodes, full start range from the first step) never docked once in
 2M steps: the per-step reward from walking straight at a spot (about 0.24 at most) barely cleared the -0.03 time
-penalty, so there was almost no gradient toward the +5 arrival bonus, which 0 of 2M episodes ever reached. Night 2's
+penalty, so there was almost no gradient toward the +5 arrival bonus, which 0 of 2M episodes ever reached. r2's
 reward is absolute distance/heading (so the gradient never vanishes), adds a reachable +2 partial bonus at 10 cm,
 and a curriculum starts ducks close and only widens the range once the current one is solved (settings() above).
 """
@@ -57,10 +57,10 @@ DEFAULTS = {
     # error / pi) - time - collision (if it touched the box or its partner); +partial the first time it is within
     # partial_m of its spot (once per episode per duck); +arrive to both on handoff (episode end); -timeout at
     # max_steps or on a fall. Absolute distance/heading, not their improvement, so the gradient never vanishes.
-    # Holding bonus (night 3; hold_bonus 0 = off, night 2's reward): +hold_bonus per step once a duck's heading error
+    # Holding bonus (r3; hold_bonus 0 = off, r2's reward): +hold_bonus per step once a duck's heading error
     # has been under hold_yaw_deg for hold_min_steps consecutive steps (counting this one); the count resets when the
     # error reaches hold_yaw_deg. Rewards keeping a good heading, not just passing through it.
-    # Final-approach reward (night 4; approach 0 = off): +approach x max(0, 1 - distance / approach_m) x max(0, 1 -
+    # Final-approach reward (r4; approach 0 = off): +approach x max(0, 1 - distance / approach_m) x max(0, 1 -
     # heading error / approach_yaw_rad) per duck per step, a smooth pull through the last few cm and degrees that is
     # nonzero only inside approach_m and approach_yaw_rad and peaks at approach when exactly on the spot.
     "reward": {"w_dist": 1.0, "w_yaw": 0.3, "time": 0.02, "collision": 1.0, "partial": 2.0, "partial_m": 0.10,
@@ -547,7 +547,7 @@ def policy_act(model, rv: Rendezvous, deterministic: bool = True):
 
 
 def approach_reward(dist_m: float, yaw_err_rad: float, rw: dict) -> float:
-    """Night 4's final-approach term for one duck (0 when rw["approach"] is 0 or missing, as in nights 1-3)."""
+    """r4's final-approach term for one duck (0 when rw["approach"] is 0 or missing, as in runs r1-r3)."""
     a = rw.get("approach", 0.0)
     if not a:
         return 0.0

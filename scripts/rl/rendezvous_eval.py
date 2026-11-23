@@ -3,7 +3,7 @@
 
     scripts/rl.sh scripts/rl/rendezvous_eval.py make                     # experiments/test_sets/rendezvous_large.json (once)
     scripts/rl.sh scripts/rl/rendezvous_eval.py eval --rendezvous scripted --out experiments/d2-rendezvous/scripted-baseline
-    scripts/rl.sh scripts/rl/rendezvous_eval.py eval --rendezvous runs/d2-rendezvous-night1/s1/model.zip --out ...
+    scripts/rl.sh scripts/rl/rendezvous_eval.py eval --rendezvous runs/d2-rendezvous-r1-delta-reward/s1/model.zip --out ...
     scripts/rl.sh scripts/rl/rendezvous_eval.py eval ... --starts 10 --no-push        # quick check
 
 make   200 starts, one per stage1_large.json box pose (the same Latin hypercube poses as the other eval sets), duck poses
