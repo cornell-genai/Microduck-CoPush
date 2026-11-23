@@ -12,6 +12,10 @@ alone with the training ending (100 steps), appended to <out>/evals.jsonl. Write
 and keeps <out>/best.zip (+ best.json) = the evaluated checkpoint with the most arrivals (ties: lower mean heading
 error, then lower position error).
 
+--init <zip>: start from that zip's policy weights (network and action log-std; the config's PPO hyperparameters
+still apply) instead of random ones, and evaluate them at step 0 (so best.zip can be the warm start itself if PPO
+never beats it). Steps still count from 0, so --early-stop-step counts PPO steps only.
+
 --early-stop-step (0 disables, the default): if an eval at or after this step finds 0 arrivals, training stops there
 (not a crash: results.json is still written, with "aborted": true, and <out>/abort.json with the reason) instead of
 running to the full step budget. Curriculum level changes (copush.rendezvous RendezvousPairEnv, cfg rendezvous.
@@ -68,6 +72,8 @@ def main() -> int:
     ap.add_argument("--eval-every", type=int, default=None)
     ap.add_argument("--eval-starts", type=int, default=0, help="0 = the whole eval set")
     ap.add_argument("--eval-workers", type=int, default=6)
+    ap.add_argument("--init", default=None, help="a PPO zip (e.g. bc_rendezvous.py's bc.zip) whose policy weights start "
+                    "a scratch run instead of random ones; evaluated once at step 0")
     ap.add_argument("--early-stop-step", type=int, default=0, help="stop if an eval at/after this step finds 0 arrivals (0 disables)")
     a = ap.parse_args()
 
@@ -102,6 +108,10 @@ def main() -> int:
                     clip_range=pc["clip_range"], ent_coef=pc["ent_coef"], seed=pc["seed"], device="cpu",
                     tensorboard_log=os.path.join(out, "tb"), verbose=0)
         vec.seed(pc["seed"])
+        if a.init:
+            init = a.init if os.path.isabs(a.init) else os.path.join(ROOT, a.init)
+            model.policy.load_state_dict(PPO.load(init, device="cpu").policy.state_dict())
+            print(f"policy weights from {os.path.relpath(init, ROOT)}", flush=True)
         for stale in ("evals.jsonl", "best.json", "best.zip", "abort.json"):
             if os.path.exists(os.path.join(out, stale)):
                 os.remove(os.path.join(out, stale))
@@ -180,6 +190,8 @@ def main() -> int:
                 evaluate(checkpoint(self.num_timesteps), self.num_timesteps)
             return abort["reason"] is None
 
+    if a.init and not ckpt:                             # the warm start's own score, the curve's step 0
+        evaluate(checkpoint(0), 0)
     remaining = total - (model.num_timesteps if ckpt else 0)
     if remaining > 0:
         model.learn(total_timesteps=remaining, callback=EvalCallback(), tb_log_name="ppo", reset_num_timesteps=ckpt is None)
@@ -192,7 +204,7 @@ def main() -> int:
             evaluate(final, model.num_timesteps)
             evals = [json.loads(ln) for ln in open(os.path.join(out, "evals.jsonl"))]
     write_json(os.path.join(out, "results.json"), {
-        "name": stage["name"], "init": "scratch", "seed": pc["seed"], "steps": int(model.num_timesteps), "steps_planned": total,
+        "name": stage["name"], "init": os.path.relpath(a.init, ROOT) if a.init and os.path.isabs(a.init) else (a.init or "scratch"), "seed": pc["seed"], "steps": int(model.num_timesteps), "steps_planned": total,
         "wall_s": wall0 + time.perf_counter() - t0, "ppo": pc, "rendezvous": cfg["rendezvous"], "eval_curve": evals,
         "aborted": abort["reason"] is not None, "abort_reason": abort["reason"]})
     if abort["reason"]:

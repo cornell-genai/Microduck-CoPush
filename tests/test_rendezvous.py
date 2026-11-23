@@ -295,3 +295,35 @@ def test_sampled_and_eval_starts_follow_the_rules():
         assert math.dist((s["duck_a"]["x"], s["duck_a"]["y"]), (s["duck_b"]["x"], s["duck_b"]["y"])) >= 0.15
         if s["kind"] == "wrong_side":
             assert s["flags"]["ducks_on_target_side"] == 2
+
+
+def test_bc_demonstrations_are_the_scripted_actions_with_training_rewards_and_returns():
+    """Night 5: bc_rendezvous collect records each duck's observation, the scripted action, and the discounted
+    return-to-go of the training reward; night5.yaml's reward is night 4's."""
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", "rl"))
+    import bc_rendezvous as bcr
+    stage, cfg = load_stage("experiments/d2-rendezvous/night5.yaml")
+    _, cfg4 = load_stage("experiments/d2-rendezvous/night4.yaml")
+    assert cfg["rendezvous"]["reward"] == cfg4["rendezvous"]["reward"]
+    bc = bcr.bc_settings(stage)
+    dcfg = bcr.demo_config(cfg, bc["dist_m"])
+    assert dcfg["rendezvous"]["curriculum"]["enabled"] is False and cfg["rendezvous"]["curriculum"]["enabled"] is True
+    obs_l, act_l, ret_l, ep_l, info_l = bcr._collect_chunk((dcfg, [5, 6], 0.99, 0.8))
+    for obs, act, ret, ep, info in zip(obs_l, act_l, ret_l, ep_l, info_l):
+        assert obs.shape == (2 * info["steps"], 14) and act.shape == (2 * info["steps"], 2) and ret.shape == (2 * info["steps"],)
+        assert np.all(np.abs(act) <= 1.0) and np.all(ep == info["seed"])
+    # replay seed 5 by hand: same observations and actions, and returns that satisfy G_t = r_t + gamma G_t+1
+    env = RendezvousPairEnv(dcfg)
+    env.max_start_dist = 0.8
+    obs, _ = env.reset(seed=5)
+    act = ScriptedRendezvous(env.rv)
+    rews = []
+    for t in range(info_l[0]["steps"]):
+        a = np.asarray(act(None), dtype=np.float32).reshape(2, 2)
+        assert np.allclose(obs_l[0][2 * t:2 * t + 2], obs) and np.allclose(act_l[0][2 * t:2 * t + 2], a)
+        obs, r, te, tr, _ = env.step(a)
+        rews.append(r)
+    assert te or tr
+    g = ret_l[0].reshape(-1, 2)
+    assert np.allclose(g[-1], rews[-1], atol=1e-5)
+    assert np.allclose(g[:-1], np.stack(rews[:-1]) + 0.99 * g[1:], atol=1e-4)
