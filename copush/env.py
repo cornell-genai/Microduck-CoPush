@@ -96,6 +96,30 @@ def cmd_to_action(vx_a, vyaw_a, vx_b, vyaw_b) -> np.ndarray:
                      vx_b / (0.5 * VX_MAX) - 1, vyaw_b / VYAW_MAX], dtype=np.float32)
 
 
+def docking_spots(box: dict, target: dict, setback: float, spacing: float, noise: Optional[dict] = None) -> dict:
+    """The in-contact start poses for a box pose: {duck: (x, y, yaw_deg)}. box and target are {"x", "y"} plus box
+    "yaw" in degrees. Both ducks stand `setback` behind the box centre on the long face away from the target, facing
+    it, `spacing` apart along the long axis, duck A on the left of the push direction (start noise: `noise` offsets
+    each heading and setback and the spacing, as in CoPushEnv._place_in_contact). Invariant to a 180-degree box yaw."""
+    b = math.radians(box["yaw"])
+    t = (math.cos(b), math.sin(b))                     # long (28 cm) axis
+    n = (-math.sin(b), math.cos(b))                    # long-face normal
+    side = 1.0 if (target["x"] - box["x"]) * n[0] + (target["y"] - box["y"]) * n[1] >= 0 else -1.0
+    face = (side * n[0], side * n[1])                  # push direction
+    yaw = math.degrees(math.atan2(face[1], face[0]))
+    half = (spacing + (noise["spacing"] if noise else 0.0)) / 2
+    # duck A on the left of the push direction, as in the approach layout
+    left = (-face[1], face[0])
+    sgn = 1.0 if left[0] * t[0] + left[1] * t[1] >= 0 else -1.0
+    out = {}
+    for duck, k in (("duck_a", +1), ("duck_b", -1)):
+        back = setback + (noise["setback"][duck] if noise else 0.0)
+        cx, cy = box["x"] - face[0] * back, box["y"] - face[1] * back
+        out[duck] = (cx + k * sgn * half * t[0], cy + k * sgn * half * t[1],
+                     yaw + (noise["heading"][duck] if noise else 0.0))
+    return out
+
+
 START_MIN_DUCK_GAP_M = 0.12        # start noise: duck centers closer than this = the ducks overlap
 START_MAX_BOX_SHIFT_M = 0.01       # start noise: the box moved more than this while settling = a duck was placed into it
 START_MAX_BOX_TURN_DEG = 2.0
@@ -224,22 +248,10 @@ class CoPushEnv(gym.Env):
     def _place_in_contact(self, noise: Optional[dict] = None) -> None:
         """Both ducks against the box's long face on the side away from the target, facing it (with start noise:
         each duck's heading and setback, and their spacing, offset by `noise`)."""
-        box, tg, e = self.cfg["box"], self.cfg["target"], self.ecfg
-        b = math.radians(box["yaw"])
-        t = (math.cos(b), math.sin(b))                     # long (28 cm) axis
-        n = (-math.sin(b), math.cos(b))                    # long-face normal
-        side = 1.0 if (tg["x"] - box["x"]) * n[0] + (tg["y"] - box["y"]) * n[1] >= 0 else -1.0
-        face = (side * n[0], side * n[1])                  # push direction
-        yaw = math.degrees(math.atan2(face[1], face[0]))
-        half = (e["contact_spacing"] + (noise["spacing"] if noise else 0.0)) / 2
-        # duck A on the left of the push direction, as in the approach layout
-        left = (-face[1], face[0])
-        sgn = 1.0 if left[0] * t[0] + left[1] * t[1] >= 0 else -1.0
-        for duck, k in (("duck_a", +1), ("duck_b", -1)):
-            back = e["contact_setback"] + (noise["setback"][duck] if noise else 0.0)
-            cx, cy = box["x"] - face[0] * back, box["y"] - face[1] * back
-            self.cfg[duck].update({"x": cx + k * sgn * half * t[0], "y": cy + k * sgn * half * t[1],
-                                   "yaw": yaw + (noise["heading"][duck] if noise else 0.0)})
+        e = self.ecfg
+        spots = docking_spots(self.cfg["box"], self.cfg["target"], e["contact_setback"], e["contact_spacing"], noise)
+        for duck, (x, y, yaw) in spots.items():
+            self.cfg[duck].update({"x": x, "y": y, "yaw": yaw})
 
     def is_heldout(self, seed: int) -> bool:
         return self.heldout[0] <= seed <= self.heldout[1]
@@ -293,6 +305,22 @@ class CoPushEnv(gym.Env):
                 self.start_resamples += 1
         else:
             st = self.sim.reset()
+        return self._begin_episode(st, f"episode {self.episode + 1} box=({box['x']:.3f},{box['y']:.3f},"
+                                       f"{box['yaw']:.1f}deg,{box['mass']:.3f}kg) seed={seed}")
+
+    def begin_push_phase(self, settle: bool = True):
+        """Start a push episode from where the ducks stand now (after a rendezvous phase, copush.rendezvous): stand
+        env.settle_s on velstand at zero command, switch both ducks to Shoe Push and restart the episode clock and
+        statistics, as an in_contact reset does after placing the ducks. Returns (observation, info) like reset."""
+        if settle:
+            self.sim.step({"A": (0, 0, 0), "B": (0, 0, 0)}, duration=self.ecfg["settle_s"])
+        for d in DUCKS:
+            self.sim.set_policy(d, "shoepush")
+        st = self.sim.mark_start()
+        return self._begin_episode(st, f"episode {self.episode + 1} push phase after rendezvous")
+
+    def _begin_episode(self, st: dict, note: str):
+        box = self.cfg["box"]
         self.state = st
         self._sense(st, None)
         self.sim.pop_events()
@@ -311,8 +339,7 @@ class CoPushEnv(gym.Env):
                       "contact_time": {d: 0.0 for d in DUCKS}, "stood_up": {d: 0 for d in DUCKS},
                       "cmd_vx": {d: 0.0 for d in DUCKS},
                       "min_dist": st["box_to_target"], "start_dist": st["box_to_target"], "flags": []}
-        self._event(0.0, "reset", f"episode {self.episode} box=({box['x']:.3f},{box['y']:.3f},"
-                                  f"{box['yaw']:.1f}deg,{box['mass']:.3f}kg) seed={seed}")
+        self._event(0.0, "reset", note)
         return self._stacked_obs(st), {"box": dict(box), "target": dict(self.cfg["target"])}
 
     def set_hold(self, duck: str, on: bool) -> None:
