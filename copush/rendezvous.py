@@ -23,9 +23,16 @@ same way. The push policy runs one shared network per duck, so which duck takes 
 
 RendezvousPairEnv is the training environment (two agents sharing a policy, per-duck rewards); RendezvousVecEnv
 flattens N of them for Stable-Baselines3 like copush.decentral.DuckVecEnv, keeping each duck's own reward.
+
+Night 1 (10 x delta-distance reward, 100-step episodes, full start range from the first step) never docked once in
+2M steps: the per-step reward from walking straight at a spot (about 0.24 at most) barely cleared the -0.03 time
+penalty, so there was almost no gradient toward the +5 arrival bonus, which 0 of 2M episodes ever reached. Night 2's
+reward is absolute distance/heading (so the gradient never vanishes), adds a reachable +2 partial bonus at 10 cm,
+and a curriculum starts ducks close and only widens the range once the current one is solved (settings() above).
 """
 from __future__ import annotations
 
+import collections
 import copy
 import heapq
 import math
@@ -46,7 +53,18 @@ DEFAULTS = {
     "sym_m": 0.05,                                            # near-symmetric start: pairings within this (m)
     "start": {"dist_m": [0.2, 0.8], "kinds": {"uniform": 0.8, "near_symmetric": 0.1, "wrong_side": 0.1},
               "clear_box_m": 0.08, "clear_ducks_m": 0.15, "sym_lateral_m": 0.02, "wrong_side_cone_deg": 60.0},
-    "reward": {"w_dist": 10.0, "w_yaw": 1.0, "time": 0.03, "collision": 1.0, "arrive": 5.0, "timeout": 5.0},
+    # Per duck per step: -w_dist x (distance to its spot / the start distribution's max distance) - w_yaw x (heading
+    # error / pi) - time - collision (if it touched the box or its partner); +partial the first time it is within
+    # partial_m of its spot (once per episode per duck); +arrive to both on handoff (episode end); -timeout at
+    # max_steps or on a fall. Absolute distance/heading, not their improvement, so the gradient never vanishes.
+    "reward": {"w_dist": 1.0, "w_yaw": 0.3, "time": 0.02, "collision": 1.0, "partial": 2.0, "partial_m": 0.10,
+               "arrive": 5.0, "timeout": 2.0},
+    # Curriculum (training only; disabled by default so old configs reproduce): start distance begins at levels[0] and
+    # advances to the next level once the docking rate over the last window_steps duck-steps of completed episodes
+    # exceeds advance_rate. Bearing and heading stay uniform over 360 deg at every level. Per training worker (each
+    # env in the vector advances on its own rollouts; levels can differ briefly between workers sharing one policy).
+    "curriculum": {"enabled": False, "levels": [[0.15, 0.20], [0.20, 0.40], [0.40, 0.60], [0.60, 0.80]],
+                  "advance_rate": 0.6, "window_steps": 50000},
 }
 DUCK_RADIUS_M = 0.08            # clearance kept from the box when walking around it (duck centres are 0.12 m apart at least)
 CORNER_OFFSET_M = 0.15          # waypoints this far off each box corner, along the corner's diagonal
@@ -524,11 +542,15 @@ def policy_act(model, rv: Rendezvous, deterministic: bool = True):
 class RendezvousPairEnv(gym.Env):
     """Rendezvous training: one simulation as two agents sharing a policy. Observation (2, 14), action (2, 2), reward
     (2,): each duck's own reward per step,
-        w_dist x (decrease in its distance to its spot) + w_yaw x (decrease in its heading error, rad) - time
-        - collision (if it touched the box or its partner this step)
+        -w_dist x (its distance to its spot / the start distribution's max distance) - w_yaw x (its heading error /
+        pi) - time - collision (if it touched the box or its partner this step) + partial the first time it is
+        within partial_m of its spot this episode
     plus arrive to both when both ducks are within pos_tol_m and yaw_tol_deg of their spots for hold_s (terminated),
     and -timeout to both at max_steps (truncated) or when a duck falls (terminated, info reason "fall").
-    Starts: options={"start": ...} (an eval-set entry), else sample_start from the env's own seeded RNG."""
+    Starts: options={"start": ...} (an eval-set entry), else sample_start from the env's own seeded RNG, at the
+    current curriculum level's distance range when curriculum.enabled (training split only; an explicit start
+    always bypasses it, as does split "eval"/"check"). info["curriculum_level"] reports the level every step, for a
+    training script to log level changes."""
     metadata = {"render_modes": []}
 
     def __init__(self, cfg: dict, split: str = "train"):
@@ -536,24 +558,53 @@ class RendezvousPairEnv(gym.Env):
         self.env = CoPushEnv(cfg, split=split)
         self.rv = Rendezvous(self.env)
         self.rw = self.rv.r["reward"]
+        self.max_start_dist = self.rv.r["start"]["dist_m"][1]
+        self.cur = self.rv.r.get("curriculum") or {}
+        self.cur_on = bool(self.cur.get("enabled", False)) and split == "train"
+        self.cur_level = 0
+        self._cur_window = collections.deque()         # (duck_steps, arrived) for completed episodes, oldest first
+        self._cur_window_steps = 0
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(2, len(OBS_NAMES)), dtype=np.float32)
         self.action_space = spaces.Box(-1.0, 1.0, shape=(2, 2), dtype=np.float32)
 
+    def _level_dist_m(self):
+        levels = self.cur["levels"]
+        return levels[min(self.cur_level, len(levels) - 1)]
+
+    def _advance_curriculum(self, arrived: bool, duck_steps: int):
+        """Batch, not a sliding window: accumulate completed episodes until window_steps worth of duck steps have
+        gone by, check the docking rate over all of them, then start a fresh batch regardless of the result."""
+        self._cur_window.append((duck_steps, arrived))
+        self._cur_window_steps += duck_steps
+        if self._cur_window_steps >= self.cur["window_steps"]:
+            if self.cur_level < len(self.cur["levels"]) - 1:
+                rate = sum(1 for _, a in self._cur_window if a) / len(self._cur_window)
+                if rate > self.cur["advance_rate"]:
+                    self.cur_level += 1
+            self._cur_window.clear()
+            self._cur_window_steps = 0
+
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
-        start = (options or {}).get("start") or sample_start(self.np_random, self.env.cfg, self.rv.r["start"])
+        opt_start = (options or {}).get("start")
+        sc = self.rv.r["start"]
+        if self.cur_on and not opt_start:
+            sc = {**sc, "dist_m": self._level_dist_m()}
+        start = opt_start or sample_start(self.np_random, self.env.cfg, sc)
         st = self.rv.reset(start, seed=seed)
-        self._prev = self.rv.errors(st)
-        return pair_obs(self.rv, st), {"start": start}
+        self._partial_given = {d: False for d in DUCKS}
+        return pair_obs(self.rv, st), {"start": start, "curriculum_level": self.cur_level}
 
     def step(self, action):
         st, info = self.rv.step(np.asarray(action, dtype=np.float32).reshape(4))
         err, rw = info["errors"], self.rw
         r = np.zeros(2, dtype=np.float32)
         for k, d in enumerate(DUCKS):
-            r[k] = (rw["w_dist"] * (self._prev[d][0] - err[d][0]) + rw["w_yaw"] * (self._prev[d][1] - err[d][1])
-                    - rw["time"] - rw["collision"] * float(info["hit_box"][d] or info["hit_ducks"]))
-        self._prev = err
+            bonus = 0.0
+            if not self._partial_given[d] and err[d][0] <= rw["partial_m"]:
+                bonus, self._partial_given[d] = rw["partial"], True
+            r[k] = (-rw["w_dist"] * (err[d][0] / self.max_start_dist) - rw["w_yaw"] * (err[d][1] / math.pi)
+                    - rw["time"] - rw["collision"] * float(info["hit_box"][d] or info["hit_ducks"]) + bonus)
         terminated, truncated, reason = False, False, None
         if info["arrived"]:
             r += rw["arrive"]
@@ -564,8 +615,10 @@ class RendezvousPairEnv(gym.Env):
         elif self.rv.steps >= self.rv.r["max_steps"]:
             r -= rw["timeout"]
             truncated, reason = True, "timeout"
+        if (terminated or truncated) and self.cur_on:
+            self._advance_curriculum(reason == "arrived", self.rv.steps * 2)
         info = {"reason": reason, "steps": self.rv.steps, "collisions": self.rv.collisions,
-                "errors": {d: [float(v) for v in err[d]] for d in DUCKS}}
+                "curriculum_level": self.cur_level, "errors": {d: [float(v) for v in err[d]] for d in DUCKS}}
         return pair_obs(self.rv, st), r, terminated, truncated, info
 
     def close(self):

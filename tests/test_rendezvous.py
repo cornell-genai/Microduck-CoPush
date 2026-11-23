@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import sys
 
 import numpy as np
 import pytest
@@ -115,6 +116,80 @@ def test_pair_env_gives_each_duck_its_own_reward():
         rs.append(r)
     rs = np.array(rs)
     assert rs.shape == (4, 2) and not np.allclose(rs[:, 0], rs[:, 1])
+
+
+def test_reward_is_absolute_distance_and_heading_not_their_improvement():
+    """Night 2: a duck that stands still still gets a nonzero (negative) reward every step, since the term is its
+    current distance/heading, not whether it improved -- night 1's reward vanished once a duck stopped moving."""
+    _, cfg = load_stage(CONFIG)
+    env = RendezvousPairEnv(cfg)
+    obs, info = env.reset(seed=7)
+    env._partial_given = {"duck_a": True, "duck_b": True}     # isolate the per-step term from the one-off bonus
+    stand = np.array([[-1.0, 0.0], [-1.0, 0.0]], dtype=np.float32)
+    rw = env.rw
+    for _ in range(3):
+        obs, r, te, tr, enfo = env.step(stand)
+        for k, d in enumerate(("duck_a", "duck_b")):
+            err = enfo["errors"][d]
+            expected = -rw["w_dist"] * (err[0] / env.max_start_dist) - rw["w_yaw"] * (err[1] / math.pi) - rw["time"]
+            assert r[k] == pytest.approx(expected, abs=1e-5)
+            assert r[k] < 0                      # standing still still costs something (no collision, no bonus)
+        if te or tr:
+            break
+
+
+def test_partial_arrival_bonus_is_given_once_per_duck_per_episode():
+    """Drive with the scripted controller (real motion toward the spots, not blind forward walking in a random
+    heading) over several starts: _partial_given flips at most once per duck per episode, and fires at least once."""
+    _, cfg = load_stage(CONFIG)
+    env = RendezvousPairEnv(cfg)
+    any_bonus = False
+    for seed in range(5):
+        env.reset(seed=seed)
+        act = ScriptedRendezvous(env.rv)
+        seen = {"duck_a": 0, "duck_b": 0}
+        for _ in range(50):
+            before = dict(env._partial_given)
+            _, r, te, tr, info = env.step(act(None))
+            for k, d in enumerate(("duck_a", "duck_b")):
+                if env._partial_given[d] and not before[d]:
+                    seen[d] += 1
+                    assert r[k] > env.rw["partial"] - 0.5     # the bonus dominates the reward on that step
+            if te or tr:
+                break
+        assert all(v <= 1 for v in seen.values()), f"bonus given more than once (seed {seed}): {seen}"
+        any_bonus = any_bonus or any(v == 1 for v in seen.values())
+    assert any_bonus                             # at least one duck, in at least one of the 5 starts, got close
+
+
+def test_curriculum_advances_after_a_window_of_mostly_arrivals_and_not_before():
+    _, cfg = load_stage(CONFIG)
+    env = RendezvousPairEnv(cfg)
+    env.cur_on, env.cur = True, {"levels": [[0.1, 0.1], [0.5, 0.5]], "advance_rate": 0.6, "window_steps": 100}
+    env.cur_level = 0
+    for arrived in (True, True, False):         # 2 of 3 arrived (67% > 60%), 3*40 = 120 duck steps >= window
+        env._advance_curriculum(arrived, 40)
+    assert env.cur_level == 1
+    env.cur_level = 0
+    env._cur_window.clear()
+    env._cur_window_steps = 0
+    for arrived in (False, False, True):        # 1 of 3 (33% < 60%): stays
+        env._advance_curriculum(arrived, 40)
+    assert env.cur_level == 0
+    env.cur_level = 1                           # already at the top level: no window can push it further
+    env._cur_window.clear()
+    env._cur_window_steps = 0
+    env._advance_curriculum(True, 1000)
+    assert env.cur_level == 1
+
+
+def test_early_stop_reason_fires_only_at_or_after_the_step_with_zero_arrivals():
+    sys.path.insert(0, os.path.join(repo_path("scripts"), "rl"))
+    from train_rendezvous import early_stop_reason
+    assert early_stop_reason(step=400000, arrived=0, n=200, at_step=400000) is not None
+    assert early_stop_reason(step=200000, arrived=0, n=200, at_step=400000) is None   # too early
+    assert early_stop_reason(step=600000, arrived=3, n=200, at_step=400000) is None   # not zero
+    assert early_stop_reason(step=600000, arrived=0, n=200, at_step=0) is None        # disabled
 
 
 def test_vec_env_keeps_per_duck_rewards():
