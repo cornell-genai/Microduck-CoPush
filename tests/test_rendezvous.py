@@ -162,6 +162,33 @@ def test_partial_arrival_bonus_is_given_once_per_duck_per_episode():
     assert any_bonus                             # at least one duck, in at least one of the 5 starts, got close
 
 
+def test_holding_bonus_needs_three_consecutive_steps_under_15_degrees():
+    """Night 3: +hold_bonus only once a duck's heading error has been under hold_yaw_deg for hold_min_steps steps in a
+    row; the count resets when the error reaches hold_yaw_deg. Night 2's config has it off."""
+    _, cfg2 = load_stage(CONFIG)
+    assert RendezvousPairEnv(cfg2).rw["hold_bonus"] == 0.0
+    _, cfg = load_stage("experiments/d2-rendezvous/night3.yaml")
+    env = RendezvousPairEnv(cfg)
+    assert env.rw["w_yaw"] == 0.8 and env.rw["hold_bonus"] == 0.1
+    env.rw = dict(env.rw, w_dist=0.0, w_yaw=0.0, time=0.0, collision=0.0, partial=0.0)   # isolate the holding bonus
+    tol = math.radians(env.rw["hold_yaw_deg"])
+    seen_bonus = False
+    for seed in range(4):
+        env.reset(seed=seed)
+        act = ScriptedRendezvous(env.rv)
+        run = {"duck_a": 0, "duck_b": 0}
+        for _ in range(50):
+            _, r, te, tr, info = env.step(act(None))
+            if te or tr:
+                break                                   # terminal steps add arrive/timeout on top
+            for k, d in enumerate(("duck_a", "duck_b")):
+                run[d] = run[d] + 1 if info["errors"][d][1] < tol else 0
+                assert env._hold_count[d] == run[d]
+                assert r[k] == pytest.approx(0.1 if run[d] >= 3 else 0.0, abs=1e-6)
+                seen_bonus |= run[d] >= 3
+    assert seen_bonus                                   # the scripted controller holds heading in some start
+
+
 def test_curriculum_advances_after_a_window_of_mostly_arrivals_and_not_before():
     _, cfg = load_stage(CONFIG)
     env = RendezvousPairEnv(cfg)

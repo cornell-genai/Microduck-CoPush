@@ -57,8 +57,11 @@ DEFAULTS = {
     # error / pi) - time - collision (if it touched the box or its partner); +partial the first time it is within
     # partial_m of its spot (once per episode per duck); +arrive to both on handoff (episode end); -timeout at
     # max_steps or on a fall. Absolute distance/heading, not their improvement, so the gradient never vanishes.
+    # Holding bonus (night 3; hold_bonus 0 = off, night 2's reward): +hold_bonus per step once a duck's heading error
+    # has been under hold_yaw_deg for hold_min_steps consecutive steps (counting this one); the count resets when the
+    # error reaches hold_yaw_deg. Rewards keeping a good heading, not just passing through it.
     "reward": {"w_dist": 1.0, "w_yaw": 0.3, "time": 0.02, "collision": 1.0, "partial": 2.0, "partial_m": 0.10,
-               "arrive": 5.0, "timeout": 2.0},
+               "arrive": 5.0, "timeout": 2.0, "hold_bonus": 0.0, "hold_yaw_deg": 15.0, "hold_min_steps": 3},
     # Curriculum (training only; disabled by default so old configs reproduce): start distance begins at levels[0] and
     # advances to the next level once the docking rate over the last window_steps duck-steps of completed episodes
     # exceeds advance_rate. Bearing and heading stay uniform over 360 deg at every level. Per training worker (each
@@ -544,7 +547,8 @@ class RendezvousPairEnv(gym.Env):
     (2,): each duck's own reward per step,
         -w_dist x (its distance to its spot / the start distribution's max distance) - w_yaw x (its heading error /
         pi) - time - collision (if it touched the box or its partner this step) + partial the first time it is
-        within partial_m of its spot this episode
+        within partial_m of its spot this episode + hold_bonus while its heading error has stayed under
+        hold_yaw_deg for hold_min_steps consecutive steps or more
     plus arrive to both when both ducks are within pos_tol_m and yaw_tol_deg of their spots for hold_s (terminated),
     and -timeout to both at max_steps (truncated) or when a duck falls (terminated, info reason "fall").
     Starts: options={"start": ...} (an eval-set entry), else sample_start from the env's own seeded RNG, at the
@@ -593,6 +597,7 @@ class RendezvousPairEnv(gym.Env):
         start = opt_start or sample_start(self.np_random, self.env.cfg, sc)
         st = self.rv.reset(start, seed=seed)
         self._partial_given = {d: False for d in DUCKS}
+        self._hold_count = {d: 0 for d in DUCKS}
         return pair_obs(self.rv, st), {"start": start, "curriculum_level": self.cur_level}
 
     def step(self, action):
@@ -603,6 +608,9 @@ class RendezvousPairEnv(gym.Env):
             bonus = 0.0
             if not self._partial_given[d] and err[d][0] <= rw["partial_m"]:
                 bonus, self._partial_given[d] = rw["partial"], True
+            self._hold_count[d] = self._hold_count[d] + 1 if err[d][1] < math.radians(rw["hold_yaw_deg"]) else 0
+            if self._hold_count[d] >= rw["hold_min_steps"]:
+                bonus += rw["hold_bonus"]
             r[k] = (-rw["w_dist"] * (err[d][0] / self.max_start_dist) - rw["w_yaw"] * (err[d][1] / math.pi)
                     - rw["time"] - rw["collision"] * float(info["hit_box"][d] or info["hit_ducks"]) + bonus)
         terminated, truncated, reason = False, False, None

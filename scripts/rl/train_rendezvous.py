@@ -8,7 +8,9 @@ duck, and check it on the fixed rendezvous eval set every eval_every steps.
 PPO hyperparameters: the config's ppo block (random weights; no warm start, this is a new behavior). Steps count duck
 entries (2 per simulator step), as scripts/rl/stage.py counts decentral runs. Every eval_every steps: a checkpoint
 (newest only, with state.json; a restart resumes there) and scripts/rl/rendezvous_eval.py on the eval set, rendezvous
-alone with the training ending (100 steps), appended to <out>/evals.jsonl. Writes <out>/model.zip and results.json.
+alone with the training ending (100 steps), appended to <out>/evals.jsonl. Writes <out>/model.zip and results.json,
+and keeps <out>/best.zip (+ best.json) = the evaluated checkpoint with the most arrivals (ties: lower mean heading
+error, then lower position error).
 
 --early-stop-step (0 disables, the default): if an eval at or after this step finds 0 arrivals, training stops there
 (not a crash: results.json is still written, with "aborted": true, and <out>/abort.json with the reason) instead of
@@ -20,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -41,6 +44,11 @@ def write_json(path, obj):
     with open(tmp, "w") as f:
         json.dump(obj, f, indent=1)
     os.replace(tmp, path)
+
+
+def best_key(row):
+    """Order of checkpoints for best.zip: most arrivals, then lower mean heading error, then lower position error."""
+    return (row["arrived"], -row["yaw_err_deg_mean"], -row["pos_err_cm_mean"])
 
 
 def early_stop_reason(step, arrived, n, at_step):
@@ -93,8 +101,9 @@ def main() -> int:
                     clip_range=pc["clip_range"], ent_coef=pc["ent_coef"], seed=pc["seed"], device="cpu",
                     tensorboard_log=os.path.join(out, "tb"), verbose=0)
         vec.seed(pc["seed"])
-        if os.path.exists(os.path.join(out, "evals.jsonl")):
-            os.remove(os.path.join(out, "evals.jsonl"))
+        for stale in ("evals.jsonl", "best.json", "best.zip", "abort.json"):
+            if os.path.exists(os.path.join(out, stale)):
+                os.remove(os.path.join(out, stale))
         print(f"scratch: training {total} duck steps, seed {pc['seed']}, {pc['n_envs']} envs, eval every {every}", flush=True)
     wall0, t0 = state.get("wall_s", 0.0), time.perf_counter()
     abort = {"reason": None}
@@ -114,6 +123,10 @@ def main() -> int:
                "duck_duck_hits": s["duck_duck_hits"], "falls": s["falls_rv"], "wall_s": round(wall0 + time.perf_counter() - t0, 1)}
         with open(os.path.join(out, "evals.jsonl"), "a") as f:
             f.write(json.dumps(row) + "\n")
+        best = read_json(os.path.join(out, "best.json"))
+        if best is None or best_key(row) > best_key(best):
+            shutil.copy(path, os.path.join(out, "best.zip"))
+            write_json(os.path.join(out, "best.json"), row)
         print(f"eval @ {step}: arrived {s['arrived']}/{s['n']}, position error {s['pos_err_cm_mean']:.1f} cm, "
               f"heading error {s['yaw_err_deg_mean']:.1f} deg, wall {row['wall_s'] / 60:.1f} min", flush=True)
         if abort["reason"] is None:
