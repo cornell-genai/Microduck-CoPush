@@ -93,7 +93,30 @@ Results: [experiments/d2-steering/](experiments/d2-steering/README.md); rejected
 - **Next (night 6):** let a held duck turn in place (speed zero, turn command passes through), trained on L2
   starts, warm-started from the L2 seeds.
 - **Later:** a separate approach skill to bring each duck from anywhere to its docking spot, so the two chain into
-  fully random starts.
+  fully random starts. Done: see the next section.
+
+#### Rendezvous (d2-rendezvous): done
+
+Results: [experiments/d2-rendezvous/](experiments/d2-rendezvous/r6-dock-payout/SUMMARY.md). Each duck runs the same
+network on its own view plus its partner's position and heading, and walks from a random start 0.2 to 0.8 m away to
+its docking spot behind the box. Then the frozen push policy (`runs/d2-steering-night5/l2-s2/model.zip`) takes over.
+All numbers are on the 200-start rendezvous test set (`experiments/test_sets/rendezvous_large.json`), 2 seeds, with
+95% intervals. Checkpoints are picked on a separate 200-start check set.
+
+- **Official policy:** r6 seed 1, `runs/d2-rendezvous-r6-dock-payout/s1/model.zip`
+  (sha256 `6b55b4a71c2caeedab6afb864cf1e036f2d51b1a3da97e33359eeaad53763605`), the final checkpoint at 2M steps.
+- **Result (r6, docking payout):** docks within 50 steps 87.0% (81.6 to 91.0) and 75.0% (68.6 to 80.5) against
+  48.0% (41.2 to 54.9) for the scripted approach; end-to-end push success 90.0% (85.1 to 93.4) and 85.5% (80.0 to
+  89.7) against 65.0% (58.2 to 71.3). Both measurably better (seeds averaged, paired: docking +33.0 points, +25.8
+  to +40.2; push +22.8, +15.7 to +29.8).
+- **How we got there:** r1 to r4, pure PPO with four reward designs, docked about 0% of the time. r5 warm-started
+  from behavioral cloning (BC) of the scripted approach and was the first to dock, but collapsed as the ducks
+  learned to hover near the spot. r6 pays docking the shaping it gives up (0.5 per step left), which removed the
+  collapse. r7 trained r6 for 3M steps instead of 2M: no measurable gain, and seed 2 drifted down after 2.4M.
+- **Remaining failures (r6 seed 1):** 20 of 200. 11 dock and then the push times out (the push policy, not the
+  rendezvous); 9 do not dock in 50 steps, usually one duck far off or facing away.
+- **Next:** chain this rendezvous into the push and steering demo, so the ducks start apart and finish with the
+  box in the target.
 
 ## Decisions so far
 

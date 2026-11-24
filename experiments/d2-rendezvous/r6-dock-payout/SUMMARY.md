@@ -255,6 +255,26 @@ r5 for reference: s1 peaked at 119/200 (400k) and fell to 8/200 by 1M; s2 peaked
 - heading error at handoff (mean of the two ducks): dock payout (seeds averaged) minus curriculum -71.9 deg (-79.2 to -64.6); dock payout seeds 5.9, 7.8 vs curriculum 78.7: **measurable difference**
 - position error at handoff (mean of the two ducks): dock payout (seeds averaged) minus curriculum -26.4 cm (-27.8 to -25.1); dock payout seeds 2.6, 3.6 vs curriculum 29.5: **measurable difference**
 
+## Failures (s1 official, final checkpoint, test set, full pipeline)
+
+From `runs/d2-rendezvous-r6-dock-payout/reselect/test_s1_final/results.json`: 20 of the 200 starts fail end to end.
+
+| failure | uniform (160) | near-symmetric (20) | wrong-side (20) | total | how the push ended | falls / collisions |
+|---|---|---|---|---|---|---|
+| did not dock within 50 steps | 6 | 0 | 3 | **9** | 8 timeout, 1 fall | 2 of 9 had a duck fall in rendezvous (starts 108, 182); 5 of 9 had duck-duck hits; in 6 of 9 one duck docked and the other was 12 to 63 cm off, in 4 of them facing 70 to 158 deg away |
+| docked, but the push failed | 8 | 2 | 1 | **11** | 10 timeout, 1 box tipped (start 27) | no falls; only 2 of 11 had any duck-box hits in rendezvous (starts 97, 183); handoff errors were small (at most 2.9 cm and 13.6 deg) |
+
+- Docked starts went on to succeed 163 of 174 times (93.7%); starts that did not dock still succeeded 17 of 26 times, because the push policy can often recover a near miss.
+- The most common failure is **docked, then the push timed out**: the rendezvous did its job, and the frozen push policy (`runs/d2-steering-night5/l2-s2/model.zip`) did not finish in 100 steps.
+
+**Clips** (scripted left, r6 s1 right; both then run the same push policy). Failure, start 149 (uniform; docked in 37 steps with 1.0 cm / 2.8 deg error, push timed out):
+![failure_docked_push_timeout_start149.gif](gifs/failure_docked_push_timeout_start149.gif)
+
+Success, start 0 (uniform; docked in 21 steps, push succeeded):
+![success_start000.gif](gifs/success_start000.gif)
+
+**What goes wrong in start 149** (from about 10 frames of the clip, not the full video): both ducks dock behind the box, but early in the push one duck drifts off to the side and stops, leaving the other to push alone. The lone duck moves the box onto the target and keeps it there until the 100-step limit without the episode counting as a success, so the box seems to end just outside the success tolerance (most likely its angle or how far along the target it sits; the frames cannot tell which). The scripted pair on the same start ends with the same one-pusher pattern but meets the tolerance.
+
 ## Clips (scripted left, trained s1 right; then the same push policy)
 
 **start006**
