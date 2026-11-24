@@ -261,7 +261,7 @@ From `runs/d2-rendezvous-r6-dock-payout/reselect/test_s1_final/results.json`: 20
 
 | failure | uniform (160) | near-symmetric (20) | wrong-side (20) | total | how the push ended | falls / collisions |
 |---|---|---|---|---|---|---|
-| did not dock within 50 steps | 6 | 0 | 3 | **9** | 8 timeout, 1 fall | 2 of 9 had a duck fall in rendezvous (starts 108, 182); 5 of 9 had duck-duck hits; in 6 of 9 one duck docked and the other was 12 to 63 cm off, in 4 of them facing 70 to 158 deg away |
+| did not dock within 50 steps | 6 | 0 | 3 | **9** | 8 timeout, 1 fall | 2 of 9 had a duck fall in rendezvous (starts 108, 182) and 1 more fell in the push (start 62); 4 of 9 had duck-duck hits; in 7 of 9 one duck docked and the other was 12 to 63 cm off, in 5 of them facing 88 to 158 deg away |
 | docked, but the push failed | 8 | 2 | 1 | **11** | 10 timeout, 1 box tipped (start 27) | no falls; only 2 of 11 had any duck-box hits in rendezvous (starts 97, 183); handoff errors were small (at most 2.9 cm and 13.6 deg) |
 
 - Docked starts went on to succeed 163 of 174 times (93.7%); starts that did not dock still succeeded 17 of 26 times, because the push policy can often recover a near miss.
