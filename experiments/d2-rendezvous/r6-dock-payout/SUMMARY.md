@@ -15,13 +15,63 @@
 | eval | done | 2026-11-23 19:37:36 |
 | gifs | done | 2026-11-23 19:42:04 |
 
+## Checkpoint selection (official r6 numbers)
+
+r6 first picked each seed's best.zip by most dockings on the test set (`experiments/test_sets/rendezvous_large.json`), the same 200 starts the results are reported on. That is selection on the test set (AGENTS.md: checkpoints are picked on a separate check set). The numbers in this section replace the test-set pick and are the official r6 numbers.
+
+- **Check set:** `experiments/test_sets/rendezvous_check.json`, 200 new starts from the same distribution as the test set (same box range as a Latin hypercube, same 0.2-0.8 m duck distances and any bearing and heading, the same 160 uniform / 20 near-symmetric / 20 wrong-side split), with their own seeds (box poses 20261124, ducks 20261125, episode seeds 20000 + i). No start and no box pose repeats a test-set one (checked when the set is made, and by a test).
+- **Candidates:** training kept only the newest checkpoint, so the every-200k checkpoints are gone. What is left per seed is the final checkpoint (step 2002944) and best.zip (the old test-set pick). The final checkpoint is the only one not chosen with the test set, so it is the official pick (as the re-selection plan says when intermediate checkpoints were not saved). best.zip's check-set score is shown for information.
+
+**Check set, rendezvous alone** (50 steps, the training ending, as the training evals)
+
+| seed | checkpoint | docked | position / heading error (mean) | used |
+|---|---|---|---|---|
+| s1 | final, step 2002944 (also the old best.zip) | 82.0% (76.1% to 86.7%) | 3.0 cm / 8.0 deg | **yes** |
+| s2 | final, step 2002944 | 72.5% (65.9% to 78.2%) | 2.9 cm / 6.5 deg | **yes** |
+| s2 | old best.zip, step 2000000 (picked on the test set) | 69.0% (62.3% to 75.0%) | 3.5 cm / 9.0 deg | no |
+
+- **s1:** step 2002944, unchanged (the old pick was already the final checkpoint); **s2:** step 2002944, changed from step 2000000.
+
+**Test set, full pipeline** (200 starts; rendezvous up to 50 steps, then the frozen push policy; 95% intervals)
+
+| controller | docked in 50 steps | end-to-end push success | position error at handoff | heading error at handoff |
+|---|---|---|---|---|
+| **dock payout s1, check-set pick = final (official)** | 87.0% (81.6% to 91.0%) | 90.0% (85.1% to 93.4%) | 2.6 cm (2.1 to 3.0) | 5.9 deg (4.2 to 7.5) |
+| **dock payout s2, check-set pick = final (official)** | 75.0% (68.6% to 80.5%) | 85.5% (80.0% to 89.7%) | 3.7 cm (2.9 to 4.4) | 7.5 deg (5.6 to 9.5) |
+| dock payout s1, old test-set pick | same checkpoint as the final one; re-run gives identical episodes | | | |
+| dock payout s2, old test-set pick (step 2000000, superseded) | 78.5% (72.3% to 83.6%) | 86.5% (81.1% to 90.6%) | 3.6 cm (2.8 to 4.3) | 7.8 deg (5.5 to 10.2) |
+| scripted | 48.0% (41.2% to 54.9%) | 65.0% (58.2% to 71.3%) | 4.9 cm (4.3 to 5.5) | 26.9 deg (22.8 to 31.0) |
+| r5 BC warm start s1 (test-set pick, not re-picked) | 64.5% (57.7% to 70.8%) | 71.5% (64.9% to 77.3%) | 6.6 cm (5.2 to 8.0) | 21.2 deg (16.5 to 26.0) |
+| r5 BC warm start s2 (test-set pick, not re-picked) | 52.0% (45.1% to 58.8%) | 62.5% (55.6% to 68.9%) | 6.6 cm (5.5 to 7.7) | 29.7 deg (24.7 to 34.6) |
+
+Position and heading error: mean over the 200 starts of the two ducks' mean, with a 95% interval for that mean.
+
+
+**Against scripted (the fixed rule: the paired interval excludes 0 and both seed rates are on the same side)** (same 200 starts, paired; seeds averaged per start)
+
+- docked in 50 steps: dock payout minus scripted +33.0 points (+25.8 to +40.2); seeds 87.0, 75.0 vs scripted 48.0: **measurably better**
+- end-to-end push success: dock payout minus scripted +22.8 points (+15.7 to +29.8); seeds 90.0, 85.5 vs scripted 65.0: **measurably better**
+- heading error at handoff: dock payout minus scripted -20.2 deg (-24.2 to -16.3); seeds 5.9, 7.5 vs scripted 26.9: **measurable difference**
+- position error at handoff: dock payout minus scripted -1.8 cm (-2.5 to -1.0); seeds 2.6, 3.7 vs scripted 4.9: **measurable difference**
+
+**Against r5, BC warm start (both seeds averaged)** (same 200 starts, paired; seeds averaged per start)
+
+- docked in 50 steps: dock payout minus r5 +22.8 points (+16.2 to +29.3); seeds 87.0, 75.0 vs r5 58.2: **measurable difference**
+- end-to-end push success: dock payout minus r5 +20.8 points (+15.2 to +26.3); seeds 90.0, 85.5 vs r5 67.0: **measurable difference**
+- heading error at handoff: dock payout minus r5 -18.7 deg (-23.0 to -14.5); seeds 5.9, 7.5 vs r5 25.4: **measurable difference**
+- position error at handoff: dock payout minus r5 -3.4 cm (-4.6 to -2.3); seeds 2.6, 3.7 vs r5 6.6: **measurable difference**
+
+r5 has the same flaw: its best.zip was also picked on the test set, and its checkpoints were not re-picked (they are gone too, and only its final checkpoints remain). Its numbers above are its old test-set picks, which favor r5, so the gap to r5 is if anything understated.
+
+*Everything below is the run as first written: its seed rows use best.zip picked on the test set (s1 is the same checkpoint as the official pick; s2's row is superseded by the table above).*
+
 ## Setup
 
 - **Why this run:** r5 (BC warm start, then PPO) was the first run to dock, 64.5% (s1) and 52.0% (s2) on the 200 starts, but both seeds peaked early (s1 119/200 at 400k PPO steps, s2 93/200 at 200k) and collapsed (s1 8/200 at 1M, s2 17/200 at 2M) while heading error kept falling. Docking ends the episode and paid nothing, while staying near the spot earns up to +0.5 per step from the approach term (`experiments/d2-rendezvous/r5-bc-warmstart/SUMMARY.md`).
 - **The change (reward):** a docking payout. When both ducks dock (the episode ends), each also gets 0.5 x (50 - steps taken), the approach term's maximum for every step it gives up, so docking at step 20 pays 15. Hovering just outside the docking tolerance (3 cm / 15 deg) earns under 0.45 per step (approach term plus holding bonus, minus the time and distance terms) and then -2 at the time limit, so docking always pays more (`experiments/d2-rendezvous/r6-dock-payout.yaml`, `dock_payout`).
 - **Also changed (BC only):** max_epochs 300 -> 1000 and patience 15 -> 50, since r5's BC hit its epoch limit while validation loss was still falling. This is a second change: the BC alone row against r5's shows its effect by itself, but PPO results against r5 mix both changes.
 - **Same as r5:** the demonstrations (same scripted coordinator, seed and settings), the BC warm start (action noise std 0.37 at the start of PPO), the rest of the reward (distance and heading shaping with heading weight 0.8, the holding bonus, the smooth final-approach term, collision and timeout penalties, no partial or arrival bonus), the curriculum (15-20 cm starts, widening to 20-40, 40-60, 60-80 cm once the training docking rate over 50,000 duck steps exceeds 60%, per worker), observations, 50-step episodes, and early stop (a seed still at 0% docking at 400000 PPO steps aborts, the BC phase not counted; if s1 aborts, s2 is skipped).
-- **Checkpoint evaluated:** each seed's best.zip, the 200-start eval with the most arrivals (ties: lower heading error, then position error); s1: step 2002944 (171/200 arrived, 2.3 cm, 6.1 deg); s2: step 2000000 (147/200 arrived, 3.4 cm, 6.7 deg).
+- **Checkpoint evaluated (superseded, see Checkpoint selection above):** each seed's best.zip, the 200-start eval with the most arrivals (ties: lower heading error, then position error); s1: step 2002944 (171/200 arrived, 2.3 cm, 6.1 deg); s2: step 2000000 (147/200 arrived, 3.4 cm, 6.7 deg).
 - **Earlier rows:** r5's two seeds and its BC alone; r4, r3 and r2's seed 1 (each aborted at 400k steps and skipped seed 2); all best checkpoints through the same pipeline, from `runs/d2-rendezvous-r5-bc-warmstart/eval_s1/results.json`, `runs/d2-rendezvous-r5-bc-warmstart/eval_s2/results.json`, `runs/d2-rendezvous-r5-bc-warmstart/eval_bc/results.json`, `runs/d2-rendezvous-r4-approach-bonus/eval_s1/results.json`, `runs/d2-rendezvous-r3-heading-bonus/eval_s1/results.json`, `runs/d2-rendezvous-r2-curriculum/eval_s1/results.json`.
 - **Everything else as earlier runs:** seeds 1 and 2, configs/copush.yaml's PPO (8 envs, n_steps 256, ent_coef 0.01), the same push policy after handoff (`runs/d2-steering-night5/l2-s2/model.zip`, sha256 `ab82e344b275ce61...`), the same 200-start eval set (`experiments/test_sets/rendezvous_large.json`) and pipeline (rendezvous up to 50 steps, then the push policy for 100 steps), the same "measurable" rule (the paired 95% interval excludes 0 and both seed rates are on the same side of the scripted rate).
 

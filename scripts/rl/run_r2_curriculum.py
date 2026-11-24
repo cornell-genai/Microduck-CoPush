@@ -40,6 +40,8 @@ from ci_report import mean_ci, wilson  # noqa: E402
 
 CONFIG = "experiments/d2-rendezvous/config.yaml"
 SET = "experiments/test_sets/rendezvous_large.json"
+PICK_SET = SET   # r1-r6 picked best.zip on the test set; kept so this run reproduces. r7 on: PICK_SET = CHECK_SET
+CHECK_SET = "experiments/test_sets/rendezvous_check.json"
 PUSH = "runs/d2-steering-night5/l2-s2/model.zip"
 E = "experiments/d2-rendezvous/r2-curriculum"
 LABEL = {"s1": "curriculum (s1)", "s2": "curriculum (s2)"}   # results-table labels
@@ -133,7 +135,7 @@ class Run:
         return self.pipeline("scripted", "scripted", "scripted")
 
     def step_train(self, run):
-        ok, logp = self.sh(run, [sys.executable, "scripts/rl/train_rendezvous.py", "--config", CONFIG, "--seed", str(SEEDS[run]),
+        ok, logp = self.sh(run, [sys.executable, "scripts/rl/train_rendezvous.py", "--config", CONFIG, "--eval-set", PICK_SET, "--seed", str(SEEDS[run]),
                                  "--out", os.path.relpath(os.path.join(self.dir, run), ROOT), *self.train_args])
         if os.path.exists(logp):
             for line in open(logp):

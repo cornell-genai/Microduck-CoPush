@@ -2,13 +2,17 @@
 """Rendezvous evaluation: the rendezvous phase alone, and the full pipeline (rendezvous -> handoff -> push).
 
     scripts/rl.sh scripts/rl/rendezvous_eval.py make                     # experiments/test_sets/rendezvous_large.json (once)
+    scripts/rl.sh scripts/rl/rendezvous_eval.py make --check             # experiments/test_sets/rendezvous_check.json (once)
     scripts/rl.sh scripts/rl/rendezvous_eval.py eval --rendezvous scripted --out experiments/d2-rendezvous/scripted-baseline
     scripts/rl.sh scripts/rl/rendezvous_eval.py eval --rendezvous runs/d2-rendezvous-r1-delta-reward/s1/model.zip --out ...
     scripts/rl.sh scripts/rl/rendezvous_eval.py eval ... --starts 10 --no-push        # quick check
 
 make   200 starts, one per stage1_large.json box pose (the same Latin hypercube poses as the other eval sets), duck poses
        from copush.rendezvous.sample_ducks with rng seed 20261122: 160 uniform, 20 near-symmetric, 20 wrong-side starts.
-eval   per start (seed 10000 + i, deterministic): the rendezvous phase until both ducks are within 3 cm and 15 deg of
+       --check: the check set instead (rendezvous_check.json), for picking checkpoints while training: the same
+       distribution with its own seeds (box poses: copush.experiments.make_test_set over stage 1's range, rng seed
+       20261124; ducks: rng seed 20261125; episode seeds 20000 + i). Refused if any start repeats a test-set start.
+eval   on --set (default the test set), per start (seed 10000 + i, or the set's episode_seed0 + i; deterministic): the rendezvous phase until both ducks are within 3 cm and 15 deg of
        their spots and upright (checked every 0.2 s step), at most handoff_steps (50) steps; then
        CoPushEnv.begin_push_phase and the push policy (default runs/d2-steering-night5/l2-s2/model.zip, per duck with
        its partner in view and the stand-still action) for env.max_steps (100) steps. Push success is the env's: box
@@ -34,7 +38,9 @@ sys.path[:0] = [ROOT, os.path.join(ROOT, "scripts", "rl")]
 os.chdir(ROOT)
 
 CONFIG = "experiments/d2-rendezvous/config.yaml"
-SET = "experiments/test_sets/rendezvous_large.json"
+SET = "experiments/test_sets/rendezvous_large.json"          # the test set: report results on it, never pick on it
+CHECK_SET = "experiments/test_sets/rendezvous_check.json"   # the check set: pick checkpoints on it (training evals)
+CHECK_BOX_SEED, CHECK_DUCK_SEED, CHECK_EPISODE_SEED0 = 20261124, 20261125, 20000
 BASE_SET = "experiments/test_sets/stage1_large.json"
 PUSH = "runs/d2-steering-night5/l2-s2/model.zip"
 SEED = 20261122
@@ -43,9 +49,22 @@ DUCKS = ("duck_a", "duck_b")
 _W: dict = {}
 
 
+def start_key(s: dict) -> tuple:
+    """A start's poses, rounded to 1 mm / 0.1 deg: two starts with the same key are the same start."""
+    return tuple(round(s[k][f], 3 if f != "yaw" else 1) for k in ("box", "duck_a", "duck_b") for f in ("x", "y", "yaw"))
+
+
+def overlap(a: list, b: list) -> list:
+    """Ids in a whose start (box and both ducks) also appears in b."""
+    keys = {start_key(s) for s in b}
+    return [s["id"] for s in a if start_key(s) in keys]
+
+
 def make(a) -> int:
     from copush.experiments import load_stage
     from copush.rendezvous import make_rendezvous_set, settings
+    if a.check:
+        return make_check(a)
     out = os.path.join(ROOT, SET)
     if os.path.exists(out) and not a.force:
         print(f"{SET} exists; --force to rebuild")
@@ -75,7 +94,41 @@ def make(a) -> int:
     return 0
 
 
-def _init(rendezvous, push, no_push, episode_steps):
+def make_check(a) -> int:
+    from copush.experiments import load_stage, make_test_set
+    from copush.rendezvous import make_rendezvous_set, settings
+    out = os.path.join(ROOT, CHECK_SET)
+    if os.path.exists(out) and not a.force:
+        print(f"{CHECK_SET} exists; --force to rebuild")
+        return 1
+    _, cfg = load_stage(CONFIG)
+    test = json.load(open(os.path.join(ROOT, SET)))
+    tg = {"x": test["target"]["x"], "y": test["target"]["y"]}
+    n = sum(KINDS.values())
+    boxes = make_test_set(cfg, n, CHECK_BOX_SEED)                 # same Latin hypercube over the same range as stage1_large
+    e, sc = cfg["env"], settings(cfg)["start"]
+    starts = make_rendezvous_set(boxes, tg, KINDS, CHECK_DUCK_SEED, sc, e["contact_setback"], e["contact_spacing"])
+    shared = overlap(starts, test["starts"])
+    shared_box = {(round(b["x"], 3), round(b["y"], 3), round(b["yaw"], 1)) for b in boxes} & \
+                 {(round(s["box"]["x"], 3), round(s["box"]["y"], 3), round(s["box"]["yaw"], 1)) for s in test["starts"]}
+    if shared or shared_box:
+        raise SystemExit(f"check set repeats test starts {shared} / box poses {sorted(shared_box)}; pick other seeds")
+    doc = {"stage": "rendezvous-check", "created": f"{dt.date.today()}", "config": CONFIG,
+           "n": len(starts), "box_rng_seed": CHECK_BOX_SEED, "rng_seed": CHECK_DUCK_SEED,
+           "episode_seed0": CHECK_EPISODE_SEED0, "box_range": cfg["env"]["box_start"], "kinds": KINDS,
+           "target": test["target"], "start_rules": sc, "test_set": SET, "shared_with_test_set": 0,
+           "note": ("checkpoint selection while training only; never report results on it. Same distribution as "
+                    f"{SET} (box poses: a Latin hypercube over stage 1's full box range, as stage1_large; ducks and kinds "
+                    "as the test set) with its own seeds; no start and no box pose repeats a test-set one. "
+                    f"Episode seed {CHECK_EPISODE_SEED0} + i."),
+           "starts": starts}
+    with open(out, "w") as f:
+        json.dump(doc, f, indent=1)
+    print(f"wrote {CHECK_SET}: {len(starts)} starts, kinds {KINDS}; shares no start or box pose with {SET}")
+    return 0
+
+
+def _init(set_path, rendezvous, push, no_push, episode_steps):
     import torch
     torch.set_num_threads(1)
     from copush.env import CoPushEnv
@@ -84,8 +137,9 @@ def _init(rendezvous, push, no_push, episode_steps):
     _, cfg = load_stage(CONFIG)
     env = CoPushEnv(cfg, split="eval")
     rv = Rendezvous(env)
-    _W.update(env=env, rv=rv, starts=json.load(open(os.path.join(ROOT, SET)))["starts"], no_push=no_push,
-              episode_steps=episode_steps, seed0=cfg["env"]["heldout_seeds"][0])
+    doc = json.load(open(os.path.join(ROOT, set_path)))
+    _W.update(env=env, rv=rv, starts=doc["starts"], no_push=no_push, episode_steps=episode_steps,
+              seed0=doc.get("episode_seed0", cfg["env"]["heldout_seeds"][0]))
     if rendezvous == "scripted":
         from copush.rendezvous import ScriptedRendezvous
         _W["rv_act"] = ScriptedRendezvous(rv)
@@ -172,7 +226,7 @@ def report(doc: dict) -> str:
     groups = ["all"] + list(KINDS) + ["target_side_1+", "pairing_margin<5cm"]
     S = doc["summary"]
     L = [f"# Rendezvous evaluation: {doc['rendezvous']}", "",
-         f"{doc['n']} starts from `{SET}`, deterministic, seed 10000 + i. "
+         f"{doc['n']} starts from `{doc['set']}`, deterministic, seed {doc.get('episode_seed0', 10000)} + i. "
          + (f"Rendezvous alone for {doc['episode_steps']} steps (training ending)." if doc["episode_steps"] else
             f"Handoff when both ducks are within 3 cm and 15 deg of their spots and upright, or at {doc['handoff_steps']} steps"
             + (f"; then the push policy `{doc['push']}` for 100 steps." if push else "; push phase skipped.")), "",
@@ -210,15 +264,17 @@ def report(doc: dict) -> str:
 
 def evaluate(a) -> int:
     t0 = time.time()
-    starts = json.load(open(os.path.join(ROOT, SET)))["starts"]
+    sdoc = json.load(open(os.path.join(ROOT, a.set)))
+    starts = sdoc["starts"]
     n = min(a.starts or len(starts), len(starts))
-    with Pool(a.workers, initializer=_init, initargs=(a.rendezvous, a.push, a.no_push, a.episode_steps)) as p:
+    with Pool(a.workers, initializer=_init, initargs=(a.set, a.rendezvous, a.push, a.no_push, a.episode_steps)) as p:
         eps = sorted(p.map(episode, range(n), chunksize=2), key=lambda e: e["i"])
     push = not a.no_push and a.episode_steps is None
     groups = {"all": eps, **{k: [e for e in eps if e["kind"] == k] for k in KINDS},
               "target_side_1+": [e for e in eps if e["flags"]["ducks_on_target_side"] > 0],
               "pairing_margin<5cm": [e for e in eps if e["flags"]["pairing_margin_m"] < 0.05]}
-    doc = {"rendezvous": a.rendezvous, "push": None if a.no_push else a.push, "set": SET, "n": n, "no_push": a.no_push,
+    doc = {"rendezvous": a.rendezvous, "push": None if a.no_push else a.push, "set": a.set,
+           "episode_seed0": sdoc.get("episode_seed0", 10000), "n": n, "no_push": a.no_push,
            "episode_steps": a.episode_steps, "handoff_steps": None if a.episode_steps else 50,
            "summary": {g: summarize(v, push) for g, v in groups.items() if v}, "wall_s": round(time.time() - t0, 1),
            "episodes": eps}
@@ -236,7 +292,9 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     m = sub.add_parser("make")
     m.add_argument("--force", action="store_true")
+    m.add_argument("--check", action="store_true", help=f"make the check set ({CHECK_SET}) instead of the test set")
     e = sub.add_parser("eval")
+    e.add_argument("--set", default=SET, help=f"the start set (default the test set; {CHECK_SET} for picking checkpoints)")
     e.add_argument("--rendezvous", default="scripted", help="scripted, or a rendezvous model.zip")
     e.add_argument("--push", default=PUSH)
     e.add_argument("--out", required=True)

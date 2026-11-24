@@ -47,6 +47,8 @@ CONFIG = "experiments/d2-rendezvous/r4-approach-bonus.yaml"        # training; t
 PREV = {"heading bonus (s1)": "runs/d2-rendezvous-r3-heading-bonus/eval_s1/results.json",     # earlier runs' pipeline runs (best
         "curriculum (s1)": "runs/d2-rendezvous-r2-curriculum/eval_s1/results.json"}     # checkpoint, seed 1), for comparison rows
 SET = "experiments/test_sets/rendezvous_large.json"
+PICK_SET = SET   # r1-r6 picked best.zip on the test set; kept so this run reproduces. r7 on: PICK_SET = CHECK_SET
+CHECK_SET = "experiments/test_sets/rendezvous_check.json"
 PUSH = "runs/d2-steering-night5/l2-s2/model.zip"
 E = "experiments/d2-rendezvous/r4-approach-bonus"
 LABEL = {"s1": "approach bonus (s1)", "s2": "approach bonus (s2)"}   # results-table labels
@@ -146,7 +148,7 @@ class Run:
         return self.pipeline("scripted", "scripted", "scripted")
 
     def step_train(self, run):
-        ok, logp = self.sh(run, [sys.executable, "scripts/rl/train_rendezvous.py", "--config", CONFIG, "--seed", str(SEEDS[run]),
+        ok, logp = self.sh(run, [sys.executable, "scripts/rl/train_rendezvous.py", "--config", CONFIG, "--eval-set", PICK_SET, "--seed", str(SEEDS[run]),
                                  "--out", os.path.relpath(os.path.join(self.dir, run), ROOT), *self.train_args])
         if os.path.exists(logp):
             for line in open(logp):

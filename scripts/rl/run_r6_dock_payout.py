@@ -55,6 +55,8 @@ PREV = {"BC warm start (s1)": "runs/d2-rendezvous-r5-bc-warmstart/eval_s1/result
 R5_SEEDS = ("BC warm start (s1)", "BC warm start (s2)")   # compared as one, seeds averaged, like this run's
 R5_AVG = "BC warm start (r5, seeds averaged)"
 SET = "experiments/test_sets/rendezvous_large.json"
+PICK_SET = SET   # r1-r6 picked best.zip on the test set; kept so this run reproduces. r7 on: PICK_SET = CHECK_SET
+CHECK_SET = "experiments/test_sets/rendezvous_check.json"
 PUSH = "runs/d2-steering-night5/l2-s2/model.zip"
 E = "experiments/d2-rendezvous/r6-dock-payout"
 STEPS = ("scripted", "collect", "bc", "bc_eval", "s1", "s2", "eval", "gifs")
@@ -193,7 +195,7 @@ class Run:
                     self.log(f"{step}: {line.strip()}")
 
     def step_train(self, run):
-        ok, logp = self.sh(run, [sys.executable, "scripts/rl/train_rendezvous.py", "--config", CONFIG, "--seed", str(SEEDS[run]),
+        ok, logp = self.sh(run, [sys.executable, "scripts/rl/train_rendezvous.py", "--config", CONFIG, "--eval-set", PICK_SET, "--seed", str(SEEDS[run]),
                                  "--out", os.path.relpath(os.path.join(self.dir, run), ROOT), *self.train_args])
         if os.path.exists(logp):
             for line in open(logp):
@@ -445,6 +447,11 @@ class Run:
             p = os.path.join(self.dir, "steps", s + ".done")
             status = "skipped (" + self.skip[s] + ")" if s in self.skip else ("done" if os.path.exists(p) else "not done")
             L.append(f"| {s} | {status} | {json.load(open(p))['end'] if os.path.exists(p) else ''} |")
+        rs = os.path.join(self.exp, "results", "reselect", "reselect.md")     # scripts/rl/r6_checkpoint_reselect.py
+        if os.path.exists(rs) and not self.dry:
+            L += ["", open(rs).read().rstrip(), "",
+                  "*Everything below is the run as first written: its seed rows use best.zip picked on the test set "
+                  "(s1 is the same checkpoint as the official pick; s2's row is superseded by the table above).*"]
         L += ["", "## Setup", "",
               "- **Why this run:** r5 (BC warm start, then PPO) was the first run to dock, 64.5% (s1) and 52.0% (s2) "
               "on the 200 starts, but both seeds peaked early (s1 119/200 at 400k PPO steps, s2 93/200 at 200k) and "

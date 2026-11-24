@@ -360,3 +360,53 @@ def test_bc_demonstrations_are_the_scripted_actions_with_training_rewards_and_re
     g = ret_l[0].reshape(-1, 2)
     assert np.allclose(g[-1], rews[-1], atol=1e-5)
     assert np.allclose(g[:-1], np.stack(rews[:-1]) + 0.99 * g[1:], atol=1e-4)
+
+
+def _rl_scripts():
+    p = os.path.join(repo_path("scripts"), "rl")
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+
+def test_training_picks_best_zip_on_the_check_set_by_default():
+    _rl_scripts()
+    import train_rendezvous as tr
+    assert tr.CHECK_SET == "experiments/test_sets/rendezvous_check.json" != tr.TEST_SET
+    parser_default = [a for a in open(tr.__file__).read().splitlines() if '"--eval-set"' in a]
+    assert parser_default and "default=CHECK_SET" in parser_default[0]
+    cmd = tr.eval_cmd("runs/x/ckpt.zip", "runs/x/evals/step_0", 50, 2)
+    assert cmd[cmd.index("--set") + 1] == tr.CHECK_SET
+    assert cmd[cmd.index("--episode-steps") + 1] == "50" and "--no-push" in cmd and "--starts" not in cmd
+    cmd = tr.eval_cmd("runs/x/ckpt.zip", "runs/x/evals/step_0", 50, 2, tr.TEST_SET, 8)
+    assert cmd[cmd.index("--set") + 1] == tr.TEST_SET and cmd[cmd.index("--starts") + 1] == "8"
+
+
+def test_runs_r1_to_r6_still_pick_on_the_test_set_so_they_reproduce():
+    import glob
+    for p in sorted(glob.glob(os.path.join(repo_path("scripts"), "rl", "run_r[1-6]_*.py"))):
+        t = open(p).read()
+        assert "PICK_SET = SET " in t and '"--eval-set", PICK_SET' in t, p
+
+
+def test_check_set_matches_the_test_set_distribution_and_shares_no_start():
+    _rl_scripts()
+    import rendezvous_eval as rve
+    check = json.load(open(repo_path(rve.CHECK_SET)))
+    test = json.load(open(repo_path(rve.SET)))
+    assert check["n"] == test["n"] == 200
+    for doc in (check, test):
+        kinds = {k: sum(s["kind"] == k for s in doc["starts"]) for k in rve.KINDS}
+        assert kinds == rve.KINDS
+    assert check["start_rules"] == test["start_rules"] and check["target"] == test["target"]
+    assert rve.overlap(check["starts"], test["starts"]) == []
+    assert rve.overlap(test["starts"][:3], test["starts"]) == [0, 1, 2]           # the overlap check does find repeats
+    tb = {(round(s["box"]["x"], 3), round(s["box"]["y"], 3)) for s in test["starts"]}
+    assert not any((round(s["box"]["x"], 3), round(s["box"]["y"], 3)) in tb for s in check["starts"])
+    assert check["episode_seed0"] != 10000
+    _, cfg = load_stage(CONFIG)
+    bs, b0 = cfg["env"]["box_start"], cfg["box"]
+    for s in check["starts"]:
+        assert abs(s["box"]["x"] - b0["x"]) <= bs["dx"] + 1e-6 and abs(s["box"]["yaw"] - b0["yaw"]) <= bs["dyaw"] + 1e-3
+        for d in ("duck_a", "duck_b"):
+            r = math.hypot(s[d]["x"] - s["box"]["x"], s[d]["y"] - s["box"]["y"])
+            assert 0.2 - 1e-6 <= r <= 0.8 + 1e-6

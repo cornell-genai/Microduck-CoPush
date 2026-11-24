@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Train the rendezvous coordinator (copush.rendezvous.RendezvousPairEnv) from scratch with PPO, one shared network per
-duck, and check it on the fixed rendezvous eval set every eval_every steps.
+duck, and check it on the fixed rendezvous check set every eval_every steps.
 
     scripts/rl.sh scripts/rl/train_rendezvous.py --config experiments/d2-rendezvous/config.yaml --seed 1 \
         --out runs/d2-rendezvous-r1-delta-reward/s1
@@ -11,6 +11,11 @@ entries (2 per simulator step), as scripts/rl/stage.py counts decentral runs. Ev
 alone with the training ending (100 steps), appended to <out>/evals.jsonl. Writes <out>/model.zip and results.json,
 and keeps <out>/best.zip (+ best.json) = the evaluated checkpoint with the most arrivals (ties: lower mean heading
 error, then lower position error).
+
+--eval-set: the starts those evals (and so best.zip) use. Default: the check set
+(experiments/test_sets/rendezvous_check.json), never the test set, so best.zip is not picked on the starts results are
+reported on. Runs r1-r6 picked on the test set (rendezvous_large.json); their run scripts pass it explicitly so they
+reproduce.
 
 --init <zip>: start from that zip's policy weights (network and action log-std; the config's PPO hyperparameters
 still apply) instead of random ones, and evaluate them at step 0 (so best.zip can be the warm start itself if PPO
@@ -51,6 +56,17 @@ def write_json(path, obj):
     os.replace(tmp, path)
 
 
+CHECK_SET = "experiments/test_sets/rendezvous_check.json"
+TEST_SET = "experiments/test_sets/rendezvous_large.json"
+
+
+def eval_cmd(path, out_dir, episode_steps, workers, eval_set=CHECK_SET, starts=0):
+    """The training-time eval: rendezvous alone on eval_set with the training ending."""
+    cmd = [sys.executable, os.path.join(ROOT, "scripts/rl/rendezvous_eval.py"), "eval", "--rendezvous", path,
+           "--set", eval_set, "--no-push", "--episode-steps", str(episode_steps), "--workers", str(workers), "--out", out_dir]
+    return cmd + (["--starts", str(starts)] if starts else [])
+
+
 def best_key(row):
     """Order of checkpoints for best.zip: most arrivals, then lower mean heading error, then lower position error."""
     return (row["arrived"], -row["yaw_err_deg_mean"], -row["pos_err_cm_mean"])
@@ -72,6 +88,7 @@ def main() -> int:
     ap.add_argument("--eval-every", type=int, default=None)
     ap.add_argument("--eval-starts", type=int, default=0, help="0 = the whole eval set")
     ap.add_argument("--eval-workers", type=int, default=6)
+    ap.add_argument("--eval-set", default=CHECK_SET, help="starts for the training evals and best.zip (default the check set)")
     ap.add_argument("--init", default=None, help="a PPO zip (e.g. bc_rendezvous.py's bc.zip) whose policy weights start "
                     "a scratch run instead of random ones; evaluated once at step 0")
     ap.add_argument("--early-stop-step", type=int, default=0, help="stop if an eval at/after this step finds 0 arrivals (0 disables)")
@@ -123,14 +140,11 @@ def main() -> int:
 
     def evaluate(path, step):
         d = os.path.join(out, "evals", f"step_{step}")
-        cmd = [sys.executable, os.path.join(ROOT, "scripts/rl/rendezvous_eval.py"), "eval", "--rendezvous",
-               os.path.relpath(path, ROOT), "--no-push", "--episode-steps", str(cfg["rendezvous"]["max_steps"]),
-               "--workers", str(a.eval_workers), "--out", os.path.relpath(d, ROOT)]
-        if a.eval_starts:
-            cmd += ["--starts", str(a.eval_starts)]
+        cmd = eval_cmd(os.path.relpath(path, ROOT), os.path.relpath(d, ROOT), cfg["rendezvous"]["max_steps"],
+                       a.eval_workers, a.eval_set, a.eval_starts)
         subprocess.run(cmd, cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
         s = json.load(open(os.path.join(d, "results.json")))["summary"]["all"]
-        row = {"step": step, "arrival_rate": s["arrival_rate"], "arrived": s["arrived"], "n": s["n"],
+        row = {"step": step, "eval_set": a.eval_set, "arrival_rate": s["arrival_rate"], "arrived": s["arrived"], "n": s["n"],
                "mean_steps_to_arrive": s["mean_steps_to_arrive"], "pos_err_cm_mean": s["pos_err_cm_mean"],
                "yaw_err_deg_mean": s["yaw_err_deg_mean"], "duck_box_hits": s["duck_box_hits"],
                "duck_duck_hits": s["duck_duck_hits"], "falls": s["falls_rv"], "wall_s": round(wall0 + time.perf_counter() - t0, 1),
@@ -204,7 +218,7 @@ def main() -> int:
             evaluate(final, model.num_timesteps)
             evals = [json.loads(ln) for ln in open(os.path.join(out, "evals.jsonl"))]
     write_json(os.path.join(out, "results.json"), {
-        "name": stage["name"], "init": os.path.relpath(a.init, ROOT) if a.init and os.path.isabs(a.init) else (a.init or "scratch"), "seed": pc["seed"], "steps": int(model.num_timesteps), "steps_planned": total,
+        "name": stage["name"], "init": os.path.relpath(a.init, ROOT) if a.init and os.path.isabs(a.init) else (a.init or "scratch"), "eval_set": a.eval_set, "seed": pc["seed"], "steps": int(model.num_timesteps), "steps_planned": total,
         "wall_s": wall0 + time.perf_counter() - t0, "ppo": pc, "rendezvous": cfg["rendezvous"], "eval_curve": evals,
         "aborted": abort["reason"] is not None, "abort_reason": abort["reason"]})
     if abort["reason"]:
