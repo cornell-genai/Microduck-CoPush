@@ -199,8 +199,8 @@ def main() -> int:
     if args.max_steps:
         jobs = [j + (None, args.max_steps) for j in jobs]
     walls = {}
+    n = len(load_test_set(args.test_set)["starts"])
     if args.workers > 1:
-        n = len(load_test_set(args.test_set)["starts"])
         res = {}
         with Pool(args.workers) as pool:
             for job in jobs:
@@ -237,7 +237,7 @@ def main() -> int:
         md.append(f"| {name} | {np.mean([r['needed_deg'] for r in h]):.0f} | {np.mean(tb):.0f} ({min(tb):.0f} to {max(tb):.0f}) | "
                   f"{np.mean([r['total_turn'] for r in h]):.0f} | {_pct(h, 'reached_push')} | "
                   f"{sum(r['reason'] == 'success' for r in h)}/{len(h)} |")
-    md += ["", "## Failure modes and idling (all 50 starts)", "",
+    md += ["", f"## Failure modes and idling (all {n} starts)", "",
            f"Idle = steps where both ducks are commanded below {IDLE_VX} m/s. Still = the box ends less than {STILL_M} m "
            "from where it started.", "",
            f"Both touch = steps where both ducks touch the box. Lazy = episodes where one duck has under {LAZY_SHARE:.0%} "

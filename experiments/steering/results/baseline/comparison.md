@@ -18,7 +18,7 @@ Turn before push = rotation toward the needed direction before the box has made 
 | stage1 | 57 | 40 (15 to 97) | 40 | 50/66 | 5/66 |
 | stage1_zero_shot_hold | 57 | 59 (21 to 77) | 38 | 63/66 | 5/66 |
 
-## Failure modes and idling (all 50 starts)
+## Failure modes and idling (all 200 starts)
 
 Idle = steps where both ducks are commanded below 0.05 m/s. Still = the box ends less than 0.1 m from where it started.
 
