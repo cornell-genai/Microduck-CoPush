@@ -14,7 +14,7 @@ from copush.config import load_config, policy_path  # noqa: E402
 if not all(os.path.exists(policy_path(load_config(), n)) for n in ("velstand", "shoepush")):
     pytest.skip("policies missing (scripts/fetch_policies.sh)", allow_module_level=True)
 
-from copush.rl_callbacks import CurriculumCallback, VideoEvalCallback, behaviors, decide, next_level  # noqa: E402
+from copush.rl_callbacks import CurriculumCallback, VideoEvalCallback, behaviors, decide, next_level, scale_box_start  # noqa: E402
 
 
 def stats(ret, reason="timeout", flags=()):
@@ -56,6 +56,17 @@ def test_next_level():
     assert next_level(0, 0.8, 0.8, 3) == 1
     assert next_level(0, 0.6, 0.8, 3) == 0
     assert next_level(2, 1.0, 0.8, 3) == 2
+
+
+def test_scale_box_start_scales_a_fixed_start_around_the_nominal_pose():
+    cfg = load_config()
+    start = {"id": 7, "dx": 0.10, "dy": -0.08, "dyaw": 80.0,
+             "x": cfg["box"]["x"] + 0.10, "y": cfg["box"]["y"] - 0.08, "yaw": cfg["box"]["yaw"] + 80.0}
+    scaled = scale_box_start(start, cfg, 0.5)
+    assert scaled == {"id": 7, "dx": 0.05, "dy": -0.04, "dyaw": 40.0,
+                      "x": cfg["box"]["x"] + 0.05, "y": cfg["box"]["y"] - 0.04,
+                      "yaw": cfg["box"]["yaw"] + 40.0}
+    assert start["dyaw"] == 80.0
 
 
 def test_curriculum_callback_levels_up_the_training_envs(tmp_path):

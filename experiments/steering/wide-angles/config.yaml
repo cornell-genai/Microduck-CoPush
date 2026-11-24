@@ -1,0 +1,44 @@
+# Central steering, wider box angles. The only task change from the successful stand-still policy
+# is the final box-yaw range: +-45 -> +-90 degrees. Training starts at half range (+-45) and widens
+# through fixed levels when the separate 50-start check set reaches 80% success.
+name: central-steering-wide-angles
+change: widen the box-angle range from +-45 to +-90 degrees with auto-widen
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/steering/stand-still-s1/model.zip  # runner replaces this with the matching seed
+out: runs/steering/wide-angles-s1
+results: experiments/steering/wide-angles/results
+test_set: experiments/test_sets/steering_wide_angles_large.json
+check_set: experiments/test_sets/steering_wide_angles_checks.json
+
+overrides:
+  controller: {mode: central}
+  reward: {version: v1.1}
+  rl: {eval_every: 20000}
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 90.0}
+    stand_still: {enabled: true, vx_threshold: 0.02}
+
+steps: 1000000
+checkpoint_every: 100000
+max_videos: 12
+
+widen:
+  levels: [0.50, 0.625, 0.75, 0.875, 1.0]  # +-45, +-56.25, +-67.5, +-78.75, +-90 deg
+  threshold: 0.80
+  eval_every: 100000
+  episodes: 50
+  seed0: 10200
+  scale_check_starts: true                 # fixed full-range checks are scaled to the current level
+
+early_stop: {success: 0.90, evals: 0}      # fixed budget; checks widen and log but never stop training
+
+check:
+  n: 50
+  rng_seed: 20261124
+
+test:
+  n: 200
+  rng_seed: 20261123
+  controllers: []
+  policies: {}

@@ -82,6 +82,8 @@ One remaining failure (+25.8 degrees): the control falls and stand-still times o
 
 ## Next step
 
-Keep stand-still and widen the box-angle range beyond ±45 degrees with auto-widen. Evaluate every
-new range on its own 200-start set and re-run the Stage 1 set as a forgetting check. Continue
-reporting the anchor/pusher role split, both-held stalls and the few remaining near-target time-outs.
+The [±90-degree wider-angle stage](wide-angles/README.md) is prepared and rehearsal-tested. It keeps
+stand-still, warm-starts each seed from its matching successful policy, and auto-widens from ±45 to
+±90 degrees. The full run evaluates its own 200 held-out starts and re-runs the Stage 1 set as a
+forgetting check while continuing to track the anchor/pusher role split, both-held stalls and the
+few remaining near-target time-outs.

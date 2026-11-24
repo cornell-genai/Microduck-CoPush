@@ -213,7 +213,8 @@ def main() -> int:
 
     checks = load_test_set(stage["check_set"])["starts"] if stage.get("check_set") else None
     widen = BoxRangeCallback(cfg, wd["levels"], wd["threshold"], wd["eval_every"], wd["episodes"], wd["seed0"],
-                             stop_success=es["success"], stop_evals=es["evals"], starts=checks, verbose=1)
+                             stop_success=es["success"], stop_evals=es["evals"], starts=checks,
+                             scale_starts=wd.get("scale_check_starts", False), verbose=1)
     ws = state.get("widen", {})
     widen.level, widen.last_eval, widen.streak = level, ws.get("last_eval", 0), ws.get("streak", 0)
     widen.history, widen.reached_full_at = list(ws.get("history", [])), ws.get("reached_full_at")

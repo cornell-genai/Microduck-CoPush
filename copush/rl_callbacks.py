@@ -157,19 +157,38 @@ class CurriculumCallback(BaseCallback):
 
 # ── auto-widen the box start range (env.box_start) ───────────────────────────
 
+def scale_box_start(start: dict, cfg: dict, scale: float) -> dict:
+    """Scale one fixed full-range box start around the nominal pose.
+
+    This lets an auto-widen curriculum reuse one deterministic check set at every level instead of
+    evaluating the narrow policy on unscaled full-range starts. The original dict is not changed.
+    """
+    out = dict(start)
+    box = cfg["box"]
+    for delta, pose in (("dx", "x"), ("dy", "y"), ("dyaw", "yaw")):
+        raw = start[delta] if delta in start else float(start[pose]) - float(box[pose])
+        value = float(raw) * float(scale)
+        out[delta] = value
+        out[pose] = float(box[pose]) + value
+    return out
+
+
 class BoxRangeCallback(BaseCallback):
     """Every `every` steps: `episodes` deterministic episodes on held-out seeds seed0, seed0 + 1, ...
     with the box sampled from the current range (env.box_start scaled by levels[level]). Success
     >= threshold widens every training env (and the eval env) one level. On the last level,
     success >= stop_success for stop_evals evaluations in a row stops training (stop_evals 0: never).
     With `starts` (a fixed check set of explicit box poses, copush.experiments) each evaluation runs
-    one episode per start instead (seed seed0 + i), and the range only matters for training.
+    one episode per start instead (seed seed0 + i). With `scale_starts`, those full-range starts are
+    scaled around the nominal box pose to the current level; off preserves the old behavior.
     `history` has one dict per evaluation."""
 
     def __init__(self, cfg: dict, levels, threshold: float, every: int, episodes: int, seed0: int,
-                 stop_success: float = 1.1, stop_evals: int = 0, starts=None, verbose: int = 0):
+                 stop_success: float = 1.1, stop_evals: int = 0, starts=None, scale_starts: bool = False,
+                 verbose: int = 0):
         super().__init__(verbose)
         self.starts = list(starts) if starts else None
+        self.scale_starts = bool(scale_starts)
         self.cfg, self.levels, self.threshold = cfg, list(levels), threshold
         self.every, self.episodes, self.seed0 = int(every), int(episodes), int(seed0)
         self.stop_success, self.stop_evals = stop_success, int(stop_evals)
@@ -189,8 +208,10 @@ class BoxRangeCallback(BaseCallback):
         if self.num_timesteps - self.last_eval < self.every:
             return True
         self.last_eval = self.num_timesteps
-        if self.starts:
-            stats = [run_episode(self.env, self._act, self.seed0 + i, {"box": s}) for i, s in enumerate(self.starts)]
+        check_starts = ([scale_box_start(s, self.cfg, self.levels[self.level]) for s in self.starts]
+                        if self.starts and self.scale_starts else self.starts)
+        if check_starts:
+            stats = [run_episode(self.env, self._act, self.seed0 + i, {"box": s}) for i, s in enumerate(check_starts)]
         else:
             stats = [run_episode(self.env, self._act, self.seed0 + i) for i in range(self.episodes)]
         rate = sum(s["reason"] == "success" for s in stats) / len(stats)
@@ -200,10 +221,10 @@ class BoxRangeCallback(BaseCallback):
         self.history.append({"step": self.num_timesteps, "level": self.level, "scale": self.levels[self.level],
                              "success_rate": rate, "falls": sum(any(s["fell"].values()) for s in stats),
                              "box_lost": sum(s["reason"] in ("box_lost", "box_tipped") for s in stats)})
-        if self.starts:                                  # success per box angle side: < -15, -15..+15, > +15 deg
+        if check_starts:                                 # success per box angle side: < -15, -15..+15, > +15 deg
             side = lambda d: 0 if d < -15 else (2 if d > 15 else 1)          # noqa: E731
             by = [[0, 0], [0, 0], [0, 0]]
-            for st0, s in zip(self.starts, stats):
+            for st0, s in zip(check_starts, stats):
                 by[side(st0["dyaw"])][0] += s["reason"] == "success"
                 by[side(st0["dyaw"])][1] += 1
             self.history[-1]["by_side"] = by
