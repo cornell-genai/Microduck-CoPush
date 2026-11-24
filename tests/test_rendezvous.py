@@ -410,3 +410,28 @@ def test_check_set_matches_the_test_set_distribution_and_shares_no_start():
         for d in ("duck_a", "duck_b"):
             r = math.hypot(s[d]["x"] - s["box"]["x"], s[d]["y"] - s["box"]["y"])
             assert 0.2 - 1e-6 <= r <= 0.8 + 1e-6
+
+
+def test_prune_checkpoints_keeps_all_only_when_asked(tmp_path):
+    _rl_scripts()
+    from train_rendezvous import prune_checkpoints
+    for s in (0, 200000, 400000):
+        (tmp_path / f"ckpt_{s}.zip").write_text("x")
+    prune_checkpoints(str(tmp_path), "ckpt_400000.zip", keep_all=True)
+    assert sorted(os.listdir(tmp_path)) == ["ckpt_0.zip", "ckpt_200000.zip", "ckpt_400000.zip"]
+    prune_checkpoints(str(tmp_path), "ckpt_400000.zip")                  # default: newest only, as runs r1-r6
+    assert os.listdir(tmp_path) == ["ckpt_400000.zip"]
+
+
+def test_r7_is_r6_with_3m_steps_and_check_set_picking():
+    r6_stage, r6 = load_stage("experiments/d2-rendezvous/r6-dock-payout.yaml")
+    r7_stage, r7 = load_stage("experiments/d2-rendezvous/r7-long-payout.yaml")
+    assert r7 == r6                                                     # env, reward, curriculum, PPO: identical
+    assert r6_stage["steps"] == 2_000_000 and r7_stage["steps"] == 3_000_000
+    assert r7_stage["eval_every"] == r6_stage["eval_every"] and r7_stage["bc"] == r6_stage["bc"]
+    assert r7_stage["check_set"] == "experiments/test_sets/rendezvous_check.json"
+    _rl_scripts()
+    import run_r7_long_payout as r7run
+    assert r7run.PICK_SET == r7run.CHECK_SET != r7run.SET
+    src = open(r7run.__file__).read()
+    assert '"--keep-checkpoints"' in src and '"--eval-set", PICK_SET' in src and "bc_rendezvous.py" not in src

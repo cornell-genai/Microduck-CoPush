@@ -7,7 +7,7 @@ duck, and check it on the fixed rendezvous check set every eval_every steps.
 
 PPO hyperparameters: the config's ppo block (random weights; no warm start, this is a new behavior). Steps count duck
 entries (2 per simulator step), as scripts/rl/stage.py counts decentral runs. Every eval_every steps: a checkpoint
-(newest only, with state.json; a restart resumes there) and scripts/rl/rendezvous_eval.py on the eval set, rendezvous
+(newest only, with state.json, unless --keep-checkpoints keeps them all; a restart resumes from the newest) and scripts/rl/rendezvous_eval.py on the eval set, rendezvous
 alone with the training ending (100 steps), appended to <out>/evals.jsonl. Writes <out>/model.zip and results.json,
 and keeps <out>/best.zip (+ best.json) = the evaluated checkpoint with the most arrivals (ties: lower mean heading
 error, then lower position error).
@@ -67,6 +67,15 @@ def eval_cmd(path, out_dir, episode_steps, workers, eval_set=CHECK_SET, starts=0
     return cmd + (["--starts", str(starts)] if starts else [])
 
 
+def prune_checkpoints(ckpt_dir, newest, keep_all=False):
+    """Delete every checkpoint in ckpt_dir except newest (the file name), unless keep_all (--keep-checkpoints)."""
+    if keep_all:
+        return
+    for f in os.listdir(ckpt_dir):
+        if f != newest:
+            os.remove(os.path.join(ckpt_dir, f))
+
+
 def best_key(row):
     """Order of checkpoints for best.zip: most arrivals, then lower mean heading error, then lower position error."""
     return (row["arrived"], -row["yaw_err_deg_mean"], -row["pos_err_cm_mean"])
@@ -88,6 +97,8 @@ def main() -> int:
     ap.add_argument("--eval-every", type=int, default=None)
     ap.add_argument("--eval-starts", type=int, default=0, help="0 = the whole eval set")
     ap.add_argument("--eval-workers", type=int, default=6)
+    ap.add_argument("--keep-checkpoints", action="store_true", help="keep every eval's checkpoint (checkpoints/ckpt_<step>.zip); "
+                    "default keeps only the newest, as runs r1-r6")
     ap.add_argument("--eval-set", default=CHECK_SET, help="starts for the training evals and best.zip (default the check set)")
     ap.add_argument("--init", default=None, help="a PPO zip (e.g. bc_rendezvous.py's bc.zip) whose policy weights start "
                     "a scratch run instead of random ones; evaluated once at step 0")
@@ -172,9 +183,7 @@ def main() -> int:
         rel = os.path.join("checkpoints", f"ckpt_{step}.zip")
         model.save(os.path.join(out, rel))
         write_json(state_path, {"step": step, "checkpoint": rel, "wall_s": wall0 + time.perf_counter() - t0})
-        for f in os.listdir(os.path.join(out, "checkpoints")):
-            if f != os.path.basename(rel):
-                os.remove(os.path.join(out, "checkpoints", f))
+        prune_checkpoints(os.path.join(out, "checkpoints"), os.path.basename(rel), a.keep_checkpoints)
         return os.path.join(out, rel)
 
     class EvalCallback(BaseCallback):

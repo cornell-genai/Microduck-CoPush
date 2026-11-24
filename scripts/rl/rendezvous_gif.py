@@ -27,7 +27,7 @@ def record(rendezvous: str, push: str, i: int, mp4: str, label: str) -> dict:
     from copush.sim import CONTROL_DT
     from copush.video import VideoRecorder
     rve._W.clear()
-    rve._init(rendezvous, push, False, None)
+    rve._init(rve.SET, rendezvous, push, False, None)
     env, rv = rve._W["env"], rve._W["rv"]
     rec = VideoRecorder(env.sim.m, mp4, fps=25, width=480, height=270)
     every = max(1, round(2 / (25 * CONTROL_DT)))
