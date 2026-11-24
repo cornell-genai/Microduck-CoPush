@@ -110,9 +110,9 @@ All numbers are on the 200-start rendezvous test set (`experiments/test_sets/ren
   89.7) against 65.0% (58.2 to 71.3). Both measurably better (seeds averaged, paired: docking +33.0 points, +25.8
   to +40.2; push +22.8, +15.7 to +29.8).
 - **How we got there:** r1 to r4, pure PPO with four reward designs, docked about 0% of the time. r5 warm-started
-  from behavioral cloning (BC) of the scripted approach and was the first to dock, but collapsed as the ducks
-  learned to hover near the spot. r6 pays docking the shaping it gives up (0.5 per step left), which removed the
-  collapse. r7 trained r6 for 3M steps instead of 2M: no measurable gain, and seed 2 drifted down after 2.4M.
+  from behavioral cloning (BC) of the scripted approach and was the first to dock, but its docking collapsed during
+  training, most likely because docking ended the episode and gave up the per-step approach reward. r6 pays docking
+  the shaping it gives up (0.5 per step left), which removed the collapse. r7 trained r6 for 3M steps instead of 2M: no measurable gain, and seed 2 drifted down after 2.4M.
 - **Remaining failures (r6 seed 1):** 20 of 200. 11 dock and then the push times out (the push policy, not the
   rendezvous); 9 do not dock in 50 steps, usually one duck far off or facing away.
 - **Next:** chain this rendezvous into the push and steering demo, so the ducks start apart and finish with the
