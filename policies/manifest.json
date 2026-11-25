@@ -5,7 +5,8 @@
   "notes": [
     "training_steps are simulator steps; steps_counted is what SB3 counted (decentral runs count 2 duck entries per simulator step)",
     "git_commit is the commit that recorded the run's results on its branch",
-    "running a policy also needs the frozen walk/push ONNX policies: sh scripts/fetch_policies.sh"
+    "running a policy also needs the frozen walk/push ONNX policies: sh scripts/fetch_policies.sh",
+    "the d2-push-l2-s2 and d2-rendezvous-r6-s1 assets were added to the release on 2026-11-25; their test_set numbers are on 200 starts with cooperative success (each duck at least 25% of the contact impulse) next to task success"
   ],
   "policies": [
     {
@@ -117,6 +118,90 @@
           "dest": "runs/overnight-20261112/runs/01_reference/config.yaml",
           "bytes": 2343,
           "sha256": "08416c939ac0656d6bf22a86f42a05967485085e3d2aa61731cdb50891af75f5"
+        }
+      ]
+    },
+    {
+      "name": "d2-push-l2-s2",
+      "run": "runs/d2-steering-night5/l2-s2",
+      "description": "D2 push policy (each duck runs the same network on its own view plus the partner's position and heading, with the stand-still action), night 5 run L2 seed 2: trained with L2 duck start noise, warm-started from night 2 run A seed 2.",
+      "use": "the official frozen push policy the rendezvous hands off to; warm start for heavy-box work",
+      "branch": "d2-steering",
+      "pr": 19,
+      "git_commit": null,
+      "experiment_config": "experiments/d2-steering/night5/run-l2/config.yaml",
+      "controller": {
+        "mode": "decentral",
+        "include_partner": true
+      },
+      "training_steps": 2002944,
+      "steps_counted": null,
+      "warm_start": "runs/d2-steering/night2/a-s2/model.zip",
+      "reward_version": "v1.1",
+      "test_set": {
+        "file": "experiments/test_sets/stage1_large.json",
+        "n": 200,
+        "success": 0.975,
+        "cooperative_success": 0.505,
+        "note": "one deterministic episode per start, 200 clean stage 1 starts; experiments/d2-steering/night5/SUMMARY.md"
+      },
+      "files": [
+        {
+          "asset": "d2-push-l2-s2.zip",
+          "dest": "runs/d2-steering-night5/l2-s2/model.zip",
+          "bytes": 170525,
+          "sha256": "ab82e344b275ce617123cf89b70d998f2dbf9003e7fd8feec437607503dd3366"
+        },
+        {
+          "asset": "d2-push-l2-s2.config.yaml",
+          "dest": "runs/d2-steering-night5/l2-s2/config.yaml",
+          "bytes": 3334,
+          "sha256": "36ce9d89456879e796143a5267db36fc163932d398c1ff7705dd3408f1cfde2f"
+        }
+      ]
+    },
+    {
+      "name": "d2-rendezvous-r6-s1",
+      "run": "runs/d2-rendezvous-r6-dock-payout/s1",
+      "description": "D2 rendezvous policy, r6 (docking payout) seed 1, final checkpoint at 2M steps: each duck walks from 0.2 to 0.8 m away to its docking spot behind the box, then hands off to d2-push-l2-s2. Includes bc.zip, the behavioral-cloning policy it was warm-started from.",
+      "use": "the official rendezvous policy",
+      "branch": "d2-rendezvous",
+      "pr": 21,
+      "git_commit": "7a90113",
+      "experiment_config": "experiments/d2-rendezvous/r6-dock-payout.yaml",
+      "controller": {
+        "mode": "decentral",
+        "include_partner": true
+      },
+      "training_steps": 2002944,
+      "steps_counted": null,
+      "warm_start": "runs/d2-rendezvous-r6-dock-payout/bc/bc.zip",
+      "reward_version": "rendezvous reward (experiments/d2-rendezvous/r6-dock-payout.yaml)",
+      "test_set": {
+        "file": "experiments/test_sets/rendezvous_large.json",
+        "n": 200,
+        "success": 0.9,
+        "cooperative_success": 0.47,
+        "note": "full pipeline (rendezvous, then d2-push-l2-s2), one deterministic episode per start; experiments/d2-rendezvous/r6-dock-payout/SUMMARY.md"
+      },
+      "files": [
+        {
+          "asset": "d2-rendezvous-r6-s1.zip",
+          "dest": "runs/d2-rendezvous-r6-dock-payout/s1/model.zip",
+          "bytes": 162248,
+          "sha256": "6b55b4a71c2caeedab6afb864cf1e036f2d51b1a3da97e33359eeaad53763605"
+        },
+        {
+          "asset": "d2-rendezvous-r6-s1.config.yaml",
+          "dest": "runs/d2-rendezvous-r6-dock-payout/s1/config.yaml",
+          "bytes": 4285,
+          "sha256": "e8c9121aa7a4f6296fe7a802a85f27b68e184946ef78546079937ef02ff636d8"
+        },
+        {
+          "asset": "d2-rendezvous-r6-bc.zip",
+          "dest": "runs/d2-rendezvous-r6-dock-payout/bc/bc.zip",
+          "bytes": 60605,
+          "sha256": "c285844e97d3ed35271f34b7e6087a1e0fc0833b59f1f0f72eba643004cf9698"
         }
       ]
     }
