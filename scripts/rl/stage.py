@@ -15,6 +15,7 @@ for `steps` steps, counted from 0.
     videos       VideoEvalCallback on rl.eval_seed with the FULL range (one fixed start), capped at
                  max_videos including the final one
     checkpoints  every checkpoint_every steps, newest only, with state.json; a restart resumes there
+                 (`keep_checkpoints: true` keeps every one, for picking a checkpoint afterwards)
     controller   the resolved config's `controller` (configs/copush.yaml; stages built on 01_reference
                  inherit central from configs/overnight.yaml). Decentral: each duck is its own SB3 entry
                  running the shared policy on its own view (copush.decentral); steps then count duck
@@ -197,7 +198,7 @@ def main() -> int:
                           "n_evals": self.n_evals, "last_eval": self.last_eval, "videos": self.videos},
                 "widen": {"level": widen.level, "last_eval": widen.last_eval, "streak": widen.streak,
                           "history": widen.history, "reached_full_at": widen.reached_full_at}})
-            for f in os.listdir(os.path.join(out, "checkpoints")):
+            for f in ([] if stage.get("keep_checkpoints") else os.listdir(os.path.join(out, "checkpoints"))):
                 if f != os.path.basename(rel):
                     os.remove(os.path.join(out, "checkpoints", f))
             self.last_ckpt = step

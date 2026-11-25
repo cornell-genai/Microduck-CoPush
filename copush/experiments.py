@@ -42,6 +42,32 @@ def load_stage(path: str):
     return stage, cfg
 
 
+def copy_box_task(cfg: dict, src: dict) -> dict:
+    """cfg with the box task of src (another resolved config) copied in: the box mass, the episode step limit, the mass
+    randomization range and the reward version (with its definition). Used to evaluate an existing set's env config,
+    or the rendezvous pipeline, on a stage's box (for example the heavy box of experiments/d2-heavybox/)."""
+    v = src["reward"]["version"]
+    cfg["box"]["mass"] = src["box"]["mass"]
+    cfg["env"]["max_steps"] = src["env"]["max_steps"]
+    cfg["env"]["random"]["box_mass"] = list(src["env"]["random"]["box_mass"])
+    cfg["reward"]["version"] = v
+    cfg["reward_versions"][v] = dict(src["reward_versions"][v])
+    return cfg
+
+
+def target_entry_m(start: dict, target: dict, size) -> float:
+    """How far the box centre must travel, straight toward the target centre, before it is inside the target
+    rectangle (size = length, width along the target's own x, y): the shortest push that can count as a success."""
+    d = math.hypot(start["x"] - target["x"], start["y"] - target["y"])
+    if d == 0:
+        return 0.0
+    ux, uy = (start["x"] - target["x"]) / d, (start["y"] - target["y"]) / d
+    c, s = math.cos(math.radians(target["yaw"])), math.sin(math.radians(target["yaw"]))
+    lx, ly = ux * c + uy * s, -ux * s + uy * c
+    r = min(size[0] / 2 / abs(lx) if lx else math.inf, size[1] / 2 / abs(ly) if ly else math.inf)
+    return max(0.0, d - r)
+
+
 def make_test_set(cfg: dict, n: int, rng_seed: int) -> List[dict]:
     """n box poses over the FULL env.box_start range (scale ignored), Latin hypercube: each axis
     is cut into n equal slices with exactly one start in each, so every difficulty bucket gets its
