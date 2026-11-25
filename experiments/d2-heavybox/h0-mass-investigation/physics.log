@@ -1,0 +1,116 @@
+{
+ "box": {
+  "mass": 0.15,
+  "size_m": [
+   0.28,
+   0.1,
+   0.09
+  ],
+  "friction": [
+   1.0,
+   0.005,
+   0.0001
+  ],
+  "condim": 3,
+  "priority": 0
+ },
+ "gravity": [
+  0.0,
+  0.0,
+  -9.81
+ ],
+ "cone": 0,
+ "impratio": 1.0,
+ "timestep": 0.005,
+ "floor": [
+  {
+   "name": "floor",
+   "friction": [
+    1.0,
+    0.005,
+    0.0001
+   ],
+   "condim": 3,
+   "priority": 0
+  }
+ ],
+ "duck_a": {
+  "mass": 0.7372431800000001,
+  "colliding_geoms": 11,
+  "friction_groups": [
+   {
+    "friction": [
+     1.0,
+     0.005,
+     0.0001
+    ],
+    "n": 11,
+    "bodies": [
+     "ankle_left",
+     "ankle_right",
+     "hip_l",
+     "hip_l_2",
+     "jaw_soft",
+     "leg",
+     "leg_2",
+     "trunk_base"
+    ]
+   }
+  ]
+ },
+ "duck_b": {
+  "mass": 0.7372431800000001,
+  "colliding_geoms": 11,
+  "friction_groups": [
+   {
+    "friction": [
+     1.0,
+     0.005,
+     0.0001
+    ],
+    "n": 11,
+    "bodies": [
+     "ankle_left",
+     "ankle_right",
+     "hip_l",
+     "hip_l_2",
+     "jaw_soft",
+     "leg",
+     "leg_2",
+     "trunk_base"
+    ]
+   }
+  ]
+ },
+ "box_floor_mu_effective": 1.0,
+ "slide_force_N_formula": 1.4715
+}
+slide force (N) by mass multiple: {'1': 0.7300000000000004, '2': 1.0700000000000007, '4': 1.5200000000000011}
+WALL {"mass": 100.0, "mode": "B_idle", "mu": null, "moved_m": 9.91921531146297e-05, "speed_m_s": 9.919215311462969e-06, "ended": null, "steps": 50, "duck_a": {"mean_N": 1.7346842917309604, "max_step_mean_N": 4.849786355184193, "p95_step_N": 3.427586521095104, "peak_ctrl_N": 6.500415585132806}, "duck_b": {"mean_N": 0.0, "max_step_mean_N": 0.0, "p95_step_N": 0.0, "peak_ctrl_N": 0.0}}
+WALL {"mass": 100.0, "mode": "A_idle", "mu": null, "moved_m": 0.0001461850796312069, "speed_m_s": 1.4618507963120691e-05, "ended": null, "steps": 50, "duck_a": {"mean_N": 0.0, "max_step_mean_N": 0.0, "p95_step_N": 0.0, "peak_ctrl_N": 0.0}, "duck_b": {"mean_N": 2.534608297521974, "max_step_mean_N": 3.945021441923744, "p95_step_N": 3.6436461934090763, "peak_ctrl_N": 8.054849427587866}}
+WALL {"mass": 100.0, "mode": "both", "mu": null, "moved_m": 0.00028771568985850774, "speed_m_s": 2.8771568985850775e-05, "ended": null, "steps": 50, "duck_a": {"mean_N": 2.3522213860429346, "max_step_mean_N": 3.9919701158195995, "p95_step_N": 3.6170465115279615, "peak_ctrl_N": 6.458787032113956}, "duck_b": {"mean_N": 2.568704233262985, "max_step_mean_N": 4.083806186596817, "p95_step_N": 3.856680927632399, "peak_ctrl_N": 7.58242119736364}}
+LADDER 1x B_idle: moved 0.86 m, ended None after 50 steps, A 0.55 N, B 0.00 N
+LADDER 1x A_idle: moved 0.70 m, ended None after 50 steps, A 0.00 N, B 0.09 N
+LADDER 1x both: moved 1.12 m, ended None after 50 steps, A 0.40 N, B 0.38 N
+LADDER 1.5x B_idle: moved 0.64 m, ended None after 50 steps, A 0.84 N, B 0.00 N
+LADDER 1.5x A_idle: moved 0.58 m, ended None after 50 steps, A 0.00 N, B 0.20 N
+LADDER 1.5x both: moved 0.94 m, ended None after 50 steps, A 0.66 N, B 0.54 N
+LADDER 2x B_idle: moved 0.49 m, ended None after 50 steps, A 1.25 N, B 0.00 N
+LADDER 2x A_idle: moved 0.48 m, ended None after 50 steps, A 0.00 N, B 0.31 N
+LADDER 2x both: moved 0.82 m, ended None after 50 steps, A 0.83 N, B 0.74 N
+LADDER 3x B_idle: moved 0.32 m, ended None after 50 steps, A 2.10 N, B 0.00 N
+LADDER 3x A_idle: moved 0.29 m, ended None after 50 steps, A 0.00 N, B 0.65 N
+LADDER 3x both: moved 0.62 m, ended None after 50 steps, A 1.51 N, B 1.20 N
+LADDER 4x B_idle: moved 0.18 m, ended None after 50 steps, A 2.61 N, B 0.00 N
+LADDER 4x A_idle: moved 0.20 m, ended None after 50 steps, A 0.00 N, B 1.22 N
+LADDER 4x both: moved 0.36 m, ended None after 50 steps, A 2.29 N, B 0.74 N
+LADDER 6x B_idle: moved 0.06 m, ended None after 50 steps, A 2.69 N, B 0.00 N
+LADDER 6x A_idle: moved 0.05 m, ended None after 50 steps, A 0.00 N, B 2.33 N
+LADDER 6x both: moved 0.21 m, ended None after 50 steps, A 2.42 N, B 1.55 N
+LADDER 8x B_idle: moved 0.03 m, ended None after 50 steps, A 2.69 N, B 0.00 N
+LADDER 8x A_idle: moved 0.02 m, ended None after 50 steps, A 0.00 N, B 2.53 N
+LADDER 8x both: moved 0.19 m, ended None after 50 steps, A 2.42 N, B 2.48 N
+LADDER 12x B_idle: moved 0.01 m, ended None after 50 steps, A 2.59 N, B 0.00 N
+LADDER 12x A_idle: moved 0.01 m, ended None after 50 steps, A 0.00 N, B 2.63 N
+LADDER 12x both: moved 0.02 m, ended None after 50 steps, A 1.27 N, B 2.60 N
+exit 0
