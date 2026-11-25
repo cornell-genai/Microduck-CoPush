@@ -1,0 +1,17 @@
+{
+ "pick": {
+  "step": 2400000,
+  "sha256": "dfe9f54f594a5d90dd5798e9aa3c1fab1225cdbd7420b02370704a1e4507731a",
+  "path": "runs/d2-rendezvous-r7-long-payout/s1/best.zip"
+ },
+ "mid": {
+  "step": 2000000,
+  "sha256": "dc65c9415a8c4d9679117d444e820cee83ce0a8701185483fbbf7df54e603982",
+  "path": "runs/d2-rendezvous-r7-long-payout/s1/checkpoints/ckpt_2000000.zip"
+ },
+ "final": {
+  "step": 3002368,
+  "sha256": "585339b527ba5f7f5ae7630eee38be54e709cc873bf4ba29c355d8571c2409c1",
+  "path": "runs/d2-rendezvous-r7-long-payout/s1/checkpoints/ckpt_3002368.zip"
+ }
+}

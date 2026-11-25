@@ -1,0 +1,2 @@
+{"step": 200000, "arrival_rate": 0.0, "arrived": 0, "n": 200, "mean_steps_to_arrive": null, "pos_err_cm_mean": 39.41355, "yaw_err_deg_mean": 60.861075, "duck_box_hits": 2665, "duck_duck_hits": 235, "falls": 20, "wall_s": 434.3}
+{"step": 400000, "arrival_rate": 0.0, "arrived": 0, "n": 200, "mean_steps_to_arrive": null, "pos_err_cm_mean": 49.977225, "yaw_err_deg_mean": 51.052699999999994, "duck_box_hits": 1937, "duck_duck_hits": 437, "falls": 53, "wall_s": 795.2}

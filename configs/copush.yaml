@@ -123,6 +123,9 @@ video:                      # copush.video: episode videos (runs/<run_id>/videos
   fps: 25
   speedup: 2                # 20 s episode -> 10 s video
 
+metrics:                    # copush.cooperation: how results are counted (reporting only, never in the reward)
+  cooperative_share: 0.25   # a success is cooperative if each duck's share of the contact impulse is at least this
+
 controller:                 # who picks the commands (copush.decentral); training, checks and videos follow it
   mode: central             # central: one policy for both ducks; decentral: each duck runs the shared policy on its own view
   include_partner: true     # decentral only: the partner's position and heading in each duck's view (D2; false = D1)

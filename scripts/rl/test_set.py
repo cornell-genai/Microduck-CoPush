@@ -119,8 +119,9 @@ def _row(name: str, s: dict) -> str:
     sh = s["push_share_a_mean"]
     share = "-" if math.isnan(sh) else f"{100 * sh:.0f} / {100 - 100 * sh:.0f}%"
     flags = ", ".join(f"{k} {v}" for k, v in sorted(s["flag_episodes"].items())) or "none"
+    co = s["cooperation"]["cooperative"]["contact"]
     return (f"| {name} | {100 * s['success_rate']:.0f}% ({round(s['success_rate'] * s['n'])}/{s['n']}) | "
-            f"{s['episodes_with_fall']}/{s['n']} | {s['box_lost']}/{s['n']} | {share} | {s['return_mean']:+.2f} | "
+            f"{100 * co['rate']:.0f}% ({co['k']}/{co['n']}) | {s['episodes_with_fall']}/{s['n']} | {s['box_lost']}/{s['n']} | {share} | {s['return_mean']:+.2f} | "
             f"{s['steps_mean']:.0f} | {s['final_dist_mean']:.2f} | "
             f"{', '.join(f'{k} {v}' for k, v in sorted(s['reasons'].items()))} | {flags} |")
 
@@ -197,6 +198,7 @@ def cmd_eval(stage: dict, cfg: dict, cfg_path: str) -> int:
             jobs.append((cfg_path, name, path))
         else:
             print(f"skipping {name}: {path} not found")
+    from copush import cooperation
     from copush.rl_eval import summarize
     with Pool(len(jobs)) as pool:
         res = dict(pool.map(_eval_one, jobs))
@@ -204,7 +206,8 @@ def cmd_eval(stage: dict, cfg: dict, cfg_path: str) -> int:
     summ = {n: summarize(s) for n, s in res.items()}
     rdir = repo_path(stage["results"])
     os.makedirs(rdir, exist_ok=True)
-    keep = ("reason", "return", "steps", "fell", "push_share", "final_dist", "final_yaw_deg", "touch_s")
+    keep = ("reason", "return", "steps", "fell", "push_share", "contact_share", "contact_impulse", "push_impulse",
+            "cooperative", "final_dist", "final_yaw_deg", "touch_s")
     with open(os.path.join(rdir, "test_set.json"), "w") as f:
         json.dump({"test_set": stage["test_set"], "n": len(ts["starts"]),
                    "summary": {n: {k: v for k, v in s.items() if k != "terms"} for n, s in summ.items()},
@@ -216,9 +219,10 @@ def cmd_eval(stage: dict, cfg: dict, cfg_path: str) -> int:
           f"{len(ts['starts'])} fixed held-out starts ([{stage['test_set']}]({os.path.relpath(repo_path(stage['test_set']), rdir)})), "
           f"box offset up to +-{rng['dx']:.2f} m (x) / +-{rng['dy']:.2f} m (y) and +-{rng['dyaw']:.0f} deg, both ducks "
           f"against the box. One deterministic episode per start, reward {cfg['reward']['version']}.", "",
-          "| controller | success | falls | box lost | push share A / B | mean return | mean steps | final dist (m) | ends | monitor flags (episodes) |",
-          "|---|---|---|---|---|---|---|---|---|---|"]
+          "| controller | success | cooperative success | falls | box lost | push share A / B | mean return | mean steps | final dist (m) | ends | monitor flags (episodes) |",
+          "|---|---|---|---|---|---|---|---|---|---|---|"]
     md += [_row(n, s) for n, s in summ.items()]
+    md += [""] + cooperation.report_lines({n: s["cooperation"] for n, s in summ.items()})
     md += ["", "Success by difficulty (successes / starts in the bucket):", "",
            "| controller | " + " | ".join(f"offset {a:g}-{b:g} m" for a, b in zip(OFFSET_BINS[:-1], OFFSET_BINS[1:])) + " | "
            + " | ".join(f"angle {a:g}-{b:g} deg" for a, b in zip(ANGLE_BINS[:-1], ANGLE_BINS[1:])) + " |",

@@ -136,7 +136,9 @@ def _run(job):
         es = info["episode_stats"]
         out.append({"id": s["id"], "side": side_of(s["dyaw"]), "reason": es["reason"],
                     "fell": any(es["fell"].values()), "box_lost": es["reason"] in ("box_lost", "box_tipped"),
-                    "push_share_a": es["push_share"]["duck_a"], "flags": sorted({f.split(":")[0] for f in es["flags"]}),
+                    "push_share_a": es["push_share"]["duck_a"],
+                    "contact_share_a": es["contact_share"]["duck_a"], "cooperative": es["cooperative"],
+                    "cooperative_threshold": es["cooperative_threshold"], "flags": sorted({f.split(":")[0] for f in es["flags"]}),
                     "needed_deg": abs(need[s["id"]]["aim_deg"]), "turn_before_push": before if pushed else sign * turned,
                     "reached_push": pushed, "total_turn": sign * turned, "overshoot": st["box_to_target"] > d0,
                     "idle_frac": idle / n, "box_path_m": path_len, "box_net_m": math.dist(p0, pos),
@@ -256,6 +258,10 @@ def main() -> int:
                   f"{100 * np.mean([r['idle_frac'] for r in rows]):.1f}% | {np.mean([r['box_path_m'] for r in rows]):.2f} | "
                   f"{sum(r['box_net_m'] < STILL_M for r in rows)}/{len(rows)} | {np.mean([r['steps'] for r in rows]):.0f} | "
                   f"{', '.join(f'{k} {v}' for k, v in sorted(flags.items())) or 'none'} |")
+    from copush import cooperation
+    md += [""] + cooperation.report_lines(
+        {name: cooperation.summarize([dict(r, i=r["id"], success=r["reason"] == "success") for r in rows],
+                                     rows[0]["cooperative_threshold"]) for name, rows in res.items()})
     with open(os.path.join(repo_path(args.out), "comparison.md"), "w") as f:
         f.write("\n".join(md) + "\n")
     print("\n".join(md))
