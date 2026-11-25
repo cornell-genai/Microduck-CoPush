@@ -56,30 +56,31 @@ _W: dict = {}
 
 def make_env_class():
     from copush.env import DUCKS, CoPushEnv
+    return make_env_subclass(CoPushEnv, DUCKS)
 
-    class DockEnv(CoPushEnv):
+
+def placed_spots(placement: dict, box: dict, target: dict, noise=None) -> dict:
+    """Per-duck docking spots {duck: (x, y, yaw_deg)} from copush.env.docking_spots. docking_spots places both ducks
+    symmetrically (offset spacing/2 each side, one setback), so each duck is taken from its own call: duck A from
+    spacing 2 * a_off and setback a_back, duck B from 2 * b_off and b_back. The eval set's start noise goes in unchanged
+    (spacing noise split half to each duck, per-duck setback and heading noise), as copush.env applies it."""
+    from copush.env import docking_spots
+    out = {}
+    for duck, key in (("duck_a", "a"), ("duck_b", "b")):
+        spots = docking_spots(box, target, placement[key + "_back"], 2 * placement[key + "_off"], noise)
+        out[duck] = spots[duck]
+    return out
+
+
+def make_env_subclass(base, ducks):
+    class DockEnv(base):
         placement = None
 
         def _place_in_contact(self, noise=None):
-            """copush.env's own placement with per-duck sideways offsets and setbacks (placement dict)."""
-            p = self.placement
-            box, tg = self.cfg["box"], self.cfg["target"]
-            b = math.radians(box["yaw"])
-            t = (math.cos(b), math.sin(b))
-            n = (-math.sin(b), math.cos(b))
-            side = 1.0 if (tg["x"] - box["x"]) * n[0] + (tg["y"] - box["y"]) * n[1] >= 0 else -1.0
-            face = (side * n[0], side * n[1])
-            yaw = math.degrees(math.atan2(face[1], face[0]))
-            left = (-face[1], face[0])
-            sgn = 1.0 if left[0] * t[0] + left[1] * t[1] >= 0 else -1.0
-            ns = noise["spacing"] if noise else 0.0
-            for duck, k, key in (("duck_a", +1, "a"), ("duck_b", -1, "b")):
-                back = p[key + "_back"] + (noise["setback"][duck] if noise else 0.0)
-                off = p[key + "_off"] + ns / 2
-                cx, cy = box["x"] - face[0] * back, box["y"] - face[1] * back
-                self.cfg[duck].update({"x": cx + k * sgn * off * t[0], "y": cy + k * sgn * off * t[1],
-                                       "yaw": yaw + (noise["heading"][duck] if noise else 0.0)})
-    assert DUCKS
+            """copush.env's own placement (docking_spots) with per-duck sideways offsets and setbacks (placement dict)."""
+            for duck, (x, y, yaw) in placed_spots(self.placement, self.cfg["box"], self.cfg["target"], noise).items():
+                self.cfg[duck].update({"x": x, "y": y, "yaw": yaw})
+    assert ducks
     return DockEnv
 
 

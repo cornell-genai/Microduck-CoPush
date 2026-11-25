@@ -45,6 +45,38 @@ def test_baseline_placement_is_the_envs_own(box, noise):
         assert a[d] == pytest.approx(b[d], abs=1e-12)
 
 
+def _old_placement(p, box, tg, noise):
+    """The sweep's original placement math (before it called copush.env.docking_spots), kept to pin its behavior."""
+    b = math.radians(box["yaw"])
+    t = (math.cos(b), math.sin(b))
+    n = (-math.sin(b), math.cos(b))
+    side = 1.0 if (tg["x"] - box["x"]) * n[0] + (tg["y"] - box["y"]) * n[1] >= 0 else -1.0
+    face = (side * n[0], side * n[1])
+    yaw = math.degrees(math.atan2(face[1], face[0]))
+    left = (-face[1], face[0])
+    sgn = 1.0 if left[0] * t[0] + left[1] * t[1] >= 0 else -1.0
+    ns = noise["spacing"] if noise else 0.0
+    out = {}
+    for duck, k, key in (("duck_a", +1, "a"), ("duck_b", -1, "b")):
+        back = p[key + "_back"] + (noise["setback"][duck] if noise else 0.0)
+        off = p[key + "_off"] + ns / 2
+        cx, cy = box["x"] - face[0] * back, box["y"] - face[1] * back
+        out[duck] = (cx + k * sgn * off * t[0], cy + k * sgn * off * t[1], yaw + (noise["heading"][duck] if noise else 0.0))
+    return out
+
+
+@pytest.mark.parametrize("box", [{"x": 0.35, "y": 0.0, "yaw": 90.0}, {"x": 0.45, "y": 0.12, "yaw": 131.0},
+                                 {"x": 0.30, "y": -0.10, "yaw": -52.0}, {"x": 0.20, "y": 0.30, "yaw": 200.0}])
+@pytest.mark.parametrize("noise", [None, NOISE])
+def test_docking_spots_placement_matches_the_original_sweep_math(box, noise):
+    from docking_sweep import placed_spots
+    tg = {"x": 0.9, "y": 0.05}
+    for name, p in CONFIGS.items():
+        new, old = placed_spots(p, box, tg, noise), _old_placement(p, box, tg, noise)
+        for d in old:
+            assert new[d] == pytest.approx(old[d], abs=1e-12), name
+
+
 def test_configs_keep_the_pair_spacing_and_move_the_ducks_as_described():
     box = {"x": 0.35, "y": 0.0, "yaw": 90.0}              # long axis along y; target ahead (+x) so the ducks sit at lower x
     dock = make_env_class()(_cfg(box))
