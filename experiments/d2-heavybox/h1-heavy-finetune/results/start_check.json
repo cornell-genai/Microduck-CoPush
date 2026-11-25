@@ -1,0 +1,14 @@
+{
+ "light 0.15 kg": {
+  "resets": 500,
+  "draws": 500,
+  "rejected": 0,
+  "rejected_rate": 0.0
+ },
+ "heavy 0.60 kg": {
+  "resets": 500,
+  "draws": 507,
+  "rejected": 7,
+  "rejected_rate": 0.013806706114398421
+ }
+}
