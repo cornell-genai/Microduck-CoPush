@@ -64,6 +64,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
+from copush import cooperation
 from copush.chirp import ChirpSensor
 from copush.config import effective_reward, load_config
 from copush.rewards import TERMS, RewardMonitor, StepSummary, TaskReward, balance
@@ -336,6 +337,7 @@ class CoPushEnv(gym.Env):
         self.down_run = {d: 0.0 for d in DUCKS}
         self.fell = {d: False for d in DUCKS}             # counted falls (fall_min_down_s)
         self.stats = {"terms": {k: 0.0 for k in TERMS}, "push": {d: 0.0 for d in DUCKS},
+                      "contact_impulse": {d: 0.0 for d in DUCKS},
                       "contact_time": {d: 0.0 for d in DUCKS}, "stood_up": {d: 0 for d in DUCKS},
                       "cmd_vx": {d: 0.0 for d in DUCKS},
                       "min_dist": st["box_to_target"], "start_dist": st["box_to_target"], "flags": []}
@@ -463,6 +465,7 @@ class CoPushEnv(gym.Env):
             s["terms"][k_] += v
         for d, L in (("duck_a", "A"), ("duck_b", "B")):
             s["push"][d] += push[d] * self.dt
+            s["contact_impulse"][d] += force[d] * self.dt
             s["contact_time"][d] += ctime[d]
             s["cmd_vx"][d] += cmds[L][0]
         s["min_dist"] = min(s["min_dist"], st["box_to_target"])
@@ -478,11 +481,18 @@ class CoPushEnv(gym.Env):
             self._event(st["t"], "end", f"{reason} after {self.steps} steps, return {self.ret:+.3f}")
         if terminated or truncated:
             tot_push = sum(s["push"].values())
+            contact_share = cooperation.shares(s["contact_impulse"])
+            coop_th = cooperation.threshold_of(self.cfg)
             info["episode_stats"] = {
                 "return": self.ret, "terms": dict(s["terms"]), "reason": reason, "steps": self.steps,
                 "fell": dict(self.fell), "stood_up": dict(s["stood_up"]),
                 "reward_version": self.rcfg["version"], "layout": self.ecfg["layout"],
                 "push_share": {d: (s["push"][d] / tot_push if tot_push > 0 else float("nan")) for d in DUCKS},
+                # cooperation (copush.cooperation): impulses in N s over the episode; contact = force magnitude on the
+                # box, push = its part toward the target. cooperative: success and each duck's contact share >= threshold
+                "contact_impulse": dict(s["contact_impulse"]), "push_impulse": dict(s["push"]),
+                "contact_share": contact_share, "cooperative_threshold": coop_th,
+                "cooperative": cooperation.is_cooperative(reason == "success", contact_share["duck_a"], coop_th),
                 "contact_time": dict(s["contact_time"]), "start_dist": s["start_dist"],
                 "cmd_vx_mean": {d: s["cmd_vx"][d] / self.steps for d in DUCKS},
                 "final_dist": st["box_to_target"], "min_dist": s["min_dist"],

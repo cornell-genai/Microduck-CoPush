@@ -116,8 +116,11 @@ def _episode(job):
             break
     es = info["episode_stats"]
     sh = es["push_share"]["duck_a"]
+    ch = es["contact_share"]["duck_a"]
     return {"cfg": cname, "set": sname, "i": i, "reason": es["reason"], "steps": int(es["steps"]),
-            "push_a": None if sh != sh else float(sh), "draws": draws, "resamples": resamples}
+            "push_a": None if sh != sh else float(sh), "contact_a": None if ch != ch else float(ch),
+            "contact_impulse": dict(es["contact_impulse"]), "push_impulse": dict(es["push_impulse"]),
+            "cooperative_threshold": es["cooperative_threshold"], "draws": draws, "resamples": resamples}
 
 
 def mean(x):

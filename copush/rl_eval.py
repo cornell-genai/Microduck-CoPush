@@ -11,6 +11,7 @@ from typing import Callable, List, Optional
 
 import numpy as np
 
+from copush import cooperation
 from copush.env import CoPushEnv, baseline
 from copush.rewards import TERMS, StepSummary, TaskReward
 
@@ -69,7 +70,9 @@ def summarize(stats: List[dict]) -> dict:
     for s in stats:
         for f in {f.split(":")[0] for f in s["flags"]}:
             flags[f] = flags.get(f, 0) + 1
-    return {"n": len(stats), "return_mean": float(ret.mean()), "return_std": float(ret.std()),
+    coop = cooperation.summarize_stats(stats)
+    return {"n": len(stats), "cooperation": coop, "cooperative_rate": coop["cooperative"]["contact"]["rate"],
+            "return_mean": float(ret.mean()), "return_std": float(ret.std()),
             "return_min": float(ret.min()), "return_max": float(ret.max()), "terms": terms,
             "success_rate": reasons.get("success", 0) / len(stats),
             "episodes_with_fall": sum(any(s["fell"].values()) for s in stats),
@@ -87,17 +90,18 @@ def summarize(stats: List[dict]) -> dict:
 def fmt_block(title: str, res: dict, terms=TERMS) -> str:
     lines = [f"### {title}", "",
              "| controller | return mean ± sd [min, max] | " + " | ".join(terms) +
-             " | success | falls | box lost | ends | push share A | contact s A / B | closest m | final m | flags (episodes) |",
-             "|---|---|" + "---|" * len(terms) + "---|---|---|---|---|---|---|---|---|"]
+             " | success | cooperative success | falls | box lost | ends | push share A | contact s A / B | closest m | final m | flags (episodes) |",
+             "|---|---|" + "---|" * len(terms) + "---|---|---|---|---|---|---|---|---|---|"]
     for name, s in res.items():
         tt = " | ".join(f"{m:+.2f} ± {sd:.2f}" for m, sd in (s["terms"][k] for k in terms))
         share = "-" if math.isnan(s["push_share_a_mean"]) else f"{100 * s['push_share_a_mean']:.0f}%"
         lines.append(f"| {name} | {s['return_mean']:+.2f} ± {s['return_std']:.2f} [{s['return_min']:+.2f}, {s['return_max']:+.2f}] | "
-                     f"{tt} | {100 * s['success_rate']:.0f}% | {s['episodes_with_fall']}/{s['n']} | {s['box_lost']}/{s['n']} | "
+                     f"{tt} | {100 * s['success_rate']:.0f}% | {100 * s['cooperative_rate']:.0f}% | {s['episodes_with_fall']}/{s['n']} | {s['box_lost']}/{s['n']} | "
                      f"{', '.join(f'{k} {v}' for k, v in sorted(s['reasons'].items()))} | {share} | "
                      f"{s['contact_time_mean']['duck_a']:.1f} / {s['contact_time_mean']['duck_b']:.1f} | "
                      f"{s['min_dist_mean']:.2f} | {s['final_dist_mean']:.2f} | "
                      f"{', '.join(f'{k} {v}' for k, v in sorted(s['flag_episodes'].items())) or 'none'} |")
+    lines += [""] + cooperation.report_lines({n: s["cooperation"] for n, s in res.items()}, f"Cooperative success: {title}", level=4)
     return "\n".join(lines) + "\n"
 
 

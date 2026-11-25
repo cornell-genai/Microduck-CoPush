@@ -37,6 +37,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path[:0] = [ROOT, os.path.join(ROOT, "scripts", "rl")]
 os.chdir(ROOT)
 
+from copush import cooperation  # noqa: E402
+
 CONFIG = "experiments/d2-rendezvous/config.yaml"
 SET = "experiments/test_sets/rendezvous_large.json"          # the test set: report results on it, never pick on it
 CHECK_SET = "experiments/test_sets/rendezvous_check.json"   # the check set: pick checkpoints on it (training evals)
@@ -183,8 +185,13 @@ def episode(i: int) -> dict:
             break
     es = info["episode_stats"]
     sh = es["push_share"]["duck_a"]
+    ch = es["contact_share"]["duck_a"]
     out.update(push_reason=es["reason"], push_success=es["reason"] == "success", push_steps=int(es["steps"]),
-               push_share_a=None if sh != sh else round(float(sh), 4))
+               push_share_a=None if sh != sh else round(float(sh), 4),
+               contact_share_a=None if ch != ch else round(float(ch), 4),
+               contact_impulse={d: round(float(es["contact_impulse"][d]), 4) for d in DUCKS},
+               push_impulse={d: round(float(es["push_impulse"][d]), 4) for d in DUCKS},
+               cooperative=bool(es["cooperative"]), cooperative_threshold=es["cooperative_threshold"])
     return out
 
 
@@ -213,7 +220,9 @@ def summarize(eps: list, push: bool) -> dict:
         s.update(end_to_end=len(ok), end_to_end_rate=len(ok) / n, end_to_end_ci=[lo, hi],
                  push_success_after_arrival=len(oka), push_success_after_arrival_rate=(len(oka) / len(arr)) if arr else None,
                  push_success_after_timeout=len(ok) - len(oka),
-                 push_reasons={r: sum(e["push_reason"] == r for e in eps) for r in sorted({e["push_reason"] for e in eps})})
+                 push_reasons={r: sum(e["push_reason"] == r for e in eps) for r in sorted({e["push_reason"] for e in eps})},
+                 cooperation=cooperation.summarize([dict(e, success=e["push_success"]) for e in eps],
+                                                   eps[0]["cooperative_threshold"]))
     return s
 
 
@@ -257,6 +266,8 @@ def report(doc: dict) -> str:
             L.append(f"| {g} | {s['n']} | {pct(s['end_to_end_rate'])} ({pct(s['end_to_end_ci'][0])} to {pct(s['end_to_end_ci'][1])}) | "
                      f"{s['push_success_after_arrival']} of {s['arrived']} ({pct(s['push_success_after_arrival_rate'])}) | "
                      f"{s['push_success_after_timeout']} of {s['n'] - s['arrived']} |")
+        L += [""] + cooperation.report_lines({g: S[g]["cooperation"] for g in groups if S.get(g)},
+                                             "Cooperative success, end to end")
         L += ["", "Push endings, all starts: " + ", ".join(f"{k} {v}" for k, v in a["push_reasons"].items()) + "."]
     L += ["", f"Wall time {doc['wall_s']} s."]
     return "\n".join(L) + "\n"
