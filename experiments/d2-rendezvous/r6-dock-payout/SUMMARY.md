@@ -2,6 +2,8 @@
 
 *Written 2026-11-23 19:42 by `scripts/rl/run_r6_dock_payout.py`.*
 
+> **Addendum, 2026-11-25:** "push success" below only checks that the box reaches the target. In about half of those successes one duck does under 25% of the pushing (seed 1: 86 of 180, and in 82 of those it does none). See [Cooperative success](#cooperative-success-addendum-2026-11-25) at the end: cooperative success is 47.0% (seed 1) and 46.0% (seed 2) against 36.5% for scripted. The numbers below are unchanged.
+
 ## Steps
 
 | step | status | finished |
@@ -270,7 +272,10 @@ From `runs/d2-rendezvous-r6-dock-payout/reselect/test_s1_final/results.json`: 20
 **Clips** (scripted left, r6 s1 right; both then run the same push policy). Failure, start 149 (uniform; docked in 37 steps with 1.0 cm / 2.8 deg error, push timed out):
 ![failure_docked_push_timeout_start149.gif](gifs/failure_docked_push_timeout_start149.gif)
 
-Success, start 0 (uniform; docked in 21 steps, push succeeded):
+Success with both ducks pushing, start 21 (uniform; docked in 29 steps, push succeeded in 31 steps; each duck did 50% of the pushing by both measures, so it is a cooperative success):
+![success_both_ducks_push_start021.gif](gifs/success_both_ducks_push_start021.gif)
+
+Task success but a solo push, start 0 (uniform; docked in 21 steps, push succeeded; duck B did all of the pushing and duck A never touched the box, so it is NOT a cooperative success). This clip was shown as the success example before 2026-11-25:
 ![success_start000.gif](gifs/success_start000.gif)
 
 **What goes wrong in start 149** (from about 10 frames of the clip, not the full video): both ducks dock behind the box, but early in the push one duck drifts off to the side and stops, leaving the other to push alone. The lone duck moves the box onto the target and keeps it there until the 100-step limit without the episode counting as a success, so the box seems to end just outside the success tolerance (most likely its angle or how far along the target it sits; the frames cannot tell which). The scripted pair on the same start ends with the same one-pusher pattern but meets the tolerance.
@@ -319,3 +324,30 @@ Success, start 0 (uniform; docked in 21 steps, push succeeded):
 
 
 Per-episode results: `runs/d2-rendezvous-r6-dock-payout/eval_<controller>/results.json` (git-ignored); the tables above come from them, and `results/<controller>/results.md` has the full per-kind breakdown.
+
+## Cooperative success (addendum, 2026-11-25)
+
+**Why:** success only checks that the box reaches the target (centre inside, angle within 15 degrees, both ducks up, held 1 s). It does not check who pushed. From 2026-11-25 a success counts as cooperative only if both ducks contributed, and cooperative success is the headline number, with task success next to it. Nothing above was changed.
+
+**Definition** (`copush/cooperation.py`; threshold `metrics.cooperative_share: 0.25` in `configs/copush.yaml`):
+- **Contact impulse** (headline measure): the size of a duck's contact force on the box, added up over the push phase. It also credits a duck that holds the box as a pivot while the other turns it.
+- **Along the line** (the older "push share"): only the part of that force pointing from the box to the target.
+- **A duck's share** = its measure divided by both ducks' total.
+- **Cooperative success** = task success and each duck's contact-impulse share at least 25%.
+
+**Result** (200-start rendezvous test set, full pipeline, 95% intervals; from [cooperative-success/cooperative.md](../cooperative-success/cooperative.md)):
+
+| controller | **cooperative success (contact impulse, 25%)** | task success | cooperative success (along the line, 25%) | successes with one duck under 25% |
+|---|---|---|---|---|
+| scripted rendezvous | **36.5% (30.1 to 43.4)** | 65.0% (58.2 to 71.3) | 36.0% (29.7 to 42.9) | 57 of 130 (43.8%) |
+| r6 seed 1 (official) | **47.0% (40.2 to 53.9)** | 90.0% (85.1 to 93.4) | 47.0% (40.2 to 53.9) | 86 of 180 (47.8%) |
+| r6 seed 2 | **46.0% (39.2 to 52.9)** | 85.5% (80.0 to 89.7) | 45.0% (38.3 to 51.9) | 79 of 171 (46.2%) |
+
+- **r6 against scripted (same starts, paired, seeds averaged):** cooperative success +10.0 points (+4.4 to +15.6), seeds +10.5 and +9.5: **measurable**. Task success was +22.8 (+15.7 to +29.8). So the learned rendezvous still measurably beats scripted, by less than half as much.
+- **Most of the gain in task success is successes where one duck does under 25% of the pushing.** r6 adds about 23 points of task success but only 10 points of cooperative success.
+- **The threshold barely matters.** r6 seed 1 has 96, 96, 94, 94 and 89 cooperative successes of 200 at 10, 20, 25, 30 and 40%; scripted has 73, 73, 73, 71 and 64. Episodes are either roughly shared or nearly solo, with few in between. The r6 against scripted difference is measurable at every threshold from 10 to 40% with both measures.
+- **The two measures agree.** They disagree on 3 of the 481 successes in this table (scripted 1, seed 1 0, seed 2 2). All three are near the 25% line or a duck pressing on the box sideways rather than toward the target.
+- **Correction:** the pull request first said "Duck A does about 60% of the pushing. No duck does all the work." The 60% is an average over episodes that hides the split: in 86 of r6 seed 1's 180 successes one duck does under 25% of the pushing.
+- **Reproduction:** the saved per-episode results did not hold the contact impulse, so each controller was rerun on the same starts and seeds. All 600 episodes matched the originals (docked, push ending, push steps, push share).
+
+**Known issue:** the box (0.15 kg) is light enough for one duck to push alone, so the task does not force cooperation, and the frozen push policy learned a pusher/steadier role split: one duck pushes, the other steadies the box and often does not push at all. A heavier-box fix for the push policy is planned on a separate branch.

@@ -81,7 +81,7 @@ All distances in metres; the spacing between the ducks is 0.20 m in every config
 
 ## What it means for the rendezvous phase
 
-The policy is only reliable where it was trained to expect the ducks. A scripted phase should deliver each duck to the baseline spot (0.095 m behind the box centre, 0.10 m to either side), facing the push direction. The smallest shift tested, 3 cm, already costs 11.5 to 21.5 points, so the docking must be accurate to well under 3 cm; this sweep did not test smaller shifts. This sweep **cannot** say which spot is best for a policy trained on a different placement: every policy here trained at the baseline, so any shift is also a shift away from its training. Finding a better docking spot would need training on the new spot, which this run did not do.
+The policy is only reliable where it was trained to expect the ducks. A scripted phase should deliver each duck to the baseline spot (0.095 m behind the box centre, 0.10 m to either side), facing the push direction. The smallest sideways shift tested, 3 cm, already costs 11.5 to 21.5 points, and the smallest setback shift, 1.5 cm (A further back), costs 5.9 points over the 800 starts (3.3 to 8.5; not measurable on the clean and noisy sets alone). So the docking should be accurate to under about 2 cm, and possibly tighter; this sweep did not test shifts under 1.5 cm. (Corrected 2026-11-25: this sentence first named 3 cm as the smallest shift tested.) This sweep **cannot** say which spot is best for a policy trained on a different placement: every policy here trained at the baseline, so any shift is also a shift away from its training. Finding a better docking spot would need training on the new spot, which this run did not do.
 
 ## Caveats
 

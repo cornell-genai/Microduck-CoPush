@@ -131,6 +131,8 @@ Errors: mean over the starts of the two ducks' mean, with a 95% interval for tha
 | r7 s2, 2M checkpoint (step 2000000) | box_tipped 2, fall 4, success 173, timeout 21 | 2 | 258 (33) | 97 (21) | 62.5% |
 | r7 s2, final checkpoint (step 3002368) | fall 8, success 160, timeout 32 | 7 | 566 (36) | 152 (23) | 61.5% |
 
+**Addendum, 2026-11-25 (push share and cooperative success):** the mean push share in the table above hides a split. In about half of every controller's successes one duck does under 25% of the pushing, so "duck A does about 60%" does not mean the pushing is shared. Cooperative success (task success and each duck at least 25% of the contact impulse; see [r6's addendum](../r6-dock-payout/SUMMARY.md#cooperative-success-addendum-2026-11-25)) on the same 200 starts: r7 seed 1 pick 43.0% (36.3 to 49.9), r7 seed 2 pick 42.5% (35.9 to 49.4), r6 seed 1 47.0% (40.2 to 53.9), r6 seed 2 46.0% (39.2 to 52.9), scripted 36.5% (30.1 to 43.4). Paired, seeds averaged: r6 minus r7 is +3.8 points (+0.6 to +6.9), seeds +4.0 and +3.5, a small measurable difference in r6's favor (task success: +2.2, -1.4 to +5.9, no measurable difference); r7 minus scripted is +6.2 (+0.7 to +11.8), measurable. The r6 against r7 difference is one of many comparisons and its interval nearly reaches 0, so treat it as weak. Numbers: [cooperative-success/cooperative.md](../cooperative-success/cooperative.md). The table above is unchanged.
+
 ## Clips (scripted left, r7 s1 check-set pick right; then the same push policy)
 
 **start006**

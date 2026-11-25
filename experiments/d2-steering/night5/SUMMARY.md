@@ -361,3 +361,22 @@ Left: the matching A seed (night 2); right: the run named. Same start, same nois
 **L2 seed 2, failure, start 31** (run: timeout; A: success)
 
 ![l2_s2_failure_start31](results/gifs/l2_s2_failure_start31/start31_side_by_side.gif)
+
+## Cooperative success (addendum, 2026-11-25): L2 seed 2
+
+**Why:** success only checks that the box reaches the target, not who pushed. From 2026-11-25 a success counts as cooperative only if each duck's share of the contact impulse (contact force on the box, added up over the episode) is at least 25% (`copush/cooperation.py`, `metrics.cooperative_share`). Nothing above was changed. This covers L2 seed 2 only (`runs/d2-steering-night5/l2-s2/model.zip`), the push policy the rendezvous hands off to; the other night 5 policies were not recomputed.
+
+200 starts per set, 95% intervals (from [cooperative.md](../../d2-rendezvous/cooperative-success/cooperative.md)):
+
+| set | **cooperative success (contact impulse, 25%)** | task success | cooperative success (along the line, 25%) | successes with one duck under 25% |
+|---|---|---|---|---|
+| clean | **50.5% (43.6 to 57.4)** | 97.5% (94.3 to 98.9) | 50.5% (43.6 to 57.4) | 94 of 195 (48.2%) |
+| noisy | **47.5% (40.7 to 54.4)** | 93.0% (88.6 to 95.8) | 47.5% (40.7 to 54.4) | 91 of 186 (48.9%) |
+| L1 | **45.0% (38.3 to 51.9)** | 90.0% (85.1 to 93.4) | 45.5% (38.7 to 52.4) | 90 of 180 (50.0%) |
+| L2 | **43.5% (36.8 to 50.4)** | 88.0% (82.8 to 91.8) | 43.0% (36.3 to 49.9) | 89 of 176 (50.6%) |
+
+- About half of this policy's successes are one duck pushing with the other under 25%. This is the role split described under "Push share" above, now counted against success.
+- The threshold barely matters between 10 and 30% (clean: 101 cooperative successes of 200 at 10, 20, 25 and 30%, 97 at 40%), and the two measures disagree on 2 of the 737 successes.
+- The rerun matched the saved night 5 evaluation on all 800 episodes (ending, steps, push share).
+
+**Known issue:** the box (0.15 kg) is light enough for one duck to push alone, so the task does not force cooperation, and the frozen push policy learned a pusher/steadier role split: one duck pushes, the other steadies the box and often does not push at all. A heavier-box fix for the push policy is planned on a separate branch.
