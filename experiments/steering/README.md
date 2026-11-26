@@ -82,6 +82,31 @@ One remaining failure (+25.8 degrees): the control falls and stand-still times o
 
 ## Next step
 
+### Small duck start noise (prepared 2026-11-25)
+
+The original central stand-still seeds trained on clean duck placements. The new
+[start-noise config](start-noise/config.yaml) adapts each matching seed for 1M additional simulator
+steps with Gaussian heading noise (5° standard deviation per duck), spacing noise (2 cm standard
+deviation between ducks) and setback noise (1 cm standard deviation per duck), clipped at 3σ.
+Invalid starts are redrawn by the existing environment. Box starts stay at Stage 1's ±45° range,
+reward v1.1 and stand-still remain enabled. Checkpoints are every 100k steps; no early stopping.
+This is an adaptation comparison against the prior policies, without an extra-training clean
+control: improvements cannot be attributed to noise alone or to the central architecture.
+
+Run or resume `scripts/rl/overnight_steering_noise.py` with the RL Python environment from this
+checkout. It trains seeds 1 and 2 from `runs/steering/stand-still-s1/model.zip` and `stand-still-s2`,
+then evaluates both old and new seeds on `stage1_large.json` (clean/forgetting) and
+`stage1_noisy_large.json` (the D2 small-noise benchmark), 200 starts each. The separate
+`stage1_noisy_checks.json` is used only for training diagnostics. Per-side success, 95% intervals,
+paired differences and failure/teamwork metrics will be written under `start-noise/results/`.
+Success and failure videos go under `runs/steering-start-noise/videos/`.
+
+The run uses a separate `steering` worktree. Its logs, completion markers and input hashes are in
+`runs/steering-start-noise/`; models and training state are in `runs/steering/start-noise-s1/` and
+`start-noise-s2/`. Checkpoint/restart behavior is inherited from `stage.py`.
+
+### Wider angles (separate work)
+
 Keep stand-still and widen the box-angle range beyond ±45 degrees with auto-widen. Evaluate every
 new range on its own 200-start set and re-run the Stage 1 set as a forgetting check. Continue
 reporting the anchor/pusher role split, both-held stalls and the few remaining near-target time-outs.
