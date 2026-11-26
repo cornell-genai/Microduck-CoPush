@@ -24,12 +24,18 @@ walk to the box and push it into the target together.
 
 ### Steering (Anmol)
 
-- **Controller:** central. **Branch:** `steering`. **Folder:** `experiments/steering/`.
-- **Status:** the long-turn blind spot is fixed on the Stage 1 range. With a real stand-still action,
-  two central-policy seeds win 96% and 98% overall and 92% and 97% on the long-turn side, against
-  66% and 68% overall and 21% and 18% long-turn for matched continued-training controls (200
-  held-out starts). Both learned policies pivot on all 66 long-turn starts. Results:
-  [experiments/steering/](experiments/steering/README.md).
+- **Controller:** central. **Branches:** `steering` (stand-still stage) and `steering-wide-angles`.
+  **Folder:** `experiments/steering/`.
+- **Status:** the long-turn blind spot is fixed on the Stage 1 range. With stand-still, two policies
+  win 96% and 98% overall and 92% and 97% on the long-turn side, against 66% and 68% overall and
+  21% and 18% long-turn for matched continued-training controls. Widening from ±45° to ±90° with
+  auto-widen produces 92% and 86% on 200 held-out starts, against 70% and 72% zero-shot; paired
+  improvement +18.5 points (95% CI +13.4 to +23.6). No measurable overall forgetting on Stage 1.
+  Results: [experiments/steering/](experiments/steering/README.md) and
+  [wide-angle stage](experiments/steering/wide-angles/README.md).
+- **Next steps:** review the wider-angle failure modes and role split (duck A averages 64–65% of
+  pushing), then combine steering with rendezvous once that track has a stable policy and check both
+  earlier held-out sets for forgetting.
 - **Next steps:**
   1. Keep stand-still and widen the box angle range beyond ±45 deg with auto-widen.
   2. Check every wider-angle policy on the Stage 1 set for forgetting.

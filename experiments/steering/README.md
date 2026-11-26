@@ -82,8 +82,11 @@ One remaining failure (+25.8 degrees): the control falls and stand-still times o
 
 ## Next step
 
-The [±90-degree wider-angle stage](wide-angles/README.md) is prepared and rehearsal-tested. It keeps
-stand-still, warm-starts each seed from its matching successful policy, and auto-widens from ±45 to
-±90 degrees. The full run evaluates its own 200 held-out starts and re-runs the Stage 1 set as a
-forgetting check while continuing to track the anchor/pusher role split, both-held stalls and the
-few remaining near-target time-outs.
+The [±90-degree wider-angle stage](wide-angles/README.md) is complete. Its two seeds score 92% and
+86% on 200 held-out starts, against 70% and 72% for the original policies; the paired improvement
+is +18.5 points (95% CI +13.4 to +23.6). The outer angle bands improve measurably and the middle
+bands show no measurable difference. The Stage 1 forgetting check shows no measurable overall
+change, though seed 1 is lower on the middle-angle side. Full failure diagnostics and clips are in
+the stage README and generated [summary](wide-angles/SUMMARY.md). Both seeds reached ±90° at 400k
+steps; next, inspect the remaining failure patterns before combining this wider angle range with
+the rendezvous curriculum.
