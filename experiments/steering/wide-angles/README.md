@@ -1,6 +1,8 @@
 # Central steering: widen box angles to ±90 degrees
 
-**Status:** prepared and rehearsal-tested on 2026-11-23; the two-seed full run is in progress.
+**Status:** complete (2026-11-24). Both training seeds reached the full ±90-degree range at
+400,000 steps, and the held-out evaluation and Stage 1 forgetting check are complete. See
+[SUMMARY.md](SUMMARY.md) for confidence intervals, failure diagnostics, raw comparisons and clips.
 
 This stage keeps the successful central stand-still controller and changes one task setting: the
 box-angle range widens from ±45 to ±90 degrees. Each PPO seed warm-starts from its matching
@@ -31,6 +33,6 @@ written to `SUMMARY.md`; checkpoints and logs remain under the ignored `runs/` d
 | 200-start final test set | `ae621b9f480979a36e66cc8281376b0998688b6d672273f5995a1e5f552fe39c` |
 | 50-start curriculum check set | `f7c02ccf1b0b79c4712a829c4ee58cb801f91dac54b88cbb91a539a37bf2acb8` |
 
-The final report will include 95% intervals overall and in five signed angle bands, paired
-two-seed comparisons against the original policies, Stage 1 forgetting, falls, box loss,
-overshoots, time-outs, pivots, both-held stalls, push share and lazy-duck episodes.
+The report includes 95% intervals overall and in five signed angle bands, paired two-seed
+comparisons against the original policies, Stage 1 forgetting, falls, box loss, overshoots,
+time-outs, pivots, both-held stalls, push share and lazy-duck episodes.
