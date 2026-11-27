@@ -30,10 +30,17 @@ walk to the box and push it into the target together.
   66% and 68% overall and 21% and 18% long-turn for matched continued-training controls (200
   held-out starts). Both learned policies pivot on all 66 long-turn starts. Results:
   [experiments/steering/](experiments/steering/README.md).
+  Small duck-noise adaptation is also complete (two seeds, 200 starts per policy/set). It gives no
+  measurable noisy-set gain (-1.25 points, 95% CI -4.75 to +2.25) and reduces clean success by 3.75
+  points (95% CI -6.77 to -0.73), concentrated on long-turn starts. Keep the original policies,
+  which already win 94% and 91% on the noisy set. See the
+  [noise result](experiments/steering/README.md#small-duck-start-noise).
 - **Next steps:**
-  1. Keep stand-still and widen the box angle range beyond ±45 deg with auto-widen.
-  2. Check every wider-angle policy on the Stage 1 set for forgetting.
-  3. Track the anchor/pusher role split (duck A currently does 77-80% of pushing), both-held stalls
+  1. Compare central and D2 on identical clean/noisy sets and document training histories; inspect
+     box-loss and long-turn regressions before another noise-training change.
+  2. Keep stand-still and widen the box angle range beyond ±45 deg with auto-widen.
+  3. Check every wider-angle policy on the Stage 1 set for forgetting.
+  4. Track the anchor/pusher role split (duck A currently does 77-80% of pushing), both-held stalls
      and the remaining near-target time-outs as the range grows.
 
 ### Rendezvous (Winston)
