@@ -1,0 +1,17 @@
+{
+ "episodes": 6000,
+ "pairs": 546336,
+ "outcomes": {
+  "arrived": 2315,
+  "timeout": 3640,
+  "fall": 45
+ },
+ "docking_rate": 0.3858333333333333,
+ "mean_steps": 45.528,
+ "dist_m": [
+  0.15,
+  0.8
+ ],
+ "seed": 777,
+ "wall_s": 1238.4
+}

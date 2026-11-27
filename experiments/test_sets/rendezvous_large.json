@@ -1,0 +1,4636 @@
+{
+ "stage": "rendezvous-large-heldout",
+ "created": "2026-11-22",
+ "config": "experiments/d2-rendezvous/config.yaml",
+ "base_set": "experiments/test_sets/stage1_large.json",
+ "n": 200,
+ "rng_seed": 20261122,
+ "kinds": {
+  "uniform": 160,
+  "near_symmetric": 20,
+  "wrong_side": 20
+ },
+ "target": {
+  "x": 0.95,
+  "y": -0.3,
+  "yaw": 90
+ },
+ "start_rules": {
+  "dist_m": [
+   0.2,
+   0.8
+  ],
+  "kinds": {
+   "uniform": 0.8,
+   "near_symmetric": 0.1,
+   "wrong_side": 0.1
+  },
+  "clear_box_m": 0.08,
+  "clear_ducks_m": 0.15,
+  "sym_lateral_m": 0.02,
+  "wrong_side_cone_deg": 60.0
+ },
+ "note": "one start per stage1_large box pose (same order); per start: box pose (x, y m; yaw deg) and each duck's x, y (m) and yaw (deg). Kinds: uniform (each duck 0.2-0.8 m from the box centre, bearing and heading uniform), near_symmetric (both ducks within 2 cm of the box's push axis, so both pairings with the spots are about equally long), wrong_side (both ducks within 60 deg of the push direction, on the target side). Neither duck within 8 cm of the box, ducks at least 15 cm apart. Never used in training. Episode seed 10000 + i.",
+ "starts": [
+  {
+   "id": 0,
+   "kind": "uniform",
+   "box": {
+    "x": 0.45268,
+    "y": 0.03541,
+    "yaw": 107.385
+   },
+   "duck_a": {
+    "x": 0.42718,
+    "y": -0.29748,
+    "yaw": 63.594
+   },
+   "duck_b": {
+    "x": 0.31716,
+    "y": 0.3206,
+    "yaw": -15.814
+   },
+   "flags": {
+    "pairing_margin_m": 0.3962,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 1,
+   "kind": "uniform",
+   "box": {
+    "x": 0.23929,
+    "y": 0.12866,
+    "yaw": 51.25
+   },
+   "duck_a": {
+    "x": 0.3253,
+    "y": -0.2352,
+    "yaw": -65.911
+   },
+   "duck_b": {
+    "x": -0.0013,
+    "y": 0.21798,
+    "yaw": -80.581
+   },
+   "flags": {
+    "pairing_margin_m": 0.0155,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 2,
+   "kind": "uniform",
+   "box": {
+    "x": 0.30185,
+    "y": -0.12377,
+    "yaw": 93.356
+   },
+   "duck_a": {
+    "x": 0.43235,
+    "y": -0.5606,
+    "yaw": -111.797
+   },
+   "duck_b": {
+    "x": -0.10249,
+    "y": -0.25418,
+    "yaw": 33.849
+   },
+   "flags": {
+    "pairing_margin_m": 0.1203,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 3,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.38107,
+    "y": 0.12261,
+    "yaw": 61.713
+   },
+   "duck_a": {
+    "x": 0.62625,
+    "y": -0.21428,
+    "yaw": 68.297
+   },
+   "duck_b": {
+    "x": 0.61284,
+    "y": 0.18151,
+    "yaw": 140.741
+   },
+   "flags": {
+    "pairing_margin_m": 0.1692,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 4,
+   "kind": "uniform",
+   "box": {
+    "x": 0.34133,
+    "y": 0.01642,
+    "yaw": 121.303
+   },
+   "duck_a": {
+    "x": 0.10588,
+    "y": 0.07709,
+    "yaw": -47.869
+   },
+   "duck_b": {
+    "x": -0.1924,
+    "y": 0.50321,
+    "yaw": 53.794
+   },
+   "flags": {
+    "pairing_margin_m": 0.0186,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 5,
+   "kind": "uniform",
+   "box": {
+    "x": 0.49173,
+    "y": -0.06645,
+    "yaw": 49.516
+   },
+   "duck_a": {
+    "x": 0.5722,
+    "y": -0.51872,
+    "yaw": -121.1
+   },
+   "duck_b": {
+    "x": 0.91357,
+    "y": 0.38017,
+    "yaw": 81.035
+   },
+   "flags": {
+    "pairing_margin_m": 0.3033,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 6,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.39316,
+    "y": -0.00635,
+    "yaw": 66.068
+   },
+   "duck_a": {
+    "x": 1.04864,
+    "y": -0.16596,
+    "yaw": 97.059
+   },
+   "duck_b": {
+    "x": 0.57261,
+    "y": -0.54444,
+    "yaw": -60.217
+   },
+   "flags": {
+    "pairing_margin_m": 0.162,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 7,
+   "kind": "uniform",
+   "box": {
+    "x": 0.26025,
+    "y": 0.12028,
+    "yaw": 92.9
+   },
+   "duck_a": {
+    "x": -0.10157,
+    "y": 0.38211,
+    "yaw": 104.656
+   },
+   "duck_b": {
+    "x": -0.15737,
+    "y": -0.49536,
+    "yaw": -44.126
+   },
+   "flags": {
+    "pairing_margin_m": 0.3173,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 8,
+   "kind": "uniform",
+   "box": {
+    "x": 0.25422,
+    "y": -0.11995,
+    "yaw": 95.724
+   },
+   "duck_a": {
+    "x": 0.29255,
+    "y": -0.67894,
+    "yaw": 171.158
+   },
+   "duck_b": {
+    "x": -0.22626,
+    "y": 0.42141,
+    "yaw": 35.317
+   },
+   "flags": {
+    "pairing_margin_m": 0.372,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 9,
+   "kind": "uniform",
+   "box": {
+    "x": 0.4303,
+    "y": 0.09654,
+    "yaw": 103.501
+   },
+   "duck_a": {
+    "x": 1.03051,
+    "y": -0.0983,
+    "yaw": 142.906
+   },
+   "duck_b": {
+    "x": 0.98696,
+    "y": 0.25852,
+    "yaw": 47.492
+   },
+   "flags": {
+    "pairing_margin_m": 0.0997,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 10,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.33861,
+    "y": 0.1123,
+    "yaw": 122.271
+   },
+   "duck_a": {
+    "x": 1.04284,
+    "y": 0.05871,
+    "yaw": 95.6
+   },
+   "duck_b": {
+    "x": 0.97411,
+    "y": 0.52876,
+    "yaw": 159.953
+   },
+   "flags": {
+    "pairing_margin_m": 0.1098,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 11,
+   "kind": "uniform",
+   "box": {
+    "x": 0.30588,
+    "y": -0.03122,
+    "yaw": 91.774
+   },
+   "duck_a": {
+    "x": 0.46019,
+    "y": 0.36924,
+    "yaw": -8.454
+   },
+   "duck_b": {
+    "x": -0.18526,
+    "y": 0.06872,
+    "yaw": 43.99
+   },
+   "flags": {
+    "pairing_margin_m": 0.1109,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 12,
+   "kind": "uniform",
+   "box": {
+    "x": 0.26791,
+    "y": -0.12614,
+    "yaw": 116.742
+   },
+   "duck_a": {
+    "x": 0.21788,
+    "y": -0.85483,
+    "yaw": 50.339
+   },
+   "duck_b": {
+    "x": 0.69362,
+    "y": -0.20274,
+    "yaw": 69.56
+   },
+   "flags": {
+    "pairing_margin_m": 0.0824,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 13,
+   "kind": "uniform",
+   "box": {
+    "x": 0.45636,
+    "y": -0.02062,
+    "yaw": 53.532
+   },
+   "duck_a": {
+    "x": 0.18921,
+    "y": -0.18968,
+    "yaw": 24.602
+   },
+   "duck_b": {
+    "x": 0.01345,
+    "y": -0.01799,
+    "yaw": -152.21
+   },
+   "flags": {
+    "pairing_margin_m": 0.0611,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 14,
+   "kind": "uniform",
+   "box": {
+    "x": 0.30294,
+    "y": -0.06534,
+    "yaw": 72.592
+   },
+   "duck_a": {
+    "x": 0.47428,
+    "y": -0.219,
+    "yaw": -68.956
+   },
+   "duck_b": {
+    "x": 0.5503,
+    "y": 0.45879,
+    "yaw": -127.478
+   },
+   "flags": {
+    "pairing_margin_m": 0.2484,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 15,
+   "kind": "uniform",
+   "box": {
+    "x": 0.41451,
+    "y": -0.04176,
+    "yaw": 53.702
+   },
+   "duck_a": {
+    "x": 0.41718,
+    "y": -0.3686,
+    "yaw": 111.512
+   },
+   "duck_b": {
+    "x": 0.71816,
+    "y": -0.59073,
+    "yaw": -2.564
+   },
+   "flags": {
+    "pairing_margin_m": 0.0586,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 16,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.36218,
+    "y": -0.0947,
+    "yaw": 66.365
+   },
+   "duck_a": {
+    "x": 1.01405,
+    "y": -0.38021,
+    "yaw": -59.326
+   },
+   "duck_b": {
+    "x": 0.75986,
+    "y": -0.27074,
+    "yaw": -120.887
+   },
+   "flags": {
+    "pairing_margin_m": 0.0006,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 17,
+   "kind": "uniform",
+   "box": {
+    "x": 0.3952,
+    "y": 0.02974,
+    "yaw": 126.106
+   },
+   "duck_a": {
+    "x": 0.22165,
+    "y": 0.43657,
+    "yaw": 174.523
+   },
+   "duck_b": {
+    "x": 0.2515,
+    "y": 0.28627,
+    "yaw": 62.301
+   },
+   "flags": {
+    "pairing_margin_m": 0.0005,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 18,
+   "kind": "uniform",
+   "box": {
+    "x": 0.37741,
+    "y": 0.04548,
+    "yaw": 117.573
+   },
+   "duck_a": {
+    "x": 1.02769,
+    "y": 0.1923,
+    "yaw": 160.822
+   },
+   "duck_b": {
+    "x": 0.17415,
+    "y": -0.68523,
+    "yaw": -93.915
+   },
+   "flags": {
+    "pairing_margin_m": 0.1136,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 19,
+   "kind": "uniform",
+   "box": {
+    "x": 0.25801,
+    "y": 0.14873,
+    "yaw": 95.278
+   },
+   "duck_a": {
+    "x": 0.34423,
+    "y": -0.13149,
+    "yaw": 140.349
+   },
+   "duck_b": {
+    "x": -0.39069,
+    "y": -0.16675,
+    "yaw": -125.648
+   },
+   "flags": {
+    "pairing_margin_m": 0.0944,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 20,
+   "kind": "uniform",
+   "box": {
+    "x": 0.37104,
+    "y": 0.10475,
+    "yaw": 113.9
+   },
+   "duck_a": {
+    "x": 0.71704,
+    "y": 0.34962,
+    "yaw": -49.415
+   },
+   "duck_b": {
+    "x": 0.87492,
+    "y": -0.08171,
+    "yaw": 25.29
+   },
+   "flags": {
+    "pairing_margin_m": 0.1538,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 21,
+   "kind": "uniform",
+   "box": {
+    "x": 0.32838,
+    "y": -0.00801,
+    "yaw": 80.188
+   },
+   "duck_a": {
+    "x": 0.35118,
+    "y": 0.51241,
+    "yaw": -43.928
+   },
+   "duck_b": {
+    "x": -0.20996,
+    "y": -0.35416,
+    "yaw": -178.611
+   },
+   "flags": {
+    "pairing_margin_m": 0.3496,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 22,
+   "kind": "uniform",
+   "box": {
+    "x": 0.24144,
+    "y": -0.00191,
+    "yaw": 52.43
+   },
+   "duck_a": {
+    "x": -0.16665,
+    "y": 0.62044,
+    "yaw": -26.042
+   },
+   "duck_b": {
+    "x": 0.2171,
+    "y": -0.36655,
+    "yaw": -2.377
+   },
+   "flags": {
+    "pairing_margin_m": 0.2147,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 23,
+   "kind": "uniform",
+   "box": {
+    "x": 0.43776,
+    "y": 0.14443,
+    "yaw": 64.499
+   },
+   "duck_a": {
+    "x": -0.08115,
+    "y": -0.38057,
+    "yaw": 19.453
+   },
+   "duck_b": {
+    "x": 0.47178,
+    "y": 0.45778,
+    "yaw": -21.545
+   },
+   "flags": {
+    "pairing_margin_m": 0.3955,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 24,
+   "kind": "uniform",
+   "box": {
+    "x": 0.28215,
+    "y": 0.02578,
+    "yaw": 120.045
+   },
+   "duck_a": {
+    "x": 0.32716,
+    "y": 0.23389,
+    "yaw": 139.561
+   },
+   "duck_b": {
+    "x": 0.26206,
+    "y": -0.29595,
+    "yaw": 42.372
+   },
+   "flags": {
+    "pairing_margin_m": 0.2956,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 25,
+   "kind": "uniform",
+   "box": {
+    "x": 0.41061,
+    "y": 0.1009,
+    "yaw": 79.766
+   },
+   "duck_a": {
+    "x": -0.35094,
+    "y": -0.06097,
+    "yaw": 71.027
+   },
+   "duck_b": {
+    "x": 0.51382,
+    "y": 0.38688,
+    "yaw": -87.6
+   },
+   "flags": {
+    "pairing_margin_m": 0.2627,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 26,
+   "kind": "uniform",
+   "box": {
+    "x": 0.34911,
+    "y": -0.13692,
+    "yaw": 88.168
+   },
+   "duck_a": {
+    "x": 0.97481,
+    "y": -0.07255,
+    "yaw": -172.898
+   },
+   "duck_b": {
+    "x": 0.62867,
+    "y": 0.08145,
+    "yaw": 63.049
+   },
+   "flags": {
+    "pairing_margin_m": 0.0801,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 27,
+   "kind": "uniform",
+   "box": {
+    "x": 0.21673,
+    "y": -0.04538,
+    "yaw": 124.681
+   },
+   "duck_a": {
+    "x": 0.79307,
+    "y": -0.00096,
+    "yaw": -147.738
+   },
+   "duck_b": {
+    "x": 0.02024,
+    "y": -0.28349,
+    "yaw": -70.467
+   },
+   "flags": {
+    "pairing_margin_m": 0.0167,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 28,
+   "kind": "uniform",
+   "box": {
+    "x": 0.29247,
+    "y": 0.00712,
+    "yaw": 66.615
+   },
+   "duck_a": {
+    "x": 0.21996,
+    "y": 0.36563,
+    "yaw": -55.566
+   },
+   "duck_b": {
+    "x": -0.44284,
+    "y": -0.26206,
+    "yaw": -103.416
+   },
+   "flags": {
+    "pairing_margin_m": 0.3354,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 29,
+   "kind": "uniform",
+   "box": {
+    "x": 0.33954,
+    "y": 0.06222,
+    "yaw": 87.664
+   },
+   "duck_a": {
+    "x": 0.53332,
+    "y": -0.52407,
+    "yaw": 136.248
+   },
+   "duck_b": {
+    "x": 0.06305,
+    "y": 0.55032,
+    "yaw": 32.319
+   },
+   "flags": {
+    "pairing_margin_m": 0.3592,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 30,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.29963,
+    "y": 0.00521,
+    "yaw": 117.233
+   },
+   "duck_a": {
+    "x": 0.10424,
+    "y": -0.07931,
+    "yaw": 125.159
+   },
+   "duck_b": {
+    "x": -0.12448,
+    "y": -0.23031,
+    "yaw": 66.663
+   },
+   "flags": {
+    "pairing_margin_m": 0.0261,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 31,
+   "kind": "uniform",
+   "box": {
+    "x": 0.47581,
+    "y": 0.07278,
+    "yaw": 127.291
+   },
+   "duck_a": {
+    "x": -0.01457,
+    "y": -0.05876,
+    "yaw": 51.58
+   },
+   "duck_b": {
+    "x": 0.72009,
+    "y": -0.1031,
+    "yaw": -98.601
+   },
+   "flags": {
+    "pairing_margin_m": 0.256,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 32,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.32216,
+    "y": -0.10725,
+    "yaw": 122.534
+   },
+   "duck_a": {
+    "x": 0.60815,
+    "y": 0.23388,
+    "yaw": 160.593
+   },
+   "duck_b": {
+    "x": 0.54954,
+    "y": -0.08809,
+    "yaw": -169.099
+   },
+   "flags": {
+    "pairing_margin_m": 0.1135,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 33,
+   "kind": "uniform",
+   "box": {
+    "x": 0.38658,
+    "y": -0.00312,
+    "yaw": 76.084
+   },
+   "duck_a": {
+    "x": 0.12974,
+    "y": -0.41047,
+    "yaw": 155.929
+   },
+   "duck_b": {
+    "x": 0.02227,
+    "y": -0.59641,
+    "yaw": 35.186
+   },
+   "flags": {
+    "pairing_margin_m": 0.0015,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 34,
+   "kind": "uniform",
+   "box": {
+    "x": 0.44594,
+    "y": -0.05639,
+    "yaw": 68.379
+   },
+   "duck_a": {
+    "x": 0.36698,
+    "y": 0.42939,
+    "yaw": 18.515
+   },
+   "duck_b": {
+    "x": 0.18675,
+    "y": 0.07343,
+    "yaw": 95.763
+   },
+   "flags": {
+    "pairing_margin_m": 0.1639,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 35,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.47079,
+    "y": -0.01491,
+    "yaw": 106.109
+   },
+   "duck_a": {
+    "x": 0.77307,
+    "y": -0.21292,
+    "yaw": 5.342
+   },
+   "duck_b": {
+    "x": 0.91249,
+    "y": -0.27266,
+    "yaw": -46.356
+   },
+   "flags": {
+    "pairing_margin_m": 0.0007,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 36,
+   "kind": "uniform",
+   "box": {
+    "x": 0.47603,
+    "y": -0.01076,
+    "yaw": 59.949
+   },
+   "duck_a": {
+    "x": 0.68567,
+    "y": -0.77465,
+    "yaw": 0.756
+   },
+   "duck_b": {
+    "x": 0.63719,
+    "y": -0.40528,
+    "yaw": -0.501
+   },
+   "flags": {
+    "pairing_margin_m": 0.0266,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 37,
+   "kind": "uniform",
+   "box": {
+    "x": 0.48698,
+    "y": -0.09833,
+    "yaw": 114.699
+   },
+   "duck_a": {
+    "x": 1.04985,
+    "y": -0.16577,
+    "yaw": -139.122
+   },
+   "duck_b": {
+    "x": 0.908,
+    "y": -0.45327,
+    "yaw": 36.945
+   },
+   "flags": {
+    "pairing_margin_m": 0.0758,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 38,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.27212,
+    "y": -0.10238,
+    "yaw": 86.373
+   },
+   "duck_a": {
+    "x": 0.0687,
+    "y": -0.07333,
+    "yaw": 17.49
+   },
+   "duck_b": {
+    "x": 0.56816,
+    "y": -0.12804,
+    "yaw": -130.723
+   },
+   "flags": {
+    "pairing_margin_m": 0.025,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 39,
+   "kind": "uniform",
+   "box": {
+    "x": 0.22,
+    "y": 0.13708,
+    "yaw": 71.247
+   },
+   "duck_a": {
+    "x": 0.2326,
+    "y": -0.30382,
+    "yaw": -56.231
+   },
+   "duck_b": {
+    "x": 0.01407,
+    "y": 0.71608,
+    "yaw": 91.785
+   },
+   "flags": {
+    "pairing_margin_m": 0.3416,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 40,
+   "kind": "uniform",
+   "box": {
+    "x": 0.36367,
+    "y": -0.0921,
+    "yaw": 117.908
+   },
+   "duck_a": {
+    "x": 0.68006,
+    "y": 0.53215,
+    "yaw": 126.432
+   },
+   "duck_b": {
+    "x": -0.24885,
+    "y": -0.08418,
+    "yaw": 178.759
+   },
+   "flags": {
+    "pairing_margin_m": 0.0063,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 41,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.44907,
+    "y": 0.06941,
+    "yaw": 118.922
+   },
+   "duck_a": {
+    "x": 0.82538,
+    "y": -0.04993,
+    "yaw": -9.615
+   },
+   "duck_b": {
+    "x": 0.99076,
+    "y": 0.33179,
+    "yaw": 88.956
+   },
+   "flags": {
+    "pairing_margin_m": 0.1122,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 42,
+   "kind": "uniform",
+   "box": {
+    "x": 0.36887,
+    "y": -0.14538,
+    "yaw": 133.264
+   },
+   "duck_a": {
+    "x": 0.22038,
+    "y": 0.2273,
+    "yaw": 163.715
+   },
+   "duck_b": {
+    "x": 0.54037,
+    "y": -0.38779,
+    "yaw": 45.238
+   },
+   "flags": {
+    "pairing_margin_m": 0.3628,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 43,
+   "kind": "uniform",
+   "box": {
+    "x": 0.46821,
+    "y": -0.05898,
+    "yaw": 68.684
+   },
+   "duck_a": {
+    "x": 0.7172,
+    "y": 0.03524,
+    "yaw": -79.545
+   },
+   "duck_b": {
+    "x": 0.48995,
+    "y": 0.23596,
+    "yaw": 107.605
+   },
+   "flags": {
+    "pairing_margin_m": 0.099,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 44,
+   "kind": "uniform",
+   "box": {
+    "x": 0.31618,
+    "y": -0.07716,
+    "yaw": 58.004
+   },
+   "duck_a": {
+    "x": -0.26092,
+    "y": -0.25733,
+    "yaw": -145.807
+   },
+   "duck_b": {
+    "x": -0.18244,
+    "y": 0.23813,
+    "yaw": 147.299
+   },
+   "flags": {
+    "pairing_margin_m": 0.168,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 45,
+   "kind": "uniform",
+   "box": {
+    "x": 0.21564,
+    "y": -0.14392,
+    "yaw": 129.834
+   },
+   "duck_a": {
+    "x": -0.20842,
+    "y": 0.28589,
+    "yaw": -75.074
+   },
+   "duck_b": {
+    "x": 0.85952,
+    "y": -0.07709,
+    "yaw": 54.838
+   },
+   "flags": {
+    "pairing_margin_m": 0.2979,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 46,
+   "kind": "uniform",
+   "box": {
+    "x": 0.3747,
+    "y": 0.08855,
+    "yaw": 133.893
+   },
+   "duck_a": {
+    "x": 0.23588,
+    "y": -0.10833,
+    "yaw": 33.859
+   },
+   "duck_b": {
+    "x": 0.04746,
+    "y": 0.17659,
+    "yaw": 104.538
+   },
+   "flags": {
+    "pairing_margin_m": 0.2435,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 47,
+   "kind": "uniform",
+   "box": {
+    "x": 0.48836,
+    "y": -0.0696,
+    "yaw": 129.572
+   },
+   "duck_a": {
+    "x": 0.89316,
+    "y": 0.07731,
+    "yaw": 98.135
+   },
+   "duck_b": {
+    "x": 0.48955,
+    "y": -0.86212,
+    "yaw": -39.252
+   },
+   "flags": {
+    "pairing_margin_m": 0.1112,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 48,
+   "kind": "uniform",
+   "box": {
+    "x": 0.39834,
+    "y": -0.09364,
+    "yaw": 110.51
+   },
+   "duck_a": {
+    "x": 0.6109,
+    "y": -0.0198,
+    "yaw": -147.033
+   },
+   "duck_b": {
+    "x": 0.77013,
+    "y": -0.04596,
+    "yaw": 22.285
+   },
+   "flags": {
+    "pairing_margin_m": 0.0326,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 49,
+   "kind": "uniform",
+   "box": {
+    "x": 0.47232,
+    "y": -0.0543,
+    "yaw": 123.606
+   },
+   "duck_a": {
+    "x": -0.05693,
+    "y": -0.22182,
+    "yaw": -177.846
+   },
+   "duck_b": {
+    "x": 0.64519,
+    "y": -0.31432,
+    "yaw": -58.234
+   },
+   "flags": {
+    "pairing_margin_m": 0.2552,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 50,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.40618,
+    "y": -0.03692,
+    "yaw": 104.594
+   },
+   "duck_a": {
+    "x": 0.90213,
+    "y": 0.1681,
+    "yaw": -39.928
+   },
+   "duck_b": {
+    "x": 0.93011,
+    "y": -0.19508,
+    "yaw": 80.578
+   },
+   "flags": {
+    "pairing_margin_m": 0.1126,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 51,
+   "kind": "uniform",
+   "box": {
+    "x": 0.22634,
+    "y": -0.14634,
+    "yaw": 84.549
+   },
+   "duck_a": {
+    "x": 0.57038,
+    "y": 0.22134,
+    "yaw": 28.09
+   },
+   "duck_b": {
+    "x": -0.44574,
+    "y": -0.17533,
+    "yaw": 7.978
+   },
+   "flags": {
+    "pairing_margin_m": 0.1712,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 52,
+   "kind": "uniform",
+   "box": {
+    "x": 0.28264,
+    "y": -0.02654,
+    "yaw": 47.198
+   },
+   "duck_a": {
+    "x": 0.03553,
+    "y": 0.38372,
+    "yaw": 73.476
+   },
+   "duck_b": {
+    "x": 0.27435,
+    "y": -0.38304,
+    "yaw": 94.442
+   },
+   "flags": {
+    "pairing_margin_m": 0.1901,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 53,
+   "kind": "uniform",
+   "box": {
+    "x": 0.49386,
+    "y": 0.01652,
+    "yaw": 67.468
+   },
+   "duck_a": {
+    "x": 1.17462,
+    "y": 0.04681,
+    "yaw": 152.756
+   },
+   "duck_b": {
+    "x": 0.78397,
+    "y": -0.34924,
+    "yaw": 21.847
+   },
+   "flags": {
+    "pairing_margin_m": 0.1557,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 54,
+   "kind": "uniform",
+   "box": {
+    "x": 0.4736,
+    "y": 0.08696,
+    "yaw": 125.122
+   },
+   "duck_a": {
+    "x": 0.12276,
+    "y": -0.00023,
+    "yaw": -29.052
+   },
+   "duck_b": {
+    "x": 0.73518,
+    "y": 0.10671,
+    "yaw": -173.053
+   },
+   "flags": {
+    "pairing_margin_m": 0.165,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 55,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.42801,
+    "y": -0.08811,
+    "yaw": 92.294
+   },
+   "duck_a": {
+    "x": 0.89178,
+    "y": -0.03118,
+    "yaw": 2.296
+   },
+   "duck_b": {
+    "x": 0.79389,
+    "y": -0.22858,
+    "yaw": 93.037
+   },
+   "flags": {
+    "pairing_margin_m": 0.0767,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 56,
+   "kind": "uniform",
+   "box": {
+    "x": 0.22828,
+    "y": 0.12667,
+    "yaw": 63.668
+   },
+   "duck_a": {
+    "x": 0.44418,
+    "y": 0.38481,
+    "yaw": 97.831
+   },
+   "duck_b": {
+    "x": 0.71061,
+    "y": 0.21505,
+    "yaw": 81.485
+   },
+   "flags": {
+    "pairing_margin_m": 0.0733,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 57,
+   "kind": "uniform",
+   "box": {
+    "x": 0.47989,
+    "y": -0.11569,
+    "yaw": 73.615
+   },
+   "duck_a": {
+    "x": 0.18188,
+    "y": -0.07876,
+    "yaw": -125.869
+   },
+   "duck_b": {
+    "x": -0.26866,
+    "y": -0.38608,
+    "yaw": 31.732
+   },
+   "flags": {
+    "pairing_margin_m": 0.0873,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 58,
+   "kind": "uniform",
+   "box": {
+    "x": 0.45977,
+    "y": 0.04193,
+    "yaw": 58.914
+   },
+   "duck_a": {
+    "x": 0.5508,
+    "y": -0.3224,
+    "yaw": -51.607
+   },
+   "duck_b": {
+    "x": 1.05601,
+    "y": 0.10528,
+    "yaw": 29.702
+   },
+   "flags": {
+    "pairing_margin_m": 0.2225,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 59,
+   "kind": "uniform",
+   "box": {
+    "x": 0.42003,
+    "y": 0.08775,
+    "yaw": 110.944
+   },
+   "duck_a": {
+    "x": -0.0459,
+    "y": 0.52516,
+    "yaw": 152.855
+   },
+   "duck_b": {
+    "x": 1.15185,
+    "y": 0.06672,
+    "yaw": 151.187
+   },
+   "flags": {
+    "pairing_margin_m": 0.2584,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 60,
+   "kind": "uniform",
+   "box": {
+    "x": 0.49473,
+    "y": 0.10663,
+    "yaw": 56.514
+   },
+   "duck_a": {
+    "x": 0.67805,
+    "y": -0.51781,
+    "yaw": -99.132
+   },
+   "duck_b": {
+    "x": 0.2469,
+    "y": 0.81555,
+    "yaw": 156.823
+   },
+   "flags": {
+    "pairing_margin_m": 0.2482,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 61,
+   "kind": "uniform",
+   "box": {
+    "x": 0.31485,
+    "y": 0.00191,
+    "yaw": 130.481
+   },
+   "duck_a": {
+    "x": 0.01789,
+    "y": -0.25661,
+    "yaw": -48.312
+   },
+   "duck_b": {
+    "x": 0.65112,
+    "y": -0.16237,
+    "yaw": 15.44
+   },
+   "flags": {
+    "pairing_margin_m": 0.159,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 62,
+   "kind": "uniform",
+   "box": {
+    "x": 0.27874,
+    "y": -0.01514,
+    "yaw": 94.894
+   },
+   "duck_a": {
+    "x": -0.28147,
+    "y": 0.39756,
+    "yaw": -132.763
+   },
+   "duck_b": {
+    "x": 0.34428,
+    "y": 0.23629,
+    "yaw": 2.468
+   },
+   "flags": {
+    "pairing_margin_m": 0.012,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 63,
+   "kind": "uniform",
+   "box": {
+    "x": 0.35573,
+    "y": 0.05708,
+    "yaw": 85.031
+   },
+   "duck_a": {
+    "x": -0.14891,
+    "y": 0.28657,
+    "yaw": -72.13
+   },
+   "duck_b": {
+    "x": 0.59509,
+    "y": -0.58372,
+    "yaw": 0.994
+   },
+   "flags": {
+    "pairing_margin_m": 0.2467,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 64,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.40767,
+    "y": 0.13975,
+    "yaw": 79.372
+   },
+   "duck_a": {
+    "x": 0.69182,
+    "y": 0.30526,
+    "yaw": 171.68
+   },
+   "duck_b": {
+    "x": 0.64395,
+    "y": 0.12391,
+    "yaw": -18.439
+   },
+   "flags": {
+    "pairing_margin_m": 0.0876,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 65,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.44369,
+    "y": -0.01292,
+    "yaw": 86.601
+   },
+   "duck_a": {
+    "x": 0.8258,
+    "y": -0.02396,
+    "yaw": -17.714
+   },
+   "duck_b": {
+    "x": 1.15424,
+    "y": -0.03709,
+    "yaw": -64.735
+   },
+   "flags": {
+    "pairing_margin_m": 0.0003,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 66,
+   "kind": "uniform",
+   "box": {
+    "x": 0.39477,
+    "y": -0.14838,
+    "yaw": 48.122
+   },
+   "duck_a": {
+    "x": 0.85621,
+    "y": -0.15691,
+    "yaw": 68.681
+   },
+   "duck_b": {
+    "x": 0.10848,
+    "y": -0.03471,
+    "yaw": -156.595
+   },
+   "flags": {
+    "pairing_margin_m": 0.2002,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 67,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.28614,
+    "y": -0.08457,
+    "yaw": 54.13
+   },
+   "duck_a": {
+    "x": 0.90848,
+    "y": -0.55684,
+    "yaw": -149.216
+   },
+   "duck_b": {
+    "x": -0.23087,
+    "y": 0.30791,
+    "yaw": 49.769
+   },
+   "flags": {
+    "pairing_margin_m": 0.0095,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 68,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.34791,
+    "y": -0.14917,
+    "yaw": 115.35
+   },
+   "duck_a": {
+    "x": -0.35463,
+    "y": -0.47198,
+    "yaw": -19.012
+   },
+   "duck_b": {
+    "x": -0.06766,
+    "y": -0.35071,
+    "yaw": -93.786
+   },
+   "flags": {
+    "pairing_margin_m": 0.0049,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 69,
+   "kind": "uniform",
+   "box": {
+    "x": 0.4583,
+    "y": 0.03767,
+    "yaw": 123.093
+   },
+   "duck_a": {
+    "x": 0.27616,
+    "y": -0.39301,
+    "yaw": 108.873
+   },
+   "duck_b": {
+    "x": 1.01495,
+    "y": -0.05035,
+    "yaw": 179.456
+   },
+   "flags": {
+    "pairing_margin_m": 0.0132,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 70,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.43117,
+    "y": -0.02485,
+    "yaw": 46.163
+   },
+   "duck_a": {
+    "x": 0.25245,
+    "y": 0.13025,
+    "yaw": 96.606
+   },
+   "duck_b": {
+    "x": 0.85825,
+    "y": -0.42746,
+    "yaw": -12.248
+   },
+   "flags": {
+    "pairing_margin_m": 0.0153,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 71,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.32659,
+    "y": 0.06554,
+    "yaw": 55.866
+   },
+   "duck_a": {
+    "x": 0.50973,
+    "y": -0.62747,
+    "yaw": 165.717
+   },
+   "duck_b": {
+    "x": 0.39995,
+    "y": -0.49873,
+    "yaw": -167.18
+   },
+   "flags": {
+    "pairing_margin_m": 0.0146,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 72,
+   "kind": "uniform",
+   "box": {
+    "x": 0.40886,
+    "y": 0.07695,
+    "yaw": 73.297
+   },
+   "duck_a": {
+    "x": 0.71263,
+    "y": -0.07776,
+    "yaw": -15.471
+   },
+   "duck_b": {
+    "x": 0.78827,
+    "y": -0.55277,
+    "yaw": -100.165
+   },
+   "flags": {
+    "pairing_margin_m": 0.0944,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 73,
+   "kind": "uniform",
+   "box": {
+    "x": 0.21877,
+    "y": -0.13333,
+    "yaw": 60.334
+   },
+   "duck_a": {
+    "x": 0.14373,
+    "y": 0.09644,
+    "yaw": -169.372
+   },
+   "duck_b": {
+    "x": 0.32054,
+    "y": 0.32553,
+    "yaw": 89.067
+   },
+   "flags": {
+    "pairing_margin_m": 0.0281,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 74,
+   "kind": "uniform",
+   "box": {
+    "x": 0.21182,
+    "y": -0.03213,
+    "yaw": 90.061
+   },
+   "duck_a": {
+    "x": 0.16945,
+    "y": 0.36199,
+    "yaw": -48.129
+   },
+   "duck_b": {
+    "x": 0.66672,
+    "y": -0.01984,
+    "yaw": 95.545
+   },
+   "flags": {
+    "pairing_margin_m": 0.1939,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 75,
+   "kind": "uniform",
+   "box": {
+    "x": 0.42298,
+    "y": -0.11197,
+    "yaw": 100.391
+   },
+   "duck_a": {
+    "x": 1.04339,
+    "y": -0.47001,
+    "yaw": -121.269
+   },
+   "duck_b": {
+    "x": 0.62832,
+    "y": 0.58937,
+    "yaw": 136.363
+   },
+   "flags": {
+    "pairing_margin_m": 0.2841,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 76,
+   "kind": "uniform",
+   "box": {
+    "x": 0.2322,
+    "y": 0.11479,
+    "yaw": 54.803
+   },
+   "duck_a": {
+    "x": -0.30217,
+    "y": 0.37881,
+    "yaw": -44.489
+   },
+   "duck_b": {
+    "x": 0.045,
+    "y": 0.37256,
+    "yaw": -116.117
+   },
+   "flags": {
+    "pairing_margin_m": 0.1189,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 77,
+   "kind": "uniform",
+   "box": {
+    "x": 0.35836,
+    "y": 0.11769,
+    "yaw": 81.721
+   },
+   "duck_a": {
+    "x": 0.67795,
+    "y": -0.18755,
+    "yaw": 69.97
+   },
+   "duck_b": {
+    "x": 0.12987,
+    "y": 0.37715,
+    "yaw": -77.615
+   },
+   "flags": {
+    "pairing_margin_m": 0.2527,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 78,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.46934,
+    "y": -0.06815,
+    "yaw": 87.068
+   },
+   "duck_a": {
+    "x": 0.73854,
+    "y": 0.28322,
+    "yaw": -12.294
+   },
+   "duck_b": {
+    "x": 1.0678,
+    "y": -0.20685,
+    "yaw": -43.195
+   },
+   "flags": {
+    "pairing_margin_m": 0.1739,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 79,
+   "kind": "uniform",
+   "box": {
+    "x": 0.27002,
+    "y": -0.03578,
+    "yaw": 88.297
+   },
+   "duck_a": {
+    "x": 0.88847,
+    "y": 0.09474,
+    "yaw": -136.168
+   },
+   "duck_b": {
+    "x": -0.05372,
+    "y": -0.73005,
+    "yaw": -106.816
+   },
+   "flags": {
+    "pairing_margin_m": 0.2324,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 80,
+   "kind": "uniform",
+   "box": {
+    "x": 0.32391,
+    "y": -0.11481,
+    "yaw": 128.787
+   },
+   "duck_a": {
+    "x": -0.06519,
+    "y": -0.63953,
+    "yaw": -84.628
+   },
+   "duck_b": {
+    "x": 0.74961,
+    "y": -0.21387,
+    "yaw": 128.406
+   },
+   "flags": {
+    "pairing_margin_m": 0.0778,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 81,
+   "kind": "uniform",
+   "box": {
+    "x": 0.20474,
+    "y": 0.13085,
+    "yaw": 102.061
+   },
+   "duck_a": {
+    "x": 0.45548,
+    "y": -0.11758,
+    "yaw": -14.067
+   },
+   "duck_b": {
+    "x": -0.10026,
+    "y": 0.61363,
+    "yaw": 100.742
+   },
+   "flags": {
+    "pairing_margin_m": 0.3374,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 82,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.36607,
+    "y": -0.02751,
+    "yaw": 100.824
+   },
+   "duck_a": {
+    "x": 0.7435,
+    "y": 0.19752,
+    "yaw": -100.741
+   },
+   "duck_b": {
+    "x": 0.99102,
+    "y": -0.36453,
+    "yaw": -11.328
+   },
+   "flags": {
+    "pairing_margin_m": 0.1693,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 83,
+   "kind": "uniform",
+   "box": {
+    "x": 0.40149,
+    "y": 0.13254,
+    "yaw": 82.573
+   },
+   "duck_a": {
+    "x": 0.64729,
+    "y": 0.09633,
+    "yaw": -140.754
+   },
+   "duck_b": {
+    "x": 0.04667,
+    "y": 0.81908,
+    "yaw": 164.783
+   },
+   "flags": {
+    "pairing_margin_m": 0.1776,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 84,
+   "kind": "uniform",
+   "box": {
+    "x": 0.23093,
+    "y": 0.10565,
+    "yaw": 125.805
+   },
+   "duck_a": {
+    "x": -0.08442,
+    "y": -0.03124,
+    "yaw": 77.527
+   },
+   "duck_b": {
+    "x": 0.50671,
+    "y": -0.59211,
+    "yaw": -123.482
+   },
+   "flags": {
+    "pairing_margin_m": 0.253,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 85,
+   "kind": "uniform",
+   "box": {
+    "x": 0.222,
+    "y": 0.10305,
+    "yaw": 128.117
+   },
+   "duck_a": {
+    "x": 0.90356,
+    "y": -0.30272,
+    "yaw": 137.947
+   },
+   "duck_b": {
+    "x": 0.64773,
+    "y": 0.35928,
+    "yaw": 79.439
+   },
+   "flags": {
+    "pairing_margin_m": 0.1572,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 86,
+   "kind": "uniform",
+   "box": {
+    "x": 0.35305,
+    "y": 0.08183,
+    "yaw": 110.1
+   },
+   "duck_a": {
+    "x": -0.19233,
+    "y": 0.04849,
+    "yaw": -10.601
+   },
+   "duck_b": {
+    "x": 0.06437,
+    "y": -0.43174,
+    "yaw": 135.454
+   },
+   "flags": {
+    "pairing_margin_m": 0.2129,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 87,
+   "kind": "uniform",
+   "box": {
+    "x": 0.48487,
+    "y": 0.11901,
+    "yaw": 132.388
+   },
+   "duck_a": {
+    "x": 0.09112,
+    "y": -0.29254,
+    "yaw": 36.966
+   },
+   "duck_b": {
+    "x": 0.58737,
+    "y": -0.44421,
+    "yaw": 158.445
+   },
+   "flags": {
+    "pairing_margin_m": 0.1673,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 88,
+   "kind": "uniform",
+   "box": {
+    "x": 0.48063,
+    "y": 0.028,
+    "yaw": 78.71
+   },
+   "duck_a": {
+    "x": 0.33322,
+    "y": 0.75109,
+    "yaw": 14.994
+   },
+   "duck_b": {
+    "x": 0.27379,
+    "y": -0.69789,
+    "yaw": 11.843
+   },
+   "flags": {
+    "pairing_margin_m": 0.3922,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 89,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.39029,
+    "y": -0.13595,
+    "yaw": 115.198
+   },
+   "duck_a": {
+    "x": 0.80697,
+    "y": 0.07178,
+    "yaw": 15.893
+   },
+   "duck_b": {
+    "x": 1.10538,
+    "y": 0.1892,
+    "yaw": -36.251
+   },
+   "flags": {
+    "pairing_margin_m": 0.006,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 90,
+   "kind": "uniform",
+   "box": {
+    "x": 0.4246,
+    "y": -0.00097,
+    "yaw": 130.721
+   },
+   "duck_a": {
+    "x": 0.84375,
+    "y": -0.41662,
+    "yaw": -4.011
+   },
+   "duck_b": {
+    "x": -0.22298,
+    "y": 0.32691,
+    "yaw": -33.323
+   },
+   "flags": {
+    "pairing_margin_m": 0.3872,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 91,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.45762,
+    "y": 0.02446,
+    "yaw": 132.15
+   },
+   "duck_a": {
+    "x": 0.69589,
+    "y": 0.22275,
+    "yaw": 4.577
+   },
+   "duck_b": {
+    "x": 0.71007,
+    "y": -0.04099,
+    "yaw": -40.064
+   },
+   "flags": {
+    "pairing_margin_m": 0.1253,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 92,
+   "kind": "uniform",
+   "box": {
+    "x": 0.26595,
+    "y": -0.09664,
+    "yaw": 57.2
+   },
+   "duck_a": {
+    "x": 0.53974,
+    "y": 0.42318,
+    "yaw": -93.58
+   },
+   "duck_b": {
+    "x": 0.29966,
+    "y": 0.62333,
+    "yaw": -148.788
+   },
+   "flags": {
+    "pairing_margin_m": 0.0159,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 93,
+   "kind": "uniform",
+   "box": {
+    "x": 0.37647,
+    "y": -0.14177,
+    "yaw": 97.344
+   },
+   "duck_a": {
+    "x": -0.14148,
+    "y": -0.25657,
+    "yaw": -121.245
+   },
+   "duck_b": {
+    "x": 0.92613,
+    "y": -0.24635,
+    "yaw": 48.123
+   },
+   "flags": {
+    "pairing_margin_m": 0.0316,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 94,
+   "kind": "uniform",
+   "box": {
+    "x": 0.47846,
+    "y": 0.13373,
+    "yaw": 115.753
+   },
+   "duck_a": {
+    "x": 0.53466,
+    "y": -0.22037,
+    "yaw": 90.725
+   },
+   "duck_b": {
+    "x": 0.00963,
+    "y": 0.49221,
+    "yaw": 152.042
+   },
+   "flags": {
+    "pairing_margin_m": 0.3898,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 95,
+   "kind": "uniform",
+   "box": {
+    "x": 0.3827,
+    "y": -0.05362,
+    "yaw": 97.779
+   },
+   "duck_a": {
+    "x": -0.20794,
+    "y": -0.35742,
+    "yaw": -100.964
+   },
+   "duck_b": {
+    "x": 0.70453,
+    "y": 0.11723,
+    "yaw": -14.671
+   },
+   "flags": {
+    "pairing_margin_m": 0.1299,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 96,
+   "kind": "uniform",
+   "box": {
+    "x": 0.4622,
+    "y": 0.03619,
+    "yaw": 75.156
+   },
+   "duck_a": {
+    "x": 0.83308,
+    "y": -0.29084,
+    "yaw": -164.264
+   },
+   "duck_b": {
+    "x": 0.79908,
+    "y": 0.25926,
+    "yaw": -165.638
+   },
+   "flags": {
+    "pairing_margin_m": 0.2013,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 97,
+   "kind": "uniform",
+   "box": {
+    "x": 0.3315,
+    "y": -0.1256,
+    "yaw": 74.222
+   },
+   "duck_a": {
+    "x": 0.32679,
+    "y": 0.18656,
+    "yaw": 23.339
+   },
+   "duck_b": {
+    "x": 0.24641,
+    "y": -0.67053,
+    "yaw": -167.114
+   },
+   "flags": {
+    "pairing_margin_m": 0.3916,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 98,
+   "kind": "uniform",
+   "box": {
+    "x": 0.38796,
+    "y": -0.02934,
+    "yaw": 120.661
+   },
+   "duck_a": {
+    "x": -0.18888,
+    "y": -0.06972,
+    "yaw": -0.268
+   },
+   "duck_b": {
+    "x": 0.18185,
+    "y": 0.22918,
+    "yaw": 24.881
+   },
+   "flags": {
+    "pairing_margin_m": 0.0943,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 99,
+   "kind": "uniform",
+   "box": {
+    "x": 0.33799,
+    "y": -0.04721,
+    "yaw": 111.469
+   },
+   "duck_a": {
+    "x": 0.54446,
+    "y": 0.48165,
+    "yaw": -5.815
+   },
+   "duck_b": {
+    "x": 0.45594,
+    "y": 0.12151,
+    "yaw": -161.847
+   },
+   "flags": {
+    "pairing_margin_m": 0.0552,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 100,
+   "kind": "uniform",
+   "box": {
+    "x": 0.4961,
+    "y": -0.09986,
+    "yaw": 126.838
+   },
+   "duck_a": {
+    "x": 0.17745,
+    "y": -0.04928,
+    "yaw": 147.447
+   },
+   "duck_b": {
+    "x": 1.15365,
+    "y": -0.51988,
+    "yaw": 76.062
+   },
+   "flags": {
+    "pairing_margin_m": 0.3495,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 101,
+   "kind": "uniform",
+   "box": {
+    "x": 0.44662,
+    "y": -0.11264,
+    "yaw": 134.328
+   },
+   "duck_a": {
+    "x": 0.1427,
+    "y": -0.34387,
+    "yaw": -45.604
+   },
+   "duck_b": {
+    "x": 0.60622,
+    "y": 0.30143,
+    "yaw": 85.856
+   },
+   "flags": {
+    "pairing_margin_m": 0.0376,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 102,
+   "kind": "uniform",
+   "box": {
+    "x": 0.35175,
+    "y": 0.07983,
+    "yaw": 62.254
+   },
+   "duck_a": {
+    "x": 0.6489,
+    "y": 0.18665,
+    "yaw": 115.299
+   },
+   "duck_b": {
+    "x": 1.10879,
+    "y": -0.02503,
+    "yaw": 44.232
+   },
+   "flags": {
+    "pairing_margin_m": 0.0576,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 103,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.23585,
+    "y": -0.08917,
+    "yaw": 104.901
+   },
+   "duck_a": {
+    "x": 0.91977,
+    "y": 0.11131,
+    "yaw": -104.684
+   },
+   "duck_b": {
+    "x": 0.47937,
+    "y": -0.00374,
+    "yaw": 43.154
+   },
+   "flags": {
+    "pairing_margin_m": 0.0065,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 104,
+   "kind": "uniform",
+   "box": {
+    "x": 0.24536,
+    "y": 0.07173,
+    "yaw": 103.493
+   },
+   "duck_a": {
+    "x": 0.68547,
+    "y": -0.31924,
+    "yaw": -176.06
+   },
+   "duck_b": {
+    "x": 0.53091,
+    "y": -0.11171,
+    "yaw": -12.063
+   },
+   "flags": {
+    "pairing_margin_m": 0.0313,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 105,
+   "kind": "uniform",
+   "box": {
+    "x": 0.27498,
+    "y": -0.03881,
+    "yaw": 76.664
+   },
+   "duck_a": {
+    "x": 0.8628,
+    "y": 0.35012,
+    "yaw": 41.563
+   },
+   "duck_b": {
+    "x": 0.62584,
+    "y": 0.36947,
+    "yaw": 129.474
+   },
+   "flags": {
+    "pairing_margin_m": 0.0295,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 106,
+   "kind": "uniform",
+   "box": {
+    "x": 0.23307,
+    "y": -0.01833,
+    "yaw": 89.86
+   },
+   "duck_a": {
+    "x": 0.39986,
+    "y": 0.2847,
+    "yaw": 103.222
+   },
+   "duck_b": {
+    "x": 0.01073,
+    "y": 0.11763,
+    "yaw": -139.992
+   },
+   "flags": {
+    "pairing_margin_m": 0.0143,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 107,
+   "kind": "uniform",
+   "box": {
+    "x": 0.31882,
+    "y": 0.04021,
+    "yaw": 124.387
+   },
+   "duck_a": {
+    "x": -0.05826,
+    "y": 0.25542,
+    "yaw": -130.214
+   },
+   "duck_b": {
+    "x": 0.76918,
+    "y": 0.41867,
+    "yaw": 147.981
+   },
+   "flags": {
+    "pairing_margin_m": 0.1772,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 108,
+   "kind": "uniform",
+   "box": {
+    "x": 0.32074,
+    "y": 0.13805,
+    "yaw": 101.321
+   },
+   "duck_a": {
+    "x": 0.37391,
+    "y": 0.37346,
+    "yaw": 17.947
+   },
+   "duck_b": {
+    "x": 0.09384,
+    "y": 0.52152,
+    "yaw": 120.389
+   },
+   "flags": {
+    "pairing_margin_m": 0.0519,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 109,
+   "kind": "uniform",
+   "box": {
+    "x": 0.4346,
+    "y": 0.0481,
+    "yaw": 118.611
+   },
+   "duck_a": {
+    "x": 0.94699,
+    "y": -0.3742,
+    "yaw": 22.118
+   },
+   "duck_b": {
+    "x": 0.21303,
+    "y": -0.5003,
+    "yaw": 102.115
+   },
+   "flags": {
+    "pairing_margin_m": 0.0317,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 110,
+   "kind": "uniform",
+   "box": {
+    "x": 0.25292,
+    "y": -0.01652,
+    "yaw": 63.333
+   },
+   "duck_a": {
+    "x": 0.2733,
+    "y": 0.24565,
+    "yaw": -60.329
+   },
+   "duck_b": {
+    "x": -0.20963,
+    "y": 0.39086,
+    "yaw": 44.786
+   },
+   "flags": {
+    "pairing_margin_m": 0.1413,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 111,
+   "kind": "uniform",
+   "box": {
+    "x": 0.44123,
+    "y": -0.07216,
+    "yaw": 57.121
+   },
+   "duck_a": {
+    "x": -0.04585,
+    "y": -0.31268,
+    "yaw": 8.711
+   },
+   "duck_b": {
+    "x": 1.07176,
+    "y": 0.3228,
+    "yaw": 111.552
+   },
+   "flags": {
+    "pairing_margin_m": 0.3561,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 112,
+   "kind": "uniform",
+   "box": {
+    "x": 0.24973,
+    "y": 0.0588,
+    "yaw": 85.556
+   },
+   "duck_a": {
+    "x": 0.11088,
+    "y": 0.61575,
+    "yaw": 172.657
+   },
+   "duck_b": {
+    "x": 0.48557,
+    "y": 0.7528,
+    "yaw": 122.307
+   },
+   "flags": {
+    "pairing_margin_m": 0.0113,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 113,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.23765,
+    "y": 0.00345,
+    "yaw": 108.359
+   },
+   "duck_a": {
+    "x": 0.62798,
+    "y": 0.17846,
+    "yaw": -62.822
+   },
+   "duck_b": {
+    "x": 0.94542,
+    "y": 0.15169,
+    "yaw": 0.404
+   },
+   "flags": {
+    "pairing_margin_m": 0.0362,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 114,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.29487,
+    "y": -0.02159,
+    "yaw": 71.914
+   },
+   "duck_a": {
+    "x": -0.08131,
+    "y": 0.11529,
+    "yaw": -172.148
+   },
+   "duck_b": {
+    "x": 0.98057,
+    "y": -0.22727,
+    "yaw": -42.812
+   },
+   "flags": {
+    "pairing_margin_m": 0.004,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 115,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.25669,
+    "y": 0.1296,
+    "yaw": 96.965
+   },
+   "duck_a": {
+    "x": 0.89679,
+    "y": 0.19105,
+    "yaw": -118.614
+   },
+   "duck_b": {
+    "x": 0.50118,
+    "y": 0.14677,
+    "yaw": 69.32
+   },
+   "flags": {
+    "pairing_margin_m": 0.0026,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 116,
+   "kind": "uniform",
+   "box": {
+    "x": 0.41708,
+    "y": -0.1277,
+    "yaw": 81.413
+   },
+   "duck_a": {
+    "x": 0.7412,
+    "y": -0.27615,
+    "yaw": -157.423
+   },
+   "duck_b": {
+    "x": -0.22705,
+    "y": 0.28415,
+    "yaw": -171.205
+   },
+   "flags": {
+    "pairing_margin_m": 0.1337,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 117,
+   "kind": "uniform",
+   "box": {
+    "x": 0.24884,
+    "y": 0.03048,
+    "yaw": 91.286
+   },
+   "duck_a": {
+    "x": -0.06461,
+    "y": 0.71806,
+    "yaw": -13.763
+   },
+   "duck_b": {
+    "x": -0.49443,
+    "y": 0.23725,
+    "yaw": 122.724
+   },
+   "flags": {
+    "pairing_margin_m": 0.1269,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 118,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.40431,
+    "y": 0.02063,
+    "yaw": 55.299
+   },
+   "duck_a": {
+    "x": -0.21795,
+    "y": 0.45013,
+    "yaw": -112.876
+   },
+   "duck_b": {
+    "x": 0.20909,
+    "y": 0.15223,
+    "yaw": -153.521
+   },
+   "flags": {
+    "pairing_margin_m": 0.0031,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 119,
+   "kind": "uniform",
+   "box": {
+    "x": 0.34476,
+    "y": -0.05038,
+    "yaw": 59.49
+   },
+   "duck_a": {
+    "x": 0.08202,
+    "y": 0.05997,
+    "yaw": 17.902
+   },
+   "duck_b": {
+    "x": 0.01393,
+    "y": -0.32721,
+    "yaw": 129.853
+   },
+   "flags": {
+    "pairing_margin_m": 0.1628,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 120,
+   "kind": "uniform",
+   "box": {
+    "x": 0.24237,
+    "y": 0.06824,
+    "yaw": 92.157
+   },
+   "duck_a": {
+    "x": -0.06194,
+    "y": -0.51407,
+    "yaw": 116.471
+   },
+   "duck_b": {
+    "x": -0.37386,
+    "y": 0.56545,
+    "yaw": 176.872
+   },
+   "flags": {
+    "pairing_margin_m": 0.3282,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 121,
+   "kind": "uniform",
+   "box": {
+    "x": 0.27984,
+    "y": -0.13962,
+    "yaw": 79.146
+   },
+   "duck_a": {
+    "x": 0.62105,
+    "y": 0.53164,
+    "yaw": 104.227
+   },
+   "duck_b": {
+    "x": -0.29821,
+    "y": 0.35288,
+    "yaw": -26.742
+   },
+   "flags": {
+    "pairing_margin_m": 0.0745,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 122,
+   "kind": "uniform",
+   "box": {
+    "x": 0.45115,
+    "y": -0.10199,
+    "yaw": 82.207
+   },
+   "duck_a": {
+    "x": 0.20699,
+    "y": -0.71438,
+    "yaw": -178.584
+   },
+   "duck_b": {
+    "x": 0.24076,
+    "y": -0.01574,
+    "yaw": 78.659
+   },
+   "flags": {
+    "pairing_margin_m": 0.2674,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 123,
+   "kind": "uniform",
+   "box": {
+    "x": 0.30408,
+    "y": 0.01108,
+    "yaw": 111.748
+   },
+   "duck_a": {
+    "x": 0.62892,
+    "y": 0.39692,
+    "yaw": -1.477
+   },
+   "duck_b": {
+    "x": 0.5457,
+    "y": -0.07382,
+    "yaw": -112.669
+   },
+   "flags": {
+    "pairing_margin_m": 0.1774,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 124,
+   "kind": "uniform",
+   "box": {
+    "x": 0.41323,
+    "y": -0.07973,
+    "yaw": 75.752
+   },
+   "duck_a": {
+    "x": 0.2754,
+    "y": -0.28766,
+    "yaw": 11.582
+   },
+   "duck_b": {
+    "x": -0.0061,
+    "y": -0.14777,
+    "yaw": 141.518
+   },
+   "flags": {
+    "pairing_margin_m": 0.1032,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 125,
+   "kind": "uniform",
+   "box": {
+    "x": 0.26329,
+    "y": -0.12146,
+    "yaw": 62.553
+   },
+   "duck_a": {
+    "x": 0.96639,
+    "y": 0.08634,
+    "yaw": 169.315
+   },
+   "duck_b": {
+    "x": 0.0647,
+    "y": -0.49505,
+    "yaw": 167.45
+   },
+   "flags": {
+    "pairing_margin_m": 0.3211,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 126,
+   "kind": "uniform",
+   "box": {
+    "x": 0.2968,
+    "y": 0.11694,
+    "yaw": 113.421
+   },
+   "duck_a": {
+    "x": 0.00472,
+    "y": -0.05099,
+    "yaw": 11.747
+   },
+   "duck_b": {
+    "x": -0.23224,
+    "y": -0.39781,
+    "yaw": -24.65
+   },
+   "flags": {
+    "pairing_margin_m": 0.0508,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 127,
+   "kind": "uniform",
+   "box": {
+    "x": 0.27699,
+    "y": 0.04398,
+    "yaw": 47.585
+   },
+   "duck_a": {
+    "x": -0.2489,
+    "y": -0.23554,
+    "yaw": 95.577
+   },
+   "duck_b": {
+    "x": 0.72336,
+    "y": 0.43377,
+    "yaw": -138.547
+   },
+   "flags": {
+    "pairing_margin_m": 0.3892,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 128,
+   "kind": "uniform",
+   "box": {
+    "x": 0.20963,
+    "y": 0.06726,
+    "yaw": 93.943
+   },
+   "duck_a": {
+    "x": 0.66767,
+    "y": -0.25526,
+    "yaw": 68.917
+   },
+   "duck_b": {
+    "x": -0.48641,
+    "y": -0.29259,
+    "yaw": -66.021
+   },
+   "flags": {
+    "pairing_margin_m": 0.0215,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 129,
+   "kind": "uniform",
+   "box": {
+    "x": 0.39675,
+    "y": 0.09171,
+    "yaw": 89.344
+   },
+   "duck_a": {
+    "x": 0.82693,
+    "y": -0.24011,
+    "yaw": -12.595
+   },
+   "duck_b": {
+    "x": 0.01725,
+    "y": -0.02594,
+    "yaw": -168.696
+   },
+   "flags": {
+    "pairing_margin_m": 0.0284,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 130,
+   "kind": "uniform",
+   "box": {
+    "x": 0.38571,
+    "y": 0.09012,
+    "yaw": 50.217
+   },
+   "duck_a": {
+    "x": -0.27981,
+    "y": 0.00445,
+    "yaw": 10.12
+   },
+   "duck_b": {
+    "x": 0.00802,
+    "y": -0.41975,
+    "yaw": 139.828
+   },
+   "flags": {
+    "pairing_margin_m": 0.0354,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 131,
+   "kind": "uniform",
+   "box": {
+    "x": 0.4219,
+    "y": 0.07844,
+    "yaw": 94.164
+   },
+   "duck_a": {
+    "x": 0.76146,
+    "y": 0.14635,
+    "yaw": 113.055
+   },
+   "duck_b": {
+    "x": 0.06961,
+    "y": -0.18301,
+    "yaw": 93.992
+   },
+   "flags": {
+    "pairing_margin_m": 0.1461,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 132,
+   "kind": "uniform",
+   "box": {
+    "x": 0.3919,
+    "y": 0.01035,
+    "yaw": 112.818
+   },
+   "duck_a": {
+    "x": 0.16336,
+    "y": -0.20655,
+    "yaw": -150.717
+   },
+   "duck_b": {
+    "x": -0.2193,
+    "y": -0.09638,
+    "yaw": 22.222
+   },
+   "flags": {
+    "pairing_margin_m": 0.1423,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 133,
+   "kind": "uniform",
+   "box": {
+    "x": 0.37915,
+    "y": 0.02315,
+    "yaw": 77.889
+   },
+   "duck_a": {
+    "x": 0.14591,
+    "y": 0.21262,
+    "yaw": 55.726
+   },
+   "duck_b": {
+    "x": 0.4586,
+    "y": -0.24658,
+    "yaw": 13.968
+   },
+   "flags": {
+    "pairing_margin_m": 0.2598,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 134,
+   "kind": "uniform",
+   "box": {
+    "x": 0.37328,
+    "y": -0.10978,
+    "yaw": 69.618
+   },
+   "duck_a": {
+    "x": -0.16902,
+    "y": 0.32032,
+    "yaw": -135.026
+   },
+   "duck_b": {
+    "x": 0.87635,
+    "y": 0.19236,
+    "yaw": -11.154
+   },
+   "flags": {
+    "pairing_margin_m": 0.0698,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 135,
+   "kind": "uniform",
+   "box": {
+    "x": 0.44755,
+    "y": 0.12333,
+    "yaw": 48.598
+   },
+   "duck_a": {
+    "x": 0.73917,
+    "y": 0.254,
+    "yaw": 120.613
+   },
+   "duck_b": {
+    "x": 0.17985,
+    "y": -0.36863,
+    "yaw": -156.461
+   },
+   "flags": {
+    "pairing_margin_m": 0.3405,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 136,
+   "kind": "uniform",
+   "box": {
+    "x": 0.22456,
+    "y": -0.08663,
+    "yaw": 106.383
+   },
+   "duck_a": {
+    "x": 0.76808,
+    "y": -0.17381,
+    "yaw": 13.046
+   },
+   "duck_b": {
+    "x": 0.26001,
+    "y": -0.40192,
+    "yaw": -139.642
+   },
+   "flags": {
+    "pairing_margin_m": 0.1246,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 137,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.37,
+    "y": -0.05195,
+    "yaw": 107.706
+   },
+   "duck_a": {
+    "x": 0.94861,
+    "y": 0.1431,
+    "yaw": -123.413
+   },
+   "duck_b": {
+    "x": 0.13251,
+    "y": -0.13857,
+    "yaw": 58.784
+   },
+   "flags": {
+    "pairing_margin_m": 0.0138,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 138,
+   "kind": "uniform",
+   "box": {
+    "x": 0.27073,
+    "y": 0.04283,
+    "yaw": 70.113
+   },
+   "duck_a": {
+    "x": 0.49039,
+    "y": 0.19761,
+    "yaw": -143.253
+   },
+   "duck_b": {
+    "x": -0.12511,
+    "y": 0.34465,
+    "yaw": -28.831
+   },
+   "flags": {
+    "pairing_margin_m": 0.0579,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 139,
+   "kind": "uniform",
+   "box": {
+    "x": 0.42554,
+    "y": 0.10835,
+    "yaw": 50.813
+   },
+   "duck_a": {
+    "x": 0.14811,
+    "y": 0.8336,
+    "yaw": 94.987
+   },
+   "duck_b": {
+    "x": 0.36383,
+    "y": 0.32006,
+    "yaw": -165.834
+   },
+   "flags": {
+    "pairing_margin_m": 0.0406,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 140,
+   "kind": "uniform",
+   "box": {
+    "x": 0.22264,
+    "y": 0.05368,
+    "yaw": 58.444
+   },
+   "duck_a": {
+    "x": -0.1298,
+    "y": 0.41776,
+    "yaw": 171.224
+   },
+   "duck_b": {
+    "x": 0.04035,
+    "y": 0.37808,
+    "yaw": -27.406
+   },
+   "flags": {
+    "pairing_margin_m": 0.0602,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 141,
+   "kind": "uniform",
+   "box": {
+    "x": 0.28806,
+    "y": 0.11097,
+    "yaw": 89.02
+   },
+   "duck_a": {
+    "x": -0.22656,
+    "y": -0.01602,
+    "yaw": -106.917
+   },
+   "duck_b": {
+    "x": 0.79621,
+    "y": -0.14849,
+    "yaw": 70.015
+   },
+   "flags": {
+    "pairing_margin_m": 0.0151,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 142,
+   "kind": "uniform",
+   "box": {
+    "x": 0.45465,
+    "y": 0.1248,
+    "yaw": 99.596
+   },
+   "duck_a": {
+    "x": 0.19782,
+    "y": 0.16775,
+    "yaw": 137.234
+   },
+   "duck_b": {
+    "x": 1.13662,
+    "y": -0.16537,
+    "yaw": 96.69
+   },
+   "flags": {
+    "pairing_margin_m": 0.1838,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 143,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.41793,
+    "y": 0.05195,
+    "yaw": 72.349
+   },
+   "duck_a": {
+    "x": 0.69213,
+    "y": -0.46798,
+    "yaw": -127.467
+   },
+   "duck_b": {
+    "x": 1.13635,
+    "y": 0.06354,
+    "yaw": 25.712
+   },
+   "flags": {
+    "pairing_margin_m": 0.1805,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 144,
+   "kind": "uniform",
+   "box": {
+    "x": 0.4663,
+    "y": 0.09891,
+    "yaw": 51.369
+   },
+   "duck_a": {
+    "x": 0.57527,
+    "y": 0.30155,
+    "yaw": 56.835
+   },
+   "duck_b": {
+    "x": -0.02888,
+    "y": 0.0115,
+    "yaw": -41.325
+   },
+   "flags": {
+    "pairing_margin_m": 0.3616,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 145,
+   "kind": "uniform",
+   "box": {
+    "x": 0.48512,
+    "y": 0.05478,
+    "yaw": 100.251
+   },
+   "duck_a": {
+    "x": 0.75788,
+    "y": 0.0756,
+    "yaw": 172.228
+   },
+   "duck_b": {
+    "x": 0.11419,
+    "y": 0.13767,
+    "yaw": 43.56
+   },
+   "flags": {
+    "pairing_margin_m": 0.1107,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 146,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.36071,
+    "y": -0.13132,
+    "yaw": 109.562
+   },
+   "duck_a": {
+    "x": 0.74401,
+    "y": -0.0013,
+    "yaw": -105.507
+   },
+   "duck_b": {
+    "x": -0.34865,
+    "y": -0.37773,
+    "yaw": 3.569
+   },
+   "flags": {
+    "pairing_margin_m": 0.0039,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 147,
+   "kind": "uniform",
+   "box": {
+    "x": 0.31092,
+    "y": 0.06441,
+    "yaw": 96.101
+   },
+   "duck_a": {
+    "x": -0.2958,
+    "y": 0.35138,
+    "yaw": -22.005
+   },
+   "duck_b": {
+    "x": 0.89188,
+    "y": 0.21296,
+    "yaw": -138.07
+   },
+   "flags": {
+    "pairing_margin_m": 0.0925,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 148,
+   "kind": "uniform",
+   "box": {
+    "x": 0.43371,
+    "y": 0.09941,
+    "yaw": 55.368
+   },
+   "duck_a": {
+    "x": 0.17956,
+    "y": 0.05513,
+    "yaw": 132.437
+   },
+   "duck_b": {
+    "x": 0.81323,
+    "y": 0.07612,
+    "yaw": 93.34
+   },
+   "flags": {
+    "pairing_margin_m": 0.2575,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 149,
+   "kind": "uniform",
+   "box": {
+    "x": 0.49982,
+    "y": -0.07353,
+    "yaw": 104.27
+   },
+   "duck_a": {
+    "x": 0.84561,
+    "y": 0.40468,
+    "yaw": 75.883
+   },
+   "duck_b": {
+    "x": 0.9551,
+    "y": -0.5101,
+    "yaw": -105.924
+   },
+   "flags": {
+    "pairing_margin_m": 0.2682,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 150,
+   "kind": "uniform",
+   "box": {
+    "x": 0.33469,
+    "y": 0.01459,
+    "yaw": 45.789
+   },
+   "duck_a": {
+    "x": 0.57579,
+    "y": 0.71503,
+    "yaw": 144.17
+   },
+   "duck_b": {
+    "x": 0.61236,
+    "y": -0.16749,
+    "yaw": 12.466
+   },
+   "flags": {
+    "pairing_margin_m": 0.1609,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 151,
+   "kind": "uniform",
+   "box": {
+    "x": 0.28857,
+    "y": -0.07895,
+    "yaw": 74.596
+   },
+   "duck_a": {
+    "x": 0.83712,
+    "y": 0.24358,
+    "yaw": -64.427
+   },
+   "duck_b": {
+    "x": -0.08479,
+    "y": 0.16813,
+    "yaw": 7.605
+   },
+   "flags": {
+    "pairing_margin_m": 0.0536,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 152,
+   "kind": "uniform",
+   "box": {
+    "x": 0.21468,
+    "y": -0.08254,
+    "yaw": 98.859
+   },
+   "duck_a": {
+    "x": 0.06295,
+    "y": 0.25545,
+    "yaw": 114.962
+   },
+   "duck_b": {
+    "x": 0.62472,
+    "y": -0.66461,
+    "yaw": -178.669
+   },
+   "flags": {
+    "pairing_margin_m": 0.3678,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 153,
+   "kind": "uniform",
+   "box": {
+    "x": 0.25125,
+    "y": 0.00039,
+    "yaw": 106.746
+   },
+   "duck_a": {
+    "x": 0.72155,
+    "y": -0.29602,
+    "yaw": 21.284
+   },
+   "duck_b": {
+    "x": 0.56046,
+    "y": -0.09743,
+    "yaw": -5.414
+   },
+   "flags": {
+    "pairing_margin_m": 0.046,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 154,
+   "kind": "uniform",
+   "box": {
+    "x": 0.22939,
+    "y": -0.09026,
+    "yaw": 96.424
+   },
+   "duck_a": {
+    "x": 0.11209,
+    "y": 0.69272,
+    "yaw": -117.944
+   },
+   "duck_b": {
+    "x": -0.1748,
+    "y": -0.43438,
+    "yaw": -78.65
+   },
+   "flags": {
+    "pairing_margin_m": 0.3279,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 155,
+   "kind": "uniform",
+   "box": {
+    "x": 0.34334,
+    "y": 0.08525,
+    "yaw": 60.92
+   },
+   "duck_a": {
+    "x": 0.76238,
+    "y": -0.07046,
+    "yaw": -116.567
+   },
+   "duck_b": {
+    "x": 0.10289,
+    "y": -0.56264,
+    "yaw": -154.642
+   },
+   "flags": {
+    "pairing_margin_m": 0.2164,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 156,
+   "kind": "uniform",
+   "box": {
+    "x": 0.44221,
+    "y": -0.07626,
+    "yaw": 112.419
+   },
+   "duck_a": {
+    "x": 0.6138,
+    "y": 0.30304,
+    "yaw": -97.224
+   },
+   "duck_b": {
+    "x": 1.18462,
+    "y": -0.29695,
+    "yaw": -10.678
+   },
+   "flags": {
+    "pairing_margin_m": 0.2289,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 157,
+   "kind": "uniform",
+   "box": {
+    "x": 0.21312,
+    "y": -0.10936,
+    "yaw": 113.379
+   },
+   "duck_a": {
+    "x": 0.23091,
+    "y": -0.84429,
+    "yaw": -85.408
+   },
+   "duck_b": {
+    "x": -0.20528,
+    "y": -0.49476,
+    "yaw": -162.807
+   },
+   "flags": {
+    "pairing_margin_m": 0.1164,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 158,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.33324,
+    "y": -0.05811,
+    "yaw": 83.243
+   },
+   "duck_a": {
+    "x": -0.3598,
+    "y": 0.03398,
+    "yaw": 141.066
+   },
+   "duck_b": {
+    "x": 0.05452,
+    "y": -0.01651,
+    "yaw": 166.605
+   },
+   "flags": {
+    "pairing_margin_m": 0.0048,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 159,
+   "kind": "uniform",
+   "box": {
+    "x": 0.38344,
+    "y": 0.0764,
+    "yaw": 49.298
+   },
+   "duck_a": {
+    "x": 0.68819,
+    "y": 0.53818,
+    "yaw": 14.309
+   },
+   "duck_b": {
+    "x": 0.43001,
+    "y": -0.33324,
+    "yaw": -18.045
+   },
+   "flags": {
+    "pairing_margin_m": 0.3134,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 160,
+   "kind": "uniform",
+   "box": {
+    "x": 0.25906,
+    "y": 0.04787,
+    "yaw": 51.912
+   },
+   "duck_a": {
+    "x": -0.48041,
+    "y": 0.0745,
+    "yaw": 88.722
+   },
+   "duck_b": {
+    "x": 0.16589,
+    "y": -0.16853,
+    "yaw": -87.71
+   },
+   "flags": {
+    "pairing_margin_m": 0.0317,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 161,
+   "kind": "uniform",
+   "box": {
+    "x": 0.20357,
+    "y": 0.14612,
+    "yaw": 128.277
+   },
+   "duck_a": {
+    "x": -0.39087,
+    "y": 0.00871,
+    "yaw": 61.609
+   },
+   "duck_b": {
+    "x": 0.21701,
+    "y": 0.42236,
+    "yaw": -4.441
+   },
+   "flags": {
+    "pairing_margin_m": 0.0195,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 162,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.30876,
+    "y": -0.03924,
+    "yaw": 102.944
+   },
+   "duck_a": {
+    "x": 0.51882,
+    "y": 0.16135,
+    "yaw": 27.296
+   },
+   "duck_b": {
+    "x": 0.69612,
+    "y": -0.34717,
+    "yaw": -122.324
+   },
+   "flags": {
+    "pairing_margin_m": 0.2141,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 163,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.2759,
+    "y": 0.05001,
+    "yaw": 116.195
+   },
+   "duck_a": {
+    "x": 0.63041,
+    "y": 0.54219,
+    "yaw": 37.126
+   },
+   "duck_b": {
+    "x": 0.54565,
+    "y": 0.74062,
+    "yaw": 174.85
+   },
+   "flags": {
+    "pairing_margin_m": 0.0407,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 164,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.31398,
+    "y": -0.13487,
+    "yaw": 64.892
+   },
+   "duck_a": {
+    "x": 0.10752,
+    "y": -0.02755,
+    "yaw": -161.603
+   },
+   "duck_b": {
+    "x": 0.7046,
+    "y": -0.31828,
+    "yaw": 146.949
+   },
+   "flags": {
+    "pairing_margin_m": 0.0114,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 165,
+   "kind": "uniform",
+   "box": {
+    "x": 0.34555,
+    "y": -0.06445,
+    "yaw": 61.498
+   },
+   "duck_a": {
+    "x": 0.95475,
+    "y": -0.42003,
+    "yaw": 30.636
+   },
+   "duck_b": {
+    "x": 0.37748,
+    "y": -0.32189,
+    "yaw": 57.658
+   },
+   "flags": {
+    "pairing_margin_m": 0.1213,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 166,
+   "kind": "uniform",
+   "box": {
+    "x": 0.2076,
+    "y": -0.10363,
+    "yaw": 58.99
+   },
+   "duck_a": {
+    "x": 0.39606,
+    "y": 0.54248,
+    "yaw": -59.021
+   },
+   "duck_b": {
+    "x": 0.01982,
+    "y": -0.29609,
+    "yaw": 65.512
+   },
+   "flags": {
+    "pairing_margin_m": 0.3968,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 167,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.29321,
+    "y": -0.10623,
+    "yaw": 85.057
+   },
+   "duck_a": {
+    "x": 0.54563,
+    "y": -0.02116,
+    "yaw": -116.21
+   },
+   "duck_b": {
+    "x": 0.73998,
+    "y": -0.21637,
+    "yaw": -103.71
+   },
+   "flags": {
+    "pairing_margin_m": 0.0832,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 168,
+   "kind": "uniform",
+   "box": {
+    "x": 0.28472,
+    "y": -0.07093,
+    "yaw": 83.827
+   },
+   "duck_a": {
+    "x": 0.13126,
+    "y": 0.25015,
+    "yaw": 72.402
+   },
+   "duck_b": {
+    "x": 0.91429,
+    "y": 0.06565,
+    "yaw": 49.49
+   },
+   "flags": {
+    "pairing_margin_m": 0.1356,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 169,
+   "kind": "uniform",
+   "box": {
+    "x": 0.26712,
+    "y": -0.04245,
+    "yaw": 127.753
+   },
+   "duck_a": {
+    "x": 0.74472,
+    "y": 0.31474,
+    "yaw": -20.04
+   },
+   "duck_b": {
+    "x": -0.46258,
+    "y": -0.26502,
+    "yaw": 66.264
+   },
+   "flags": {
+    "pairing_margin_m": 0.0824,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 170,
+   "kind": "uniform",
+   "box": {
+    "x": 0.26292,
+    "y": 0.00789,
+    "yaw": 67.635
+   },
+   "duck_a": {
+    "x": -0.03872,
+    "y": 0.1574,
+    "yaw": -152.975
+   },
+   "duck_b": {
+    "x": 0.77064,
+    "y": 0.1362,
+    "yaw": 39.598
+   },
+   "flags": {
+    "pairing_margin_m": 0.0845,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 171,
+   "kind": "uniform",
+   "box": {
+    "x": 0.48337,
+    "y": 0.05585,
+    "yaw": 90.767
+   },
+   "duck_a": {
+    "x": 0.68467,
+    "y": 0.56704,
+    "yaw": 70.744
+   },
+   "duck_b": {
+    "x": 0.59115,
+    "y": 0.31775,
+    "yaw": 102.802
+   },
+   "flags": {
+    "pairing_margin_m": 0.0172,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 172,
+   "kind": "uniform",
+   "box": {
+    "x": 0.20144,
+    "y": 0.13506,
+    "yaw": 77.294
+   },
+   "duck_a": {
+    "x": -0.49077,
+    "y": -0.11047,
+    "yaw": -94.729
+   },
+   "duck_b": {
+    "x": 0.2397,
+    "y": -0.16552,
+    "yaw": -107.336
+   },
+   "flags": {
+    "pairing_margin_m": 0.0433,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 173,
+   "kind": "uniform",
+   "box": {
+    "x": 0.42796,
+    "y": -0.00543,
+    "yaw": 119.554
+   },
+   "duck_a": {
+    "x": 0.6543,
+    "y": -0.07827,
+    "yaw": 118.898
+   },
+   "duck_b": {
+    "x": 0.40432,
+    "y": 0.71238,
+    "yaw": -95.358
+   },
+   "flags": {
+    "pairing_margin_m": 0.2744,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 174,
+   "kind": "uniform",
+   "box": {
+    "x": 0.36699,
+    "y": 0.07422,
+    "yaw": 65.349
+   },
+   "duck_a": {
+    "x": 0.02727,
+    "y": 0.03835,
+    "yaw": -162.486
+   },
+   "duck_b": {
+    "x": 0.57614,
+    "y": 0.28388,
+    "yaw": -139.251
+   },
+   "flags": {
+    "pairing_margin_m": 0.2871,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 175,
+   "kind": "uniform",
+   "box": {
+    "x": 0.41299,
+    "y": -0.04383,
+    "yaw": 109.292
+   },
+   "duck_a": {
+    "x": 0.29984,
+    "y": -0.8002,
+    "yaw": -12.045
+   },
+   "duck_b": {
+    "x": 0.55903,
+    "y": -0.30207,
+    "yaw": 158.242
+   },
+   "flags": {
+    "pairing_margin_m": 0.0096,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 176,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.23652,
+    "y": -0.04859,
+    "yaw": 77.504
+   },
+   "duck_a": {
+    "x": 0.65569,
+    "y": -0.13843,
+    "yaw": -111.009
+   },
+   "duck_b": {
+    "x": -0.23653,
+    "y": 0.06052,
+    "yaw": -138.491
+   },
+   "flags": {
+    "pairing_margin_m": 0.0009,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 177,
+   "kind": "uniform",
+   "box": {
+    "x": 0.35716,
+    "y": 0.1483,
+    "yaw": 71.021
+   },
+   "duck_a": {
+    "x": 0.85552,
+    "y": 0.04218,
+    "yaw": -146.6
+   },
+   "duck_b": {
+    "x": 1.03033,
+    "y": 0.09684,
+    "yaw": 113.687
+   },
+   "flags": {
+    "pairing_margin_m": 0.0238,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 178,
+   "kind": "uniform",
+   "box": {
+    "x": 0.32977,
+    "y": -0.12998,
+    "yaw": 120.351
+   },
+   "duck_a": {
+    "x": 0.49576,
+    "y": 0.48315,
+    "yaw": 74.195
+   },
+   "duck_b": {
+    "x": 0.06522,
+    "y": -0.11158,
+    "yaw": -2.556
+   },
+   "flags": {
+    "pairing_margin_m": 0.0198,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 179,
+   "kind": "uniform",
+   "box": {
+    "x": 0.43685,
+    "y": -0.12188,
+    "yaw": 52.95
+   },
+   "duck_a": {
+    "x": 0.84955,
+    "y": 0.18756,
+    "yaw": 57.089
+   },
+   "duck_b": {
+    "x": 1.11251,
+    "y": -0.51935,
+    "yaw": 125.332
+   },
+   "flags": {
+    "pairing_margin_m": 0.1594,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 180,
+   "kind": "uniform",
+   "box": {
+    "x": 0.43983,
+    "y": -0.06132,
+    "yaw": 80.738
+   },
+   "duck_a": {
+    "x": 0.51195,
+    "y": 0.52983,
+    "yaw": -6.979
+   },
+   "duck_b": {
+    "x": 0.26678,
+    "y": 0.05528,
+    "yaw": -54.47
+   },
+   "flags": {
+    "pairing_margin_m": 0.0842,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 181,
+   "kind": "uniform",
+   "box": {
+    "x": 0.31118,
+    "y": 0.06135,
+    "yaw": 102.488
+   },
+   "duck_a": {
+    "x": 0.36762,
+    "y": -0.41199,
+    "yaw": -69.083
+   },
+   "duck_b": {
+    "x": 0.5665,
+    "y": 0.28352,
+    "yaw": 51.679
+   },
+   "flags": {
+    "pairing_margin_m": 0.2734,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 182,
+   "kind": "uniform",
+   "box": {
+    "x": 0.2904,
+    "y": -0.082,
+    "yaw": 69.298
+   },
+   "duck_a": {
+    "x": 0.69312,
+    "y": -0.68933,
+    "yaw": -115.409
+   },
+   "duck_b": {
+    "x": 0.42515,
+    "y": 0.1326,
+    "yaw": -76.24
+   },
+   "flags": {
+    "pairing_margin_m": 0.2747,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 183,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.24422,
+    "y": -0.11807,
+    "yaw": 121.823
+   },
+   "duck_a": {
+    "x": 0.37199,
+    "y": 0.16461,
+    "yaw": 0.86
+   },
+   "duck_b": {
+    "x": 0.73413,
+    "y": 0.36711,
+    "yaw": -130.955
+   },
+   "flags": {
+    "pairing_margin_m": 0.0467,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 184,
+   "kind": "uniform",
+   "box": {
+    "x": 0.48991,
+    "y": 0.01944,
+    "yaw": 64.32
+   },
+   "duck_a": {
+    "x": 0.79846,
+    "y": 0.03805,
+    "yaw": 110.493
+   },
+   "duck_b": {
+    "x": 0.07508,
+    "y": -0.44307,
+    "yaw": 173.664
+   },
+   "flags": {
+    "pairing_margin_m": 0.2725,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 185,
+   "kind": "uniform",
+   "box": {
+    "x": 0.40292,
+    "y": -0.00956,
+    "yaw": 131.53
+   },
+   "duck_a": {
+    "x": -0.07585,
+    "y": -0.04807,
+    "yaw": -5.861
+   },
+   "duck_b": {
+    "x": 0.98833,
+    "y": 0.37094,
+    "yaw": -36.647
+   },
+   "flags": {
+    "pairing_margin_m": 0.1651,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 186,
+   "kind": "uniform",
+   "box": {
+    "x": 0.31748,
+    "y": 0.02236,
+    "yaw": 134.827
+   },
+   "duck_a": {
+    "x": 0.71573,
+    "y": 0.59257,
+    "yaw": 92.509
+   },
+   "duck_b": {
+    "x": 0.63787,
+    "y": 0.19286,
+    "yaw": 28.639
+   },
+   "flags": {
+    "pairing_margin_m": 0.0762,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 187,
+   "kind": "uniform",
+   "box": {
+    "x": 0.24658,
+    "y": 0.1412,
+    "yaw": 45.29
+   },
+   "duck_a": {
+    "x": -0.1813,
+    "y": 0.67066,
+    "yaw": -100.625
+   },
+   "duck_b": {
+    "x": 0.15052,
+    "y": -0.32279,
+    "yaw": -98.157
+   },
+   "flags": {
+    "pairing_margin_m": 0.1736,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 188,
+   "kind": "uniform",
+   "box": {
+    "x": 0.46444,
+    "y": 0.03281,
+    "yaw": 108.509
+   },
+   "duck_a": {
+    "x": 0.21071,
+    "y": -0.58163,
+    "yaw": -80.155
+   },
+   "duck_b": {
+    "x": 0.484,
+    "y": 0.28275,
+    "yaw": 31.022
+   },
+   "flags": {
+    "pairing_margin_m": 0.3147,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 189,
+   "kind": "uniform",
+   "box": {
+    "x": 0.46251,
+    "y": 0.03361,
+    "yaw": 98.352
+   },
+   "duck_a": {
+    "x": 0.21402,
+    "y": 0.41023,
+    "yaw": 143.003
+   },
+   "duck_b": {
+    "x": 0.38461,
+    "y": 0.26535,
+    "yaw": 96.689
+   },
+   "flags": {
+    "pairing_margin_m": 0.0003,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 190,
+   "kind": "uniform",
+   "box": {
+    "x": 0.29871,
+    "y": 0.01336,
+    "yaw": 105.517
+   },
+   "duck_a": {
+    "x": 0.0024,
+    "y": 0.33176,
+    "yaw": 105.9
+   },
+   "duck_b": {
+    "x": 0.28928,
+    "y": -0.30161,
+    "yaw": 89.252
+   },
+   "flags": {
+    "pairing_margin_m": 0.3925,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 191,
+   "kind": "uniform",
+   "box": {
+    "x": 0.35047,
+    "y": 0.1436,
+    "yaw": 132.922
+   },
+   "duck_a": {
+    "x": 0.09797,
+    "y": -0.55374,
+    "yaw": -111.068
+   },
+   "duck_b": {
+    "x": -0.15814,
+    "y": -0.09419,
+    "yaw": -109.3
+   },
+   "flags": {
+    "pairing_margin_m": 0.1736,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 192,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.20205,
+    "y": -0.06231,
+    "yaw": 124.098
+   },
+   "duck_a": {
+    "x": -0.04103,
+    "y": -0.24129,
+    "yaw": 169.329
+   },
+   "duck_b": {
+    "x": 0.48802,
+    "y": 0.15076,
+    "yaw": 49.625
+   },
+   "flags": {
+    "pairing_margin_m": 0.0174,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 193,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.35947,
+    "y": 0.09372,
+    "yaw": 131.072
+   },
+   "duck_a": {
+    "x": 0.93786,
+    "y": 0.58715,
+    "yaw": -6.588
+   },
+   "duck_b": {
+    "x": -0.07644,
+    "y": -0.26171,
+    "yaw": -3.051
+   },
+   "flags": {
+    "pairing_margin_m": 0.0096,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 194,
+   "kind": "wrong_side",
+   "box": {
+    "x": 0.33579,
+    "y": 0.11373,
+    "yaw": 46.658
+   },
+   "duck_a": {
+    "x": 0.59225,
+    "y": -0.26498,
+    "yaw": -108.257
+   },
+   "duck_b": {
+    "x": 0.58765,
+    "y": -0.06093,
+    "yaw": -169.457
+   },
+   "flags": {
+    "pairing_margin_m": 0.0578,
+    "ducks_on_target_side": 2
+   }
+  },
+  {
+   "id": 195,
+   "kind": "uniform",
+   "box": {
+    "x": 0.49733,
+    "y": 0.08357,
+    "yaw": 83.641
+   },
+   "duck_a": {
+    "x": 0.42363,
+    "y": 0.63708,
+    "yaw": 108.046
+   },
+   "duck_b": {
+    "x": 0.05559,
+    "y": 0.20544,
+    "yaw": 122.667
+   },
+   "flags": {
+    "pairing_margin_m": 0.1612,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 196,
+   "kind": "uniform",
+   "box": {
+    "x": 0.3995,
+    "y": -0.13865,
+    "yaw": 99.17
+   },
+   "duck_a": {
+    "x": 0.18036,
+    "y": -0.2441,
+    "yaw": -53.912
+   },
+   "duck_b": {
+    "x": 0.36396,
+    "y": -0.69293,
+    "yaw": 137.278
+   },
+   "flags": {
+    "pairing_margin_m": 0.1228,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 197,
+   "kind": "uniform",
+   "box": {
+    "x": 0.20625,
+    "y": -0.02392,
+    "yaw": 70.365
+   },
+   "duck_a": {
+    "x": 0.44598,
+    "y": 0.01693,
+    "yaw": -34.953
+   },
+   "duck_b": {
+    "x": -0.38705,
+    "y": -0.01274,
+    "yaw": 41.374
+   },
+   "flags": {
+    "pairing_margin_m": 0.1432,
+    "ducks_on_target_side": 1
+   }
+  },
+  {
+   "id": 198,
+   "kind": "uniform",
+   "box": {
+    "x": 0.32583,
+    "y": -0.03398,
+    "yaw": 74.967
+   },
+   "duck_a": {
+    "x": 0.04379,
+    "y": 0.15014,
+    "yaw": -116.549
+   },
+   "duck_b": {
+    "x": 0.05866,
+    "y": -0.22195,
+    "yaw": -49.999
+   },
+   "flags": {
+    "pairing_margin_m": 0.2588,
+    "ducks_on_target_side": 0
+   }
+  },
+  {
+   "id": 199,
+   "kind": "near_symmetric",
+   "box": {
+    "x": 0.30696,
+    "y": 0.09524,
+    "yaw": 48.998
+   },
+   "duck_a": {
+    "x": 0.88654,
+    "y": -0.38671,
+    "yaw": 172.552
+   },
+   "duck_b": {
+    "x": 0.12723,
+    "y": 0.25617,
+    "yaw": -87.347
+   },
+   "flags": {
+    "pairing_margin_m": 0.0001,
+    "ducks_on_target_side": 1
+   }
+  }
+ ]
+}

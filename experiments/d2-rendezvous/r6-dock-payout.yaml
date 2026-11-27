@@ -1,0 +1,97 @@
+# Rendezvous: the ducks start anywhere 0.2 to 0.8 m from the box (any bearing, any heading), walk to their docking
+# spots (copush.rendezvous), then the steering night 5 L2-s2 push policy pushes. Stage 1 box range and target (layout overnight's
+# target, 0.60 m ahead and 0.30 m right of the nominal box), stand-still on for the push phase as in its training.
+#
+# r1 (delta-distance reward, 100-step episodes, full start range from step 0) never docked once in 2M steps on
+# either seed: see experiments/d2-rendezvous/r1-delta-reward/SUMMARY.md. r2's one change (several settings, all reverting
+# to r1's values if removed) is the reward and training schedule below: absolute distance/heading so the
+# gradient never vanishes, a reachable partial bonus, shorter episodes, and a curriculum that starts ducks close.
+#
+# r3 (r3-heading-bonus.yaml): heading weight 0.3 -> 0.8 and a heading-holding bonus. Heading error fell 28 deg but position
+# error grew 22 cm, still 0% docking, and the curriculum never left its first level (15-20 cm starts).
+#
+# r4 (r4-approach-bonus.yaml): a smooth final-approach reward in place of the binary partial and arrival bonuses. Heading
+# and position error both fell against r3, but still 0% docking; training docked 0.2-0.4% from 15-20 cm starts.
+#
+# r5 (r5-bc-warmstart.yaml): behavioral cloning (BC) of the scripted coordinator, then PPO with r4's reward. First run
+# to dock: 64.5% (s1) and 52.0% (s2) on 200 starts, but both seeds peaked early (s1 119/200 at 400k, s2 93/200 at
+# 200k) and collapsed (s1 8/200 at 1M, s2 17/200 at 2M) while heading kept improving: docking ends the episode and
+# paid nothing, while staying near the spot earns up to +0.5 per step from the approach term.
+#
+# RUN r6-dock-payout (this file): the one reward change is a docking payout: on docking, each duck gets
+# dock_payout x (max_steps - steps taken), with dock_payout 0.5 = the approach term's maximum per step, so docking
+# always pays at least as much as hovering to the time limit. Also (BC only): max_epochs 300 -> 1000 and patience
+# 15 -> 50, since r5's BC hit its epoch limit while validation loss was still falling. Everything else is r5's.
+name: d2-rendezvous-r6-dock-payout
+change: ducks start apart; a rendezvous phase walks them to the push policy's docking spots
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+out: runs/d2-rendezvous-r6-dock-payout
+results: experiments/d2-rendezvous
+test_set: experiments/test_sets/rendezvous_large.json
+push_policy: runs/d2-steering-night5/l2-s2/model.zip     # sha256 ab82e344b275ce617123cf89b70d998f2dbf9003e7fd8feec437607503dd3366
+
+overrides:
+  env:
+    layout: rendezvous
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}   # stage 1's final range (training starts)
+    stand_still: {enabled: true, vx_threshold: 0.02}             # push phase: as the L2-s2 policy was trained
+  layouts:
+    rendezvous:
+      start_mode: approach                                       # ducks start where the start puts them
+      target: {x: 0.95, y: -0.30, yaw: 90}
+  controller: {mode: decentral, include_partner: true}
+  rendezvous:
+    pos_tol_m: 0.03          # arrived / handoff: within 3 cm and 15 deg of the spot, upright
+    yaw_tol_deg: 15.0
+    hold_s: 0.25             # training episode ends when both are within tolerance this long
+    stop_pos_m: 0.02         # scripted: stop and hold within 2 cm and 10 deg
+    stop_yaw_deg: 10.0
+    max_steps: 50            # training episode limit (10 s; r1 was 100 - at most 1.2 m of travel at 2.4 cm/step,
+                              # more than the 0.8 m max start distance needs)
+    handoff_steps: 50        # pipeline: hand off to the push policy at 50 steps whatever the ducks' state
+    sym_m: 0.05
+    start:
+      dist_m: [0.2, 0.8]      # the eval set's range (experiments/test_sets/rendezvous_large.json); curriculum below
+                              # overrides this for training starts, but it stays the reward's distance normalizer
+      kinds: {uniform: 0.8, near_symmetric: 0.1, wrong_side: 0.1}
+      clear_box_m: 0.08
+      clear_ducks_m: 0.15
+      sym_lateral_m: 0.02
+      wrong_side_cone_deg: 60.0
+    # Absolute distance/heading (not their improvement, as r1 had it), so the per-step reward never drops near
+    # zero while a duck is still far away: -w_dist x (distance to its spot / 0.8 m) - w_yaw x (heading error / pi)
+    # - time - collision, +partial the first time within partial_m of its spot (once per duck per episode), +arrive
+    # on handoff, -timeout at max_steps or on a fall (both reduced from r1, since the distance term now already
+    # punishes being far throughout the episode, not just at the end).
+    # r3: w_yaw 0.3 -> 0.8, plus the holding bonus (hold_bonus 0 in r2). r4: partial and arrive 0,
+    # replaced by the approach term (approach 0 in runs r1-r3).
+    reward: {w_dist: 1.0, w_yaw: 0.8, time: 0.02, collision: 1.0, partial: 0.0, partial_m: 0.10, arrive: 0.0, timeout: 2.0,
+             hold_bonus: 0.1, hold_yaw_deg: 15.0, hold_min_steps: 3, approach: 0.5, approach_m: 0.10, approach_yaw_rad: 0.35,
+             dock_payout: 0.5}   # r6: + 0.5 x steps left, to each duck, on docking
+    # New in r2: start close and only widen once the current range is solved, instead of the full 0.2-0.8 m
+    # range from step 0. Per training worker; see copush.rendezvous DEFAULTS["curriculum"] and RendezvousPairEnv.
+    curriculum:
+      enabled: true
+      levels: [[0.15, 0.20], [0.20, 0.40], [0.40, 0.60], [0.60, 0.80]]
+      advance_rate: 0.6       # docking rate over the window below, to advance to the next level
+      window_steps: 50000     # duck steps of completed episodes
+  ppo: {seed: 1}            # configs/copush.yaml's PPO otherwise (8 envs, n_steps 256, ent_coef 0.01)
+
+# Behavioral cloning (scripts/rl/bc_rendezvous.py; see its BC_DEFAULTS): demonstrations from the scripted coordinator
+# on randomized training starts (never the eval set), 15-80 cm (the curriculum's first level up to the eval range).
+bc:
+  episodes: 6000
+  seed: 777
+  dist_m: [0.15, 0.80]
+  workers: 8
+  val_frac: 0.2           # by episode
+  lr: 0.001
+  batch_size: 4096
+  max_epochs: 1000        # r6: 300 -> 1000
+  patience: 50            # r6: 15 -> 50; epochs without a better validation action loss
+  value_coef: 0.05        # value head fit to the demonstrations' returns-to-go, so PPO starts with a sensible critic
+  init_log_std: -1.0      # PPO action noise at the start of fine-tuning: std 0.37 (PPO's default 0 is std 1)
+
+steps: 2000000               # duck steps (2 per simulator step), as stage.py counts decentral runs
+eval_every: 200000

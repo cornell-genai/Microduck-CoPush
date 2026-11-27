@@ -1,0 +1,33 @@
+{
+ "pairs_train": 437400,
+ "pairs_val": 108936,
+ "episodes_val": 1200,
+ "epochs_run": 300,
+ "best_epoch": 298,
+ "best": {
+  "epoch": 298,
+  "train_action_mse": 0.055145,
+  "val_action_mse": 0.05599,
+  "train_value_mse": 16.3954,
+  "val_value_mse": 15.3585,
+  "wall_s": 182.8
+ },
+ "stopped": "max_epochs",
+ "action_var": 0.5730760097503662,
+ "settings": {
+  "episodes": 6000,
+  "seed": 777,
+  "dist_m": [
+   0.15,
+   0.8
+  ],
+  "workers": 8,
+  "val_frac": 0.2,
+  "lr": 0.001,
+  "batch_size": 4096,
+  "max_epochs": 300,
+  "patience": 15,
+  "value_coef": 0.05,
+  "init_log_std": -1.0
+ }
+}

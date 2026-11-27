@@ -1,0 +1,38 @@
+{
+ "step": 2400000,
+ "eval_set": "experiments/test_sets/rendezvous_check.json",
+ "arrival_rate": 0.82,
+ "arrived": 164,
+ "n": 200,
+ "mean_steps_to_arrive": 32.71341463414634,
+ "pos_err_cm_mean": 3.6426999999999996,
+ "yaw_err_deg_mean": 9.120525,
+ "duck_box_hits": 433,
+ "duck_duck_hits": 161,
+ "falls": 3,
+ "wall_s": 5417.5,
+ "train_by_level": {
+  "3": {
+   "episodes": 2580,
+   "arrived": 2233
+  }
+ },
+ "train_by_level_total": {
+  "0": {
+   "episodes": 9652,
+   "arrived": 5761
+  },
+  "1": {
+   "episodes": 5260,
+   "arrived": 3826
+  },
+  "2": {
+   "episodes": 5123,
+   "arrived": 4114
+  },
+  "3": {
+   "episodes": 9928,
+   "arrived": 8239
+  }
+ }
+}
