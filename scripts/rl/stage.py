@@ -171,7 +171,9 @@ def main() -> int:
         def evaluate(self, final: bool = False):
             stats = run_episode(self.env, self._act, self.seed)
             reason = "final" if final else decide(stats, self.best, self.seen, self.margin, self.n_evals == 0)
-            if reason not in (None, "final") and len(self.videos) >= stage["max_videos"] - 1:
+            if stage["max_videos"] <= 0:
+                reason = None                                    # smoke tests can run without ffmpeg
+            elif reason not in (None, "final") and len(self.videos) >= stage["max_videos"] - 1:
                 reason = None                                    # cap; one slot is kept for the final video
             if reason is not None:
                 self.vlog.record(self.env, self._act, self.num_timesteps, reason, seed=self.seed)
