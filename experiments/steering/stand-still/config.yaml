@@ -3,7 +3,7 @@
 # pivot the box around it.
 name: central-steering-stand-still
 change: stand-still action on the central controller (env.stand_still)
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/stage1-random-box-pose/model.zip
 out: runs/steering/stand-still-s1

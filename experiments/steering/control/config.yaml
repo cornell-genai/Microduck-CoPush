@@ -3,7 +3,7 @@
 # training from the stand-still action's effect.
 name: central-steering-control
 change: fixed-budget continuation of Stage 1 (matched control; no behavior change)
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/stage1-random-box-pose/model.zip
 out: runs/steering/control-s1
