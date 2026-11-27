@@ -2,7 +2,7 @@
 #
 #   nohup scripts/rl/overnight.sh --config configs/overnight.yaml >> runs/overnight-20261112/queue.log 2>&1 &
 #
-# `reference` is a set of overrides on configs/copush.yaml; each run adds its own `overrides`
+# `reference` is a set of overrides on `base` (the light box, configs/copush-light-box.yaml); each run adds its own `overrides`
 # on top and differs from the reference by ONE thing. See runs/overnight-20261112/DECISIONS.md
 # for where the layout, the curriculum levels and steps_per_run come from.
 out: runs/overnight-20261112
@@ -17,6 +17,7 @@ early_stop:
   flat_steps: 300000          # stop a run when the eval returns over this many steps ...
   flat_range: 0.25            # ... span less than this (completely flat; returns are ~-15 .. +13)
 
+base: configs/copush-light-box.yaml   # the light box (the heavy box is the default of configs/copush.yaml)
 reference:                    # reward v1.1, the layout from the reachability sweep, seed 1
   env: {layout: overnight}
   layouts:

@@ -9,7 +9,7 @@
 # Resolved config = base < reference < overrides, as in experiments/stage1-random-box-pose/config.yaml (no training here).
 name: stage1-large-heldout
 change: evaluation set of 200 stage 1 starts (no training)
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 out: runs/chirp-partner-sensing/large-eval            # unused: nothing is trained
 results: experiments/chirp-partner-sensing/large-eval/results

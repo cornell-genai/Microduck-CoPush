@@ -24,7 +24,7 @@
 # 15 -> 50, since r5's BC hit its epoch limit while validation loss was still falling. Everything else is r5's.
 name: d2-rendezvous-r6-dock-payout
 change: ducks start apart; a rendezvous phase walks them to the push policy's docking spots
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 out: runs/d2-rendezvous-r6-dock-payout
 results: experiments/d2-rendezvous

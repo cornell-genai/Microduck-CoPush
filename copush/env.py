@@ -5,7 +5,7 @@ The learner sets each duck's forward speed and turn rate every 0.2 s; the frozen
 
     scripts/rl.sh -c "from copush.env import CoPushEnv; ..."      # or scripts/rl.sh my_script.py
 
-    env = CoPushEnv()                      # configs/copush.yaml: fixed start, reward v1
+    env = CoPushEnv()                      # configs/copush.yaml: fixed start, heavy box, reward v1.1-t130
     obs, info = env.reset(seed=0)
     obs, reward, terminated, truncated, info = env.step(env.action_space.sample())
 
@@ -21,7 +21,7 @@ Observation (21, OBS_NAMES), all in the TARGET's frame (x along the target's yaw
 Policy switching is automatic: velstand until the duck touches the box, Shoe Push from then on,
 back to velstand after env.lose_contact_s without contact (Shoe Push falls without a box).
 
-Episodes: env.max_steps steps (100 = 20 s), ended early by TaskReward (success, fall, box
+Episodes: env.max_steps steps (130 = 26 s for the default heavy box; the light box used 100 = 20 s), ended early by TaskReward (success, fall, box
 tipped/lost). env.layout picks a start mode and target from `layouts`:
     close (default): start_mode in_contact, target 0.40 m straight ahead of the box. Both ducks
         are placed against the box's long face (the side away from the target), contact_spacing

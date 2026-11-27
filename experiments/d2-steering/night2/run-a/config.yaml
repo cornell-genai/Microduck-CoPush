@@ -17,7 +17,7 @@
 # other pushes) on long-turn starts?
 name: d2-steering-night2-run-a
 change: stand-still action on D2 (env.stand_still), warm start from D2 stage 1, random box starts (stage 1 range)
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/decentral-p2-d2/model.zip            # D2 stage 1 (policies-v1 release, stage1-d2): 66% on stage1_large, 15% on > +15 deg
 out: runs/d2-steering/night2/a-s1

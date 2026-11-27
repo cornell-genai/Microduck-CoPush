@@ -9,7 +9,7 @@
 # limit did not pass until +-10 deg (narrower than L1). With heading +-30 and forward 1 cm: 0.0% redraws, 0 down (500 resets).
 name: d2-steering-night5-run-l2
 change: "L2 duck start noise in training, warm start from night 2 Run A (same seed)"
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/d2-steering/night2/a-s1/model.zip     # replaced per seed by --warm-start
 out: runs/d2-steering-night5/l2-s1

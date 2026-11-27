@@ -28,7 +28,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
 
-from copush.config import load_config, with_reward_version  # noqa: E402
+from copush.config import load_config, with_reward_version, LIGHT_BOX_PATH  # noqa: E402
 from copush.env import CoPushEnv, baseline  # noqa: E402
 from copush.rl_eval import episodes, summarize, switch_summary  # noqa: E402
 from copush.video import VideoLog  # noqa: E402
@@ -55,7 +55,7 @@ def main() -> int:
     p.add_argument("--version", default="v1.1")
     p.add_argument("--no-videos", action="store_true")
     args = p.parse_args()
-    base = with_reward_version(load_config(), args.version)
+    base = with_reward_version(load_config(LIGHT_BOX_PATH), args.version)
     seed = base["rl"]["eval_seed"]
     run_id = "rl-baselines-" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = os.path.join(ROOT, "runs", run_id)

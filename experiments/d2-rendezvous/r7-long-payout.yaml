@@ -31,7 +31,7 @@
 # r6's, kept for the record and unused). Reward, curriculum, observations and PPO settings are r6's.
 name: d2-rendezvous-r7-long-payout
 change: ducks start apart; a rendezvous phase walks them to the push policy's docking spots
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 out: runs/d2-rendezvous-r7-long-payout
 results: experiments/d2-rendezvous

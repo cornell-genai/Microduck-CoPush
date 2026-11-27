@@ -8,7 +8,7 @@
 # gradient never vanishes, a reachable partial bonus, shorter episodes, and a curriculum that starts ducks close.
 name: d2-rendezvous
 change: ducks start apart; a rendezvous phase walks them to the push policy's docking spots
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 out: runs/d2-rendezvous-r2-curriculum
 results: experiments/d2-rendezvous

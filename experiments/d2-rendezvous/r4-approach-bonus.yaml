@@ -16,7 +16,7 @@
 # arrive (+5 on handoff) bonuses, both set to 0 here. r3's heading weight and holding bonus stay.
 name: d2-rendezvous-r4-approach-bonus
 change: ducks start apart; a rendezvous phase walks them to the push policy's docking spots
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 out: runs/d2-rendezvous-r4-approach-bonus
 results: experiments/d2-rendezvous

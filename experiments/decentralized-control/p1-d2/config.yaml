@@ -8,7 +8,7 @@
 # Steps count duck entries: 2 per simulator step, so 800k entries = 01_reference's 400k simulator steps.
 name: decentral-p1-d2
 change: decentralized, own view + partner; PPO fine-tune from the distilled policy, fixed start
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/decentral-distill/d2.zip   # distilled from the centralized stage 1 policy
 out: runs/decentral-p1-d2

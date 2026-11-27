@@ -8,7 +8,7 @@
 # partner (copush.decentral). Steps count duck entries: 2 per simulator step.
 name: d2-distilled
 change: decentralized, own view + partner (D2), PPO from the distilled weights, fixed start
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 init: distilled
 warm_start: runs/decentral-distill/d2.zip   # distilled from the centralized stage 1 policy

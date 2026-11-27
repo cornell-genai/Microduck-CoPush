@@ -20,6 +20,7 @@ from copush.config import load_config, policy_path  # noqa: E402
 if not all(os.path.exists(policy_path(load_config(), n)) for n in ("velstand", "shoepush")):
     pytest.skip("policies missing (scripts/fetch_policies.sh)", allow_module_level=True)
 
+from copush.config import LIGHT_BOX_PATH  # noqa: E402
 from copush.env import LOG_COLUMNS, OBS_NAMES, CoPushEnv, action_to_cmd, baseline, cmd_to_action  # noqa: E402
 from copush.rewards import TERMS  # noqa: E402
 
@@ -121,7 +122,7 @@ def test_reward_version_is_selected_from_the_config():
     v12 = CoPushEnv(with_reward_version(load_config(), "v1.2"))
     assert (v1.rcfg["w_yaw"], v1.rcfg["time_penalty"], v1.rcfg["fall_min_down_s"]) == (3.0, 0.01, 0.0)
     assert (v12.rcfg["w_yaw"], v12.rcfg["time_penalty"], v12.rcfg["contact_penalty"]) == (1.0, 0.03, 0.02)
-    assert CoPushEnv().rcfg["version"] == "v1.1"
+    assert CoPushEnv().rcfg["version"] == "v1.1-t130"         # the default (heavy box) version
 
 
 @pytest.mark.parametrize("version,counts", [("v1", True), ("v1.1", False)])
@@ -212,7 +213,7 @@ def test_episode_video_and_index(tmp_path):
 
 
 def test_push_steer_squares_up_and_holds_on_velstand():
-    c = load_config()
+    c = load_config(LIGHT_BOX_PATH)      # the scripted baselines were tuned on the light box
     c["layouts"]["close"]["target"].update({"y": 0.15})            # last round's failing case
     e = CoPushEnv(c, split="eval")
     act = baseline("push_steer", e)
@@ -265,7 +266,7 @@ def test_stand_still_action_is_off_by_default_and_holds_on_velstand_when_on():
 
 def test_pivot_push_pivots_with_one_duck_held_then_succeeds():
     from copush.env import PivotThenPush
-    c = load_config()
+    c = load_config(LIGHT_BOX_PATH)      # the scripted baselines were tuned on the light box
     c["layouts"]["close"]["target"] = {"x": 0.75, "y": -0.15, "yaw": 90}       # 0.15 m to the right
     e = CoPushEnv(c, split="eval")
     act = baseline("pivot_push", e)

@@ -12,7 +12,7 @@
 # other pushes) on long-turn starts?
 name: d2-steering-run-b
 change: "Run A plus duck start noise (start_noise: heading 5 deg, spacing 0.02 m, setback 0.01 m)"
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/decentral-p2-d2/model.zip            # D2 stage 1 (policies-v1 release, stage1-d2): 66% on stage1_large, 15% on > +15 deg
 out: runs/d2-steering/run-b

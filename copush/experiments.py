@@ -4,7 +4,8 @@
     starts = make_test_set(cfg, n=50, rng_seed=20261112)      # box poses from the final env.box_start range
     stats = test_set_episodes(cfg, starts, lambda env: baseline("pivot_push", env))
 
-A stage config names the shared configs it builds on: `base` (configs/copush.yaml), `reference` (a
+A stage config names the shared configs it builds on: `base` (configs/copush.yaml = the heavy box, the default;
+configs/copush-light-box.yaml = the old light box, which every earlier config names), `reference` (a
 queue YAML whose `reference` block is the policy being built on, e.g. configs/overnight.yaml for
 01_reference) and the stage's own `overrides` on top (ONE change). Paths are relative to the repo.
 

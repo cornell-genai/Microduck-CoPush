@@ -8,6 +8,9 @@ it can be dumped back to `runs/<ts>/config.yaml` and reloaded unchanged:
     cfg = config_from_args(parser.parse_args())               # flags from add_config_args
 
 Precedence: built-in defaults < YAML file < overrides (CLI flags).
+
+A YAML file may start with `extends: <path>` (relative to the repo): that file is loaded first and this one is merged
+over it (chains allowed). configs/copush-light-box.yaml uses it to be "configs/copush.yaml with the old light box".
 """
 from __future__ import annotations
 
@@ -21,23 +24,24 @@ import yaml
 
 from copush.upstream import ROOT
 
-DEFAULT_PATH = os.path.join(ROOT, "configs", "copush.yaml")
+DEFAULT_PATH = os.path.join(ROOT, "configs", "copush.yaml")                  # the heavy box (the official push task)
+LIGHT_BOX_PATH = os.path.join(ROOT, "configs", "copush-light-box.yaml")      # the old light box (0.15 kg, 100 steps, v1.1)
 POLICY_NAMES = ("velstand", "shoepush")
 
 DEFAULTS = {
     "duck_a": {"x": 0.0, "y": 0.10, "yaw": 0.0, "policy": "velstand"},
     "duck_b": {"x": 0.0, "y": -0.10, "yaw": 0.0, "policy": "velstand"},
-    "box": {"x": 0.35, "y": 0.0, "yaw": 90.0, "mass": 0.15, "mass_range": None},
+    "box": {"x": 0.35, "y": 0.0, "yaw": 90.0, "mass": 0.60, "mass_range": None},
     "target": {"x": 1.20, "y": 0.0, "yaw": 90.0, "size": [0.40, 0.20]},
     "policies": {"velstand": "data/policies/velstand_v8/velstand.onnx",
                  "shoepush": "data/policies/robert/shoe_push/forward/policy.onnx"},
     "keyboard": {"vx_step": 0.05, "vyaw_step": 0.3, "vx_max": 0.3, "vx_min": -0.3, "vyaw_max": 1.5},
     "actuator": {"vin": 7.4, "vin_drop_gain": 0.1},
     "env": {"layout": "close", "settle_s": 0.3, "contact_setback": 0.095, "contact_spacing": 0.20,
-            "step_s": 0.2, "max_steps": 100, "lose_contact_s": 0.5,
+            "step_s": 0.2, "max_steps": 130, "lose_contact_s": 0.5,
             "stand_still": {"enabled": False, "vx_threshold": 0.02}, "randomize": False,
             "random": {"box_x": [0.30, 0.36], "box_y": [-0.04, 0.04], "box_yaw": [75, 105],
-                       "box_mass": [0.10, 0.25]},
+                       "box_mass": [0.40, 1.00]},
             "box_start": {"enabled": False, "dx": 0.10, "dy": 0.10, "dyaw": 30.0, "scale": 1.0,
                           "hard_frac": 0.0, "hard_min_dyaw": 15.0},
             "heldout_seeds": [10000, 10099],
@@ -46,7 +50,7 @@ DEFAULTS = {
     "layouts": {"close": {"start_mode": "in_contact", "target": {"x": 0.75, "y": 0.0, "yaw": 90}},
                 "steer": {"start_mode": "in_contact", "target": {"x": 0.75, "y": -0.30, "yaw": 90}},
                 "hard": {"start_mode": "approach", "target": {"x": 1.20, "y": 0.0, "yaw": 90}}},
-    "reward": {"version": "v1.1", "w_pos": 10.0, "w_yaw": 3.0, "success_bonus": 10.0, "success_yaw_deg": 15.0,
+    "reward": {"version": "v1.1-t130", "w_pos": 10.0, "w_yaw": 3.0, "success_bonus": 10.0, "success_yaw_deg": 15.0,
                "success_hold_s": 1.0, "time_penalty": 0.01, "fall_mode": "terminate",
                "fall_penalty": 10.0, "fall_min_down_s": 0.0, "fall_rate": 1.0, "box_fail_penalty": 5.0,
                "box_tilt_deg": 30.0, "box_lost_dist": 0.40, "cooperation_mode": "none", "coop_lambda": 5.0,
@@ -59,7 +63,9 @@ DEFAULTS = {
                         "v1.3": {"fall_min_down_s": 0.2, "w_yaw": 1.0, "box_fail_penalty": 10.0,
                                  "time_penalty": 0.01},
                         "v1.4": {"fall_min_down_s": 0.2, "w_yaw": 1.0, "box_fail_penalty": 10.0,
-                                 "time_penalty": 0.03, "both_held_penalty": 0.05}},
+                                 "time_penalty": 0.03, "both_held_penalty": 0.05},
+                        "v1.1-t130": {"fall_min_down_s": 0.2, "w_yaw": 1.0, "box_fail_penalty": 10.0,
+                                      "time_penalty": 0.023077}},
     "ppo": {"n_envs": 8, "total_steps": 300000, "n_steps": 256, "batch_size": 256, "n_epochs": 10,
             "learning_rate": 0.0003, "gamma": 0.99, "gae_lambda": 0.95, "clip_range": 0.2,
             "ent_coef": 0.01, "seed": 0},
@@ -90,11 +96,23 @@ def _merge(base: dict, over: dict) -> dict:
     return out
 
 
+def _read_yaml(path: str, seen: tuple = ()) -> dict:
+    """The YAML at path, with its `extends` chain merged underneath (the key itself is dropped)."""
+    path = os.path.abspath(path)
+    if path in seen:
+        raise ValueError(f"extends loop: {' -> '.join(seen + (path,))}")
+    with open(path) as f:
+        doc = yaml.safe_load(f) or {}
+    parent = doc.pop("extends", None)
+    if parent:
+        doc = _merge(_read_yaml(parent if os.path.isabs(parent) else os.path.join(ROOT, parent), seen + (path,)), doc)
+    return doc
+
+
 def load_config(path: Optional[str] = DEFAULT_PATH, overrides: Optional[dict] = None) -> dict:
     cfg = copy.deepcopy(DEFAULTS)
     if path:
-        with open(path) as f:
-            cfg = _merge(cfg, yaml.safe_load(f) or {})
+        cfg = _merge(cfg, _read_yaml(path))
     cfg = _merge(cfg, overrides or {})
     for duck in ("duck_a", "duck_b"):
         if cfg[duck]["policy"] not in POLICY_NAMES:

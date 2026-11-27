@@ -27,7 +27,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
 
-from copush.config import load_config, with_reward_version  # noqa: E402
+from copush.config import load_config, with_reward_version, LIGHT_BOX_PATH  # noqa: E402
 from copush.rl_eval import episodes, summarize  # noqa: E402
 
 OFFSETS = (0.0, 0.10, 0.15, 0.20, 0.25, 0.30)
@@ -66,7 +66,7 @@ def main() -> int:
     p.add_argument("--out", required=True)
     args = p.parse_args()
     os.makedirs(args.out, exist_ok=True)
-    base = with_reward_version(load_config(), "v1.1")
+    base = with_reward_version(load_config(LIGHT_BOX_PATH), "v1.1")
     seed = base["rl"]["eval_seed"]
     cells = []
     for off in OFFSETS:

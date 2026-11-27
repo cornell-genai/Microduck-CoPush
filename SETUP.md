@@ -123,7 +123,7 @@ flags above:
 
 ```yaml
 duck_a: {x: 0.0, y: 0.10, yaw: 0, policy: velstand}
-box:    {x: 0.35, y: 0.0, yaw: 90, mass: 0.15}     # yaw 90 = long face toward the ducks
+box:    {x: 0.35, y: 0.0, yaw: 90, mass: 0.60}     # yaw 90 = long face toward the ducks; 0.60 kg is the heavy box
 target: {x: 1.20, y: 0.0, yaw: 90, size: [0.40, 0.20]}
 ```
 
@@ -299,6 +299,9 @@ A PPO run also holds TensorBoard logs, checkpoints, short videos with an `index.
 Settings live in [configs/copush.yaml](configs/copush.yaml):
 - the start layout: `close`, `steer` or `hard`, plus `overnight` in `configs/overnight.yaml`
 - the reward version (`reward.version`, applied on top of `reward` from `reward_versions`)
+- the box task: the default is the heavy box (`box.mass` 0.60 kg, `env.max_steps` 130, reward `v1.1-t130`). The old light
+  box (0.15 kg, 100 steps, `v1.1`) is [configs/copush-light-box.yaml](configs/copush-light-box.yaml); an experiment
+  config selects it with `base: configs/copush-light-box.yaml` (every config made before the heavy box does)
 - PPO hyperparameters
 - the video settings
 
@@ -325,7 +328,7 @@ Settings live in [configs/copush.yaml](configs/copush.yaml):
 copush/         sim.py (two-duck MuJoCo world), duck_policy.py (per-duck ONNX runner),
                 env.py (Gymnasium env + scripted baselines), rewards.py, rl_eval.py, rl_callbacks.py,
                 video.py, config.py; plus the Week 1 duck-sim client (sim_client.py, runner.py, ...)
-configs/        copush.yaml (scene, layouts, reward versions, PPO, video), overnight*.yaml (queues)
+configs/        copush.yaml (scene, layouts, reward versions, PPO, video; the heavy box), copush-light-box.yaml (the old light box), overnight*.yaml (queues)
 scripts/        copush.sh / copush_sim.py (sim), rl.sh + rl/ (checks, baselines, train, overnight),
                 b0/ (B0 harness), sim.sh, check_m1.py, two_duck_demo.py (Week 1 duck-sim path)
 scenes/         copush_base.xml (floor/lights for the two-duck world), B0 and Week 1 scenes

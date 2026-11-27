@@ -12,7 +12,7 @@
 # stall states, far below the hold cutoff (-0.867). Reward v1.1, stand-still threshold 0.02 m/s, no start noise: as night 2's A.
 name: d2-steering-night4-run-e
 change: bounded exploration (mean soft-bounded to +-1.5, std capped at 0.5, ent_coef 0) on top of night 2 Run A (stand-still D2, reward v1.1)
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/decentral-p2-d2/model.zip            # D2 stage 1 (policies-v1 release, stage1-d2): 66% on stage1_large, 15% on > +15 deg
 out: runs/d2-steering-night4/e-s1
