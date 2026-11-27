@@ -28,10 +28,10 @@ Heavy box (0.60 kg), 130-step limit (26 s), one episode per start, 95% Wilson in
 
 Task success also rose measurably on every set (+32.8 to +38.2 points). The 200-start numbers agree with the 141-start ones below: every rate is inside the earlier interval.
 
-- **Who pushes.** In h1 successes the duck doing less does 40 to 50% of the pushing in 95 to 100% of successes (per seed and set). For the frozen policy it is 62 to 76%, with 13 to 27% of its successes in the 10 to 25% bucket.
+- **Who pushes.** In h1 successes the duck doing less does 40 to 50% of the pushing in 94.8 to 100% of successes (per seed and set). For the frozen policy it is 62 to 76%, with 13 to 27% of its successes in the 10 to 25% bucket.
 - **Solo tests.** Duck B alone (A forced to stand still): 0.0 to 5.5% (the 5.5% is seed 2 on noisy, 11 of 200). Duck A alone: 2.5 to 8.5% (the 8.5% is seed 1 on clean, 17 of 200, interval 5.4 to 13.2). All under 10% by their point values. Frozen L2-s2 alone: 0 or 1 success per set. Every solo success took 112 to 130 of the 130 steps.
 - **Falls and tip-overs.** Falls 0 to 9 per 200 for h1 (frozen 2 to 6); tip-overs 0 to 4 (frozen 0 to 1); box lost 0 or 1 (frozen 0).
-- **What the remaining failures are.** Mostly timeouts, which means hitting the 130-step limit: 47 to 71 of 200 per seed and set (frozen: 125 to 134). In 384 of those 710 timeouts (54%) one duck did under 10% of the pushing. 34 to 41 starts per set fail for all three seeds.
+- **What the remaining failures are.** Mostly timeouts, which means hitting the 130-step limit: 47 to 71 of 200 per seed and set (frozen: 125 to 134). In 384 of those 710 timeouts (54%) one duck did under 10% of the pushing, and in 290 of them it never touched the box (2 more timeouts had no contact from either duck). 34 to 41 starts per set fail for all three seeds.
 - **Speed.** Successes take 70 to 73 steps on average (frozen: 77 to 85); the slowest take 123 to 130.
 - **Overshoots** are not recorded and were not measured.
 
@@ -41,10 +41,10 @@ PLAN.md sized the 130-step limit by the distance the box must travel to ENTER th
 
 | distance from the box start | 10th / 50th / 90th percentile / max (m) | two ducks' open-loop reach in 130 steps (0.928 m) over the 90th percentile | starts one duck could reach (0.507 m) |
 |---|---|---|---|
-| to enter the target | 0.53 / 0.60 / 0.69 / 0.75 | +35% | 0 of 200 |
-| to the target centre | 0.64 / 0.72 / 0.80 / 0.87 | **+16%** | 0 of 200 |
+| to enter the target (clean, L1, L2; noisy within 0.01) | 0.53 / 0.60 / 0.69 / 0.75 | +35% | 0 of 200 |
+| to the target centre (clean, L1, L2; noisy within 0.01) | 0.64 / 0.72 / 0.80 / 0.87 | **+16%** | 0 of 200 |
 
-So by centre distance the two-duck margin is 16%, not the 30% the plan asked for, and the open-loop speed is an upper bound for a policy that also has to steer. The timeouts are not simply the farthest targets, though: the centre distance of h1's timeouts (mean 0.72 to 0.73 m) is about the same as that of its successes (0.71 m). What causes them was not tested.
+So by centre distance the two-duck margin is 16%, not the 30% the plan asked for, and the open-loop speed is an upper bound for a policy that also has to steer. The timeouts are not simply the farthest targets, though: the mean centre distance of h1's timeouts (0.72 to 0.74 m per seed and set) is about 1 cm more than that of its successes (0.71 to 0.72 m). Timeouts are slightly farther in 11 of the 12 seed and set combinations, so distance plays a small part, not the main one. What causes them was not tested.
 
 ## Test sets, 141 starts (superseded by the 200-start sets above)
 
@@ -57,12 +57,12 @@ Heavy box (0.60 kg), 130-step (26 s) limit, 141 starts per set (142 for noisy), 
 | L1 start noise | 29.8% / 27.0% (20.3 to 34.8) | 65.2% / 61.7% (53.5 to 69.3) | 70.9% / 69.5% (61.5 to 76.5) | 63.1% / 61.0% (52.8 to 68.7) | +37.1 (+29.6 to +44.6), measurable |
 | L2 start noise | 32.6% / 27.7% (20.9 to 35.6) | 67.4% / 65.2% (57.1 to 72.6) | 65.2% / 64.5% (56.4 to 72.0) | 64.5% / 63.8% (55.6 to 71.3) | +36.9 (+29.7 to +44.0), measurable |
 
-Each cell is task success / cooperative success, with the interval for cooperative success. Task success also rose measurably on every set (+32.4 to +39.2 points). Between seeds: their intervals overlap on every set, and on clean and L2 there is no measurable difference. On L1 seed 2 is ahead of seeds 1 and 3 in a paired comparison on the same starts (+7.8, interval +0.7 to +14.9, and +8.5, +1.3 to +15.8), and on noisy it is borderline ahead of seed 3 (+8.5, +0.0 to +16.9). Those are 3 of 24 pairwise comparisons with no correction for running that many, so treat seed 2's lead as weak.
+Each cell is task success / cooperative success, with the interval for cooperative success. Task success also rose measurably on every set (+32.4 to +39.2 points). Between seeds: their intervals overlap on every set, and on clean and L2 there is no measurable difference. On L1 seed 2 is ahead of seeds 1 and 3 in a paired comparison on the same starts (+7.8, interval +0.7 to +14.9, and +8.5, +1.3 to +15.8), and on noisy it is borderline ahead of seed 3 (+8.5, +0.0 to +16.9). Counting task success too (seed 2 over seed 3 on L1, +7.8, +0.1 to +15.5), those are 4 of 24 pairwise comparisons with no correction for running that many, so treat seed 2's lead as weak.
 
-- **Who pushes.** In h1 successes the duck doing less almost always does 40 to 50% of the pushing: 95 to 100% of successes per seed and set. For the frozen policy on the heavy box it is 59 to 83%, with 10 to 30% of its successes in the 10 to 25% bucket.
+- **Who pushes.** In h1 successes the duck doing less almost always does 40 to 50% of the pushing: 94.6 to 100% of successes per seed and set. For the frozen policy on the heavy box it is 59 to 83%, with 10 to 30% of its successes in the 10 to 25% bucket.
 - **Solo tests on the test sets.** Duck B alone: 0.0 to 6.3% (the 6.3% is seed 2 on noisy, 9 of 142). Duck A alone: 2.1 to 9.2% (the 9.2% is seed 1 on clean, 13 of 141). Frozen L2-s2 alone: 0 or 1 success per set. So fine-tuning made a solo push slightly more possible than the plan assumed: every solo success on the test sets took 112 to 130 of the 130 steps (109 to 130 on the check set), so they are starts where one duck just makes it before the limit. PLAN.md sized the sets from an open-loop push speed (0.0195 m/s for one duck); the solo successes suggest a trained duck is a little faster than that, but its solo speed was not measured.
 - **Falls and tip-overs.** Few and not worse than frozen: 0 to 6 falls and 0 to 3 tip-overs per 141 starts for h1, against 1 to 5 and 0 to 1 for frozen. Box lost: 0 in the two-duck test-set runs (1 in a frozen solo test; 1 per h1 seed on the check set).
-- **What the remaining failures are.** Nearly all timeouts: 34 to 47 of about 141 per seed and set (frozen: 86 to 93). In about half of those timeouts one duck did under 10% of the pushing (12 to 32 per seed and set), which is a duck that lost the box or never got onto it, as in the failure clip. The rest are both ducks pushing and running out of time. 21 of the 141 clean starts fail for all three seeds.
+- **What the remaining failures are.** Nearly all timeouts: 34 to 47 of about 141 per seed and set (frozen: 86 to 93). In about half of those timeouts one duck did under 10% of the pushing (12 to 32 per seed and set), as in the failure clip; whether that duck lost the box or never got onto it was not measured. The rest are both ducks pushing and running out of time. 21 of the 141 clean starts fail for all three seeds.
 - **Speed.** Successes take 70 to 74 steps on average (frozen: 75 to 84), and the slowest finish at 118 to 130 steps, so the 26 s limit still binds for some starts.
 - **Overshoots** are not recorded by this run and were not measured.
 
@@ -100,7 +100,7 @@ In [gifs/](gifs/), all h1 seed 2 on the L2 heavy test set:
 
 ## Training
 
-Three PPO (proximal policy optimization) seeds, all fine-tuned from L2-s2, 2M duck steps each, a checkpoint every 200k steps scored on the check set. No seed was stopped early (98, 87 and 81 task successes of 200 at 400k steps). Picks: seed 1 at 1.8M steps, seeds 2 and 3 at the last checkpoint (2.0M). Seeds 2 and 3 scored their best at the last checkpoint, but the check-set score swings by up to 16 successes between checkpoints (seed 2: 126 at 1.2M, 110 at 1.6M, 130 at the end), so this does not show they were still improving. Checkpoints are in `runs/d2-heavybox-h1/s<seed>/` (git-ignored).
+Three PPO (proximal policy optimization) seeds, all fine-tuned from L2-s2, 2M duck steps each, a checkpoint every 200k steps scored on the check set. No seed was stopped early (98, 87 and 81 task successes of 200 at 400k steps). Picks: seed 1 at 1.8M steps, seeds 2 and 3 at the last checkpoint (2.0M). Seeds 2 and 3 scored their best at the last checkpoint, but the check-set score swings between checkpoints by as much as the late gains (seed 2: 126 at 1.2M, 110 at 1.6M, 130 at the end; seed 3: 87, 78, then 97 between 0.8M and 1.2M), so this does not show they were still improving. Checkpoints are in `runs/d2-heavybox-h1/s<seed>/` (git-ignored).
 
 ## Limits
 
