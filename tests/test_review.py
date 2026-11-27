@@ -114,7 +114,7 @@ def test_sample_small_groups_one_group_and_small_runs(episodes):
 # ── saving and resuming ──────────────────────────────────────────────────────
 
 def meta(reviewer="ashwin", seed=0):
-    return {"run": "r9-test", "policy": "s1", "policy_file": "runs/x/best.zip", "policy_sha256": "ab" * 32,
+    return {"run": "r9-test", "coop_source": {"contact_impulse": 44}, "policy": "s1", "policy_file": "runs/x/best.zip", "policy_sha256": "ab" * 32,
             "results_file": "runs/x/results.json", "reviewer": reviewer,
             "sampling": {"n": 6, "group": None, "seed": seed, "coop_min": 0.25, "group_sizes": {}}}
 
@@ -236,3 +236,70 @@ def test_newest_label_wins_and_empty_run(tmp_path, episodes):
     empty = rl.summarize([])
     assert empty["labels"] == 0 and empty["combined"]["task"]["rate"] is None
     assert "No labels found" in rl.report("nope", empty)
+
+
+# ── where cooperative success comes from ─────────────────────────────────────
+
+def write_eps(tmp_path, eps):
+    p = tmp_path / "results.json"
+    p.write_text(json.dumps({"rendezvous": "scripted", "push": "p.zip", "set": "s.json", "episodes": eps}))
+    return str(p)
+
+
+def test_coop_from_contact_impulse_when_the_file_has_it(tmp_path):
+    # push_share_a says duck A did 0.5 (cooperative), the impulses say duck A did 10% (not): the impulses decide
+    eps = [rv_episode(0, share=0.5, contact_impulse={"duck_a": 1.0, "duck_b": 9.0}, push_impulse={"duck_a": 5.0, "duck_b": 5.0}),
+           rv_episode(1, share=0.0, contact_impulse={"duck_a": 6.0, "duck_b": 4.0}),            # impulses say cooperative
+           rv_episode(2, success=False, share=0.5, contact_impulse={"duck_a": 6.0, "duck_b": 4.0}),   # a failure is never
+           rv_episode(3, share=0.5, contact_impulse={"duck_a": 0.0, "duck_b": 0.0})]           # nobody touched the box
+    d = rl.load_episodes(write_eps(tmp_path, eps), "scripted")
+    assert [e["coop_success"] for e in d["episodes"]] == [False, True, False, False]
+    assert {e["coop_source"] for e in d["episodes"]} == {"contact_impulse"}
+    assert d["coop_source"] == {"contact_impulse": 4} and d["coop_min"] == 0.25
+
+
+def test_coop_threshold_is_the_one_of_cooperation_py_and_a_share_at_it_counts(tmp_path):
+    eps = [rv_episode(0, contact_impulse={"duck_a": 2.5, "duck_b": 7.5})]
+    path = write_eps(tmp_path, eps)
+    assert rl.load_episodes(path, "scripted")["episodes"][0]["coop_success"] is True          # exactly 25%
+    assert rl.load_episodes(path, "scripted", coop_min=0.30)["episodes"][0]["coop_success"] is False
+    from copush import cooperation
+    assert rl.COOP_MIN == cooperation.DEFAULT_THRESHOLD == rl.config_threshold()                # configs/copush.yaml says 0.25
+
+
+def test_coop_from_contact_share_then_push_share_fallback(tmp_path):
+    # a comparison.json-style record: a contact share and no impulses
+    d = rl.load_episodes(write_eps(tmp_path, [rv_episode(0, share=0.5, contact_share_a=0.1)]), "scripted")
+    e = d["episodes"][0]
+    assert (e["coop_success"], e["coop_source"], d["coop_source"]) == (False, "contact_share", {"contact_share": 1})
+    # an old file: nothing but the push share -> the fallback, and it says so
+    old = [rv_episode(0, share=0.5), rv_episode(1, share=0.0), rv_episode(2, success=False, share=None)]
+    d = rl.load_episodes(write_eps(tmp_path, old), "scripted")
+    assert [(e["coop_success"], e["coop_source"]) for e in d["episodes"]] == [(True, "push_share"), (False, "push_share"), (False, "push_share")]
+    assert d["coop_source"] == {"push_share": 3}
+
+
+def test_coop_label_is_saved_and_shown_in_the_summary(tmp_path):
+    new = [rv_episode(0, share=0.0, contact_impulse={"duck_a": 5.0, "duck_b": 5.0}), rv_episode(1, share=0.5)]
+    d = rl.load_episodes(write_eps(tmp_path, new), "scripted")
+    assert [e["coop_source"] for e in d["episodes"]] == ["contact_impulse", "push_share"]
+    m = {**meta(), "coop_source": d["coop_source"], "results_file": "runs/x/results.json"}
+    s, _ = rl.Session.open(str(tmp_path / "experiments" / "r9-test" / "reviews"), m, d["episodes"], date="2026-11-24")
+    for x, e in zip(s.doc["sample"], d["episodes"]):
+        rec = s.label(x["key"], e, "real_success")
+        assert rec["metric"]["coop_source"] == e["coop_source"]
+    assert json.load(open(s.path))["coop_source"] == {"contact_impulse": 1, "push_share": 1}
+    out = rl.report("r9-test", rl.summarize(rl.load_reviews("r9-test", root=str(tmp_path))))
+    assert "Cooperative success was read from (per results file):" in out
+    assert "runs/x/results.json: contact impulse of each duck" in out and "FALLBACK: push share only" in out
+    assert "NOTE: part of this file has no contact-impulse fields" in out
+
+
+def test_replay_match_compares_every_recorded_field():
+    import serve
+    rec = {"id": 3, "push_steps": 41, "push_share_a": 0.0, "contact_impulse": {"duck_a": 0.0, "duck_b": 14.4979}, "extra": 1}
+    ok = serve.replay_match({**rec, "extra": 2}, rec)
+    assert ok["reproduced"] and "push_share_a" in ok["checked"] and "extra" not in ok["checked"]
+    bad = serve.replay_match({**rec, "contact_impulse": {"duck_a": 0.0, "duck_b": 14.4}}, rec)
+    assert not bad["reproduced"] and bad["mismatch"] == {"contact_impulse": [rec["contact_impulse"], {"duck_a": 0.0, "duck_b": 14.4}]}
+    assert not serve.replay_match({}, rec)["reproduced"]            # a field the replay lacks does not pass

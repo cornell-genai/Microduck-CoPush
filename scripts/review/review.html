@@ -210,6 +210,7 @@ function showReveal(e) {
     : `duck A ${Math.round(100 * r.push_share_a)}% / duck B ${Math.round(100 * (1 - r.push_share_a))}%`;
   rows.push(["Metric: task success", [yes(r.task_success), badge(L.agree_task)]]);
   rows.push(["Metric: cooperative success", [yes(r.coop_success), badge(L.agree_coop)]]);
+  if (r.coop_source) rows.push(["Cooperative success read from", [r.coop_source.replace(/_/g, " ") + (r.coop_source === "push_share" ? " (fallback: old file)" : "")]]);
   rows.push(["Push share", [share]]);
   rows.push(["Start type", [r.start_type ?? "n/a"]]);
   rows.push(["Falls", [r.falls ?? "n/a"]]);

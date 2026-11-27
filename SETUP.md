@@ -251,7 +251,7 @@ metric said, so we can measure how often a person disagrees with the metric.
 **Start a session** (one local page, port 8765; Ctrl-C stops it):
 
 ```sh
-# a full-pipeline rendezvous run (needs the rendezvous code: the d2-rendezvous branch until it is merged)
+# a full-pipeline rendezvous run
 scripts/rl.sh scripts/review/serve.py --run r6-dock-payout --seed-policy s1 --n 30 --reviewer ashwin
 
 # a push-only run: comparison.json does not name the policy file, so pass it as compare_policies.py took it
@@ -266,11 +266,21 @@ scripts/rl.sh scripts/review/serve.py --run d2-steering/night5 --seed-policy l2_
   cooperative success, success in the last 10% of the time limit, docking error at 90% or more of its tolerance, a
   push success without docking). The sample takes the three groups evenly, random within each, in a shuffled order.
   `--n` (30), `--group success|failure|suspicious`, `--seed` (0; the same seed gives the same sample). A run with no
-  more than `--n` episodes is shown whole. Cooperative success means task success with each duck doing at least 25% of
-  the push (`--coop-min`).
+  more than `--n` episodes is shown whole. `--group` is the only way to weight the sample: `--group suspicious` takes
+  only that group, and a run of the tool without it always takes the three groups evenly.
+- **Cooperative success** is task success with each duck's share of the pushing at least the threshold
+  (`metrics.cooperative_share` in `configs/copush.yaml`, 0.25; `--coop-min` overrides it), computed with
+  `copush/cooperation.py`. The share is read from the results file's contact impulses (`contact_impulse`, then
+  `contact_share_a`). Only an old results file without those fields falls back to its push share (`push_share_a`).
+  The source is printed when a session starts, saved in the label file (`coop_source`, counts per file, and on every
+  label) and listed per results file by `summarize.py`, which flags the push-share fallback.
+- **Other options:** `--results` (the results file), `--policy` (push-only runs), `--max-steps`, `--port` (8765),
+  `--no-open`, `--out-dir` (where the label file goes; default `experiments/<run>/reviews`; use a folder under `runs/`
+  for a trial) and `--render-only` (render the sampled clips, print whether every replay matched, exit).
 - **Clips** are rendered on demand with the evaluation's own starts and seeds and cached in
   `runs/review-cache/` (git-ignored, about 5 to 10 MB per episode). If a replay does not match the recorded episode
-  step for step, the page says so.
+  step for step, the page says so. A replay is checked on every field the results file recorded (docking, hits,
+  ending, steps, shares and impulses to the stored precision); `--render-only` prints the result per clip.
 - **Keys:** `1` to `4` verdict, `Enter` save and reveal, arrows or `N` / `P` next and previous, `Space` play or pause,
   `,` `.` step a frame, `R` replay, `[` `]` speed (0.5x, 1x, 2x; 1x is real time). The letters on the reasons tick them.
 - **Saving:** every label is written at once to `experiments/<run>/reviews/<reviewer>_<date>.json` (the run's existing

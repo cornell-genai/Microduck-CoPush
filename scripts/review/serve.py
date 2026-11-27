@@ -19,6 +19,12 @@ the same session again resumes it. scripts/review/summarize.py reports the agree
 --policy         push-only runs: the policy as compare_policies.py took it (model.zip@partner@standstill); a
                  rendezvous results file names its own policy and push policy
 --n, --group, --seed   sample size (30), only one group (success, failure, suspicious), sampling seed (0)
+--coop-min       cooperative threshold (default: metrics.cooperative_share of configs/copush.yaml, 0.25). The
+                 cooperative result is read from the results file's contact impulses (contact_impulse) through
+                 copush/cooperation.py; only an old file without those fields falls back to its push share. The
+                 source is printed at start, saved in the session file and in each label, and shown in the summary.
+--out-dir        where the label file goes (default experiments/<run>/reviews)
+--render-only    render the sampled clips, print whether each replay matched, and exit
 --port, --no-open      the local port (8765); do not open the browser
 """
 from __future__ import annotations
@@ -44,17 +50,28 @@ import reviewlib as rl  # noqa: E402
 FPS = 10                      # GIF frames per second of simulated time: 1x in the page is real time
 SIZE = (480, 270)
 CACHE = "runs/review-cache"   # under the git-ignored runs/
-RENDER_VERSION = 1            # bump when the rendering changes, so cached GIFs are redone
+RENDER_VERSION = 2            # bump when the rendering or the replay check changes, so cached GIFs are redone
 
 
 # ── rendering (in one worker process that keeps the env and the policies loaded) ─────────────────────────────
 
+# what a replay must reproduce: the fields rendezvous_eval.py wrote (the shares and impulses to the precision it stored)
+REPLAY_FIELDS = ("id", "arrived", "rv_steps", "fell_rv", "assign", "pos_err_cm", "yaw_err_deg", "hit_box", "hit_ducks",
+                 "push_reason", "push_steps", "push_success", "push_share_a", "contact_share_a", "contact_impulse",
+                 "push_impulse", "cooperative")
+
+
+def replay_match(replayed: dict, recorded: dict, fields=REPLAY_FIELDS) -> dict:
+    """Compare a replayed episode with the recorded one on every field both have. -> {"reproduced", "checked",
+    "mismatch": {field: [recorded, replayed]}}. Stored values are rounded (4 places for shares and impulses, 2 for
+    errors), and the replay is rounded the same way before it gets here, so equality is exact."""
+    checked = [k for k in fields if k in recorded]
+    bad = {k: [recorded[k], replayed.get(k)] for k in checked if replayed.get(k) != recorded[k]}
+    return {"reproduced": not bad, "checked": checked, "mismatch": bad}
+
+
 def _setup_rendezvous(spec: dict):
-    try:
-        import rendezvous_eval as rve
-    except ImportError as e:
-        raise RuntimeError("this is a rendezvous (full-pipeline) run and scripts/rl/rendezvous_eval.py is not on this "
-                           f"branch yet; run the review from a checkout that has the rendezvous code ({e})")
+    import rendezvous_eval as rve
     rve._W.clear()
     rve._init(spec["set"], spec["policy_file"], spec["push"] or rve.PUSH, spec["no_push"], spec["episode_steps"])
     env, rv = rve._W["env"], rve._W["rv"]
@@ -73,9 +90,7 @@ def _setup_rendezvous(spec: dict):
         finally:
             rv.frame_hook = env.frame_hook = None
             del env.begin_push_phase
-        raw = job["raw"]
-        same = all(out.get(k) == raw.get(k) for k in ("id", "arrived", "rv_steps", "push_reason", "push_steps") if k in raw)
-        return {"reproduced": same}
+        return replay_match(out, job["raw"])
     return env, run
 
 
@@ -112,8 +127,14 @@ def _setup_push(spec: dict):
         finally:
             env.frame_hook = None
         es, raw = info["episode_stats"], job["raw"]
-        same = es["reason"] == raw.get("reason", es["reason"]) and es["steps"] == raw.get("steps", es["steps"])
-        return {"reproduced": bool(same), "seed": seed}
+        got = {"reason": es["reason"], "steps": int(es["steps"])}
+        for f, k in (("push_share_a", "push_share"), ("contact_share_a", "contact_share")):
+            v = es[k]["duck_a"]
+            got[f] = None if v != v else float(v)
+        for f in ("push_share_a", "contact_share_a"):          # compare at the precision the file stored
+            if isinstance(raw.get(f), float) and got[f] is not None:
+                got[f] = round(got[f], 4) if round(raw[f], 4) == raw[f] else got[f]
+        return {**replay_match(got, raw, ("reason", "steps", "push_share_a", "contact_share_a")), "seed": seed}
     return env, run
 
 
@@ -195,6 +216,7 @@ class Review:
     def __init__(self, a):
         results = rl.repo_path(a.results) if a.results else rl.find_results(a.run, a.seed_policy)
         data = rl.load_episodes(results, a.seed_policy, coop_min=a.coop_min, max_steps=a.max_steps)
+        self.coop_min = data["coop_min"]
         self.data, self.run = data, a.run
         doc = json.load(open(results))
         if data["format"] == "rendezvous":
@@ -215,9 +237,11 @@ class Review:
         g = rl.groups(data["episodes"])
         meta = {"run": a.run, "policy": data["policy"], "policy_file": pfile, "policy_sha256": sha,
                 "results_file": os.path.relpath(results, ROOT), "reviewer": a.reviewer,
-                "sampling": {"n": a.n, "group": a.group, "seed": a.seed, "coop_min": a.coop_min,
+                "coop_source": data["coop_source"],
+                "sampling": {"n": a.n, "group": a.group, "seed": a.seed, "coop_min": self.coop_min,
                              "group_sizes": {k: len(v) for k, v in g.items()}}}
-        self.session, self.resumed = rl.Session.open(os.path.join(rl.experiment_dir(a.run), "reviews"), meta, picked)
+        self.session, self.resumed = rl.Session.open(
+            rl.repo_path(a.out_dir) if a.out_dir else os.path.join(rl.experiment_dir(a.run), "reviews"), meta, picked)
         self.items = []
         tag = (sha or "unknown")[:8]
         for idx, s in enumerate(self.session.doc["sample"]):
@@ -385,8 +409,14 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--results", default=None)
     ap.add_argument("--policy", default=None, help="push-only runs: model.zip@partner@standstill, as compare_policies.py")
-    ap.add_argument("--coop-min", type=float, default=rl.COOP_MIN,
-                    help="cooperative success: each duck's push share is at least this (0.25)")
+    ap.add_argument("--coop-min", type=float, default=None,
+                    help="cooperative success: each duck's share is at least this (default: metrics.cooperative_share "
+                         "of configs/copush.yaml, 0.25)")
+    ap.add_argument("--out-dir", default=None,
+                    help="where the label file goes (default experiments/<run>/reviews); use a folder under runs/ for a test")
+    ap.add_argument("--render-only", action="store_true",
+                    help="render the sampled clips, print whether each replay matched the recorded episode, and exit "
+                         "(no server)")
     ap.add_argument("--max-steps", type=int, default=None, help="the push time limit in steps, when it is not 100")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--no-open", action="store_true")
@@ -402,6 +432,22 @@ def main() -> int:
           + ", ".join(f"{k} {v}" for k, v in sizes.items()) + f"); reviewing {len(r.items)}")
     print(("resuming " if r.resumed else "new session ") + os.path.relpath(r.session.path, ROOT)
           + (f" ({done} of {len(r.items)} labeled)" if r.resumed else ""))
+    print("cooperative success read from: " + ", ".join(f"{rl.COOP_SOURCE_TEXT[k]} for {v} episodes"
+                                                         for k, v in r.data["coop_source"].items())
+          + f" (threshold {r.coop_min})")
+    if a.render_only:
+        r.render_loop()
+        bad = 0
+        for it in r.items:
+            e, m = it["episode"], it["meta"] or {}
+            ok = m.get("reproduced")
+            bad += ok is not True
+            print(f"  clip {it['idx']}: start {e['start_id']} seed {e['episode_seed']} group {rl.group_of(e)}: "
+                  + (f"ERROR {it['error']}" if it["error"] else
+                     ("replay MATCHES the recorded episode" if ok else f"replay DIFFERS: {m.get('mismatch')}")
+                     + f" ({len(m.get('checked', []))} fields checked: {', '.join(m.get('checked', []))}; {m.get('frames')} frames)"))
+        print(f"{len(r.items) - bad} of {len(r.items)} replays match")
+        return 0 if not bad else 1
     threading.Thread(target=r.render_loop, daemon=True).start()
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
     url = f"http://127.0.0.1:{a.port}/"
