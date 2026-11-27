@@ -37,7 +37,7 @@ def test_mass_range_is_off_by_default():
     env = _env()
     for seed in (1, 2, 3):
         env.reset(seed=seed)
-        assert env.cfg["box"]["mass"] == env.box0["mass"] == 0.15
+        assert env.cfg["box"]["mass"] == env.box0["mass"] == 0.60       # the default (heavy) box mass
 
 
 def test_mass_range_draws_a_different_mass_each_episode_inside_the_range():

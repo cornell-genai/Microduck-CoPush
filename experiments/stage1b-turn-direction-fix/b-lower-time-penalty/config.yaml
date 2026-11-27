@@ -6,7 +6,7 @@
 # Resolved config = base < reference block of `reference` < overrides: stage 1's settings plus ONE change.
 name: stage1b-b-lower-time-penalty
 change: reward v1.3 (time penalty 0.03 -> 0.01 per step), stage 1's start mix, warm start from stage 1
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/stage1-random-box-pose/model.zip   # the stage 1 policy (980k steps)
 test_set: experiments/test_sets/stage1.json         # the stage 1 exam, unchanged

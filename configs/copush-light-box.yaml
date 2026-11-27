@@ -1,0 +1,14 @@
+# The OLD light-box task: configs/copush.yaml with the four box-task settings it had before the heavy box became the
+# default. Every experiment config made before the heavy box names this file as its `base`, so it still resolves to
+# exactly what it did then (scripts/rl/check_config_pins.py and tests/test_heavybox.py check that).
+#
+#   base: configs/copush-light-box.yaml        # in an experiment config (the heavy box is the default without it)
+#
+# Reward versions v1 to v1.4 keep their definitions in configs/copush.yaml; only the default choice (v1.1) is set here.
+extends: configs/copush.yaml
+
+box: {mass: 0.15}
+env:
+  max_steps: 100                      # 20 s episodes
+  random: {box_mass: [0.10, 0.25]}    # only used when env.randomize is on
+reward: {version: v1.1}               # time penalty 0.03 x 100 steps = 3

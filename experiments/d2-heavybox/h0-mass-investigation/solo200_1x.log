@@ -1,0 +1,6 @@
+| mass | friction | ducks | task success | cooperative success | falls | box tip-overs | duck-box contact height cm: typical / 95% of episode maxima / max | box moved >= 2 cm | >= 10 cm | mean progress / start distance (m) | steps to success, mean (max) | overshoots (failed after reaching the target or passing it by 5 cm) | endings |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1.0x (0.150 kg) | default | both | 97.5% (94.3 to 98.9) | 50.5% (43.6 to 57.4) | 0/200 | 0/200 | 8.4 / 9.5 / 10.1 | 200/200 | 200/200 | 0.60 / 0.68 | 37 (75) | 4/200 | {'success': 195, 'timeout': 5} |
+| 1.0x (0.150 kg) | default | A_idle | 0.0% (0.0 to 1.9) | 0.0% (0.0 to 1.9) | 0/200 | 0/200 | 8.1 / 9.5 / 9.5 | 98/200 | 68/200 | 0.06 / 0.68 | - | 0/200 | {'timeout': 200} |
+| 1.0x (0.150 kg) | default | B_idle | 59.5% (52.6 to 66.1) | 0.0% (0.0 to 1.9) | 0/200 | 0/200 | 8.2 / 9.5 / 9.7 | 200/200 | 200/200 | 0.48 / 0.68 | 45 (75) | 48/200 | {'success': 119, 'timeout': 81} |
+wall 246 s

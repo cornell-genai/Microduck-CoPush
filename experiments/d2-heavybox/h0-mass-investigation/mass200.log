@@ -1,0 +1,12 @@
+| mass | friction | ducks | task success | cooperative success | falls | box tip-overs | duck-box contact height cm: typical / 95% of episode maxima / max | box moved >= 2 cm | >= 10 cm | mean progress / start distance (m) | steps to success, mean (max) | overshoots (failed after reaching the target or passing it by 5 cm) | endings |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2.0x (0.300 kg) | default | both | 86.5% (81.1 to 90.6) | 34.5% (28.3 to 41.3) | 1/200 | 4/200 | 8.2 / 9.6 / 12.3 | 200/200 | 200/200 | 0.53 / 0.68 | 50 (89) | 1/200 | {'box_tipped': 4, 'fall': 1, 'success': 173, 'timeout': 22} |
+| 2.0x (0.300 kg) | default | A_idle | 7.5% (4.6 to 12.0) | 0.0% (0.0 to 1.9) | 1/200 | 0/200 | 8.0 / 9.6 / 10.0 | 97/200 | 63/200 | 0.09 / 0.68 | 78 (98) | 0/200 | {'fall': 1, 'success': 15, 'timeout': 184} |
+| 2.0x (0.300 kg) | default | B_idle | 84.5% (78.8 to 88.9) | 0.0% (0.0 to 1.9) | 0/200 | 0/200 | 8.1 / 9.6 / 9.7 | 200/200 | 199/200 | 0.53 / 0.68 | 63 (93) | 6/200 | {'success': 169, 'timeout': 31} |
+| 2.5x (0.375 kg) | default | both | 70.0% (63.3 to 75.9) | 29.0% (23.2 to 35.6) | 0/200 | 4/200 | 8.1 / 9.7 / 10.3 | 200/200 | 200/200 | 0.50 / 0.68 | 55 (93) | 3/200 | {'box_tipped': 4, 'success': 140, 'timeout': 56} |
+| 2.5x (0.375 kg) | default | A_idle | 9.5% (6.2 to 14.4) | 0.0% (0.0 to 1.9) | 2/200 | 0/200 | 7.9 / 9.6 / 11.7 | 94/200 | 56/200 | 0.10 / 0.68 | 92 (100) | 2/200 | {'fall': 2, 'success': 19, 'timeout': 179} |
+| 2.5x (0.375 kg) | default | B_idle | 64.0% (57.1 to 70.3) | 0.0% (0.0 to 1.9) | 0/200 | 0/200 | 8.0 / 9.6 / 9.7 | 200/200 | 200/200 | 0.51 / 0.68 | 73 (99) | 12/200 | {'success': 128, 'timeout': 72} |
+| 3.0x (0.450 kg) | default | both | 49.5% (42.6 to 56.4) | 25.5% (20.0 to 32.0) | 1/200 | 2/200 | 8.1 / 9.7 / 10.4 | 200/200 | 200/200 | 0.47 / 0.68 | 61 (98) | 7/200 | {'box_tipped': 2, 'fall': 1, 'success': 99, 'timeout': 98} |
+| 3.0x (0.450 kg) | default | A_idle | 3.0% (1.4 to 6.4) | 0.0% (0.0 to 1.9) | 2/200 | 0/200 | 8.0 / 9.5 / 9.6 | 95/200 | 57/200 | 0.11 / 0.68 | 94 (99) | 6/200 | {'fall': 2, 'success': 6, 'timeout': 192} |
+| 3.0x (0.450 kg) | default | B_idle | 31.5% (25.5 to 38.2) | 0.0% (0.0 to 1.9) | 0/200 | 0/200 | 8.0 / 9.6 / 9.7 | 200/200 | 199/200 | 0.46 / 0.68 | 83 (100) | 10/200 | {'success': 63, 'timeout': 137} |
+wall 583 s

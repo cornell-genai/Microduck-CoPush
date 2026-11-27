@@ -23,7 +23,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
 
-from copush.config import load_config  # noqa: E402
+from copush.config import load_config, LIGHT_BOX_PATH  # noqa: E402
 from copush.sim import CONTROL_DT, CoPushSim  # noqa: E402
 from copush.state import wrap_angle  # noqa: E402
 
@@ -66,7 +66,7 @@ def main() -> int:
     a = ap.parse_args()
     out = a.out if os.path.isabs(a.out) else os.path.join(ROOT, a.out)
     os.makedirs(out, exist_ok=True)
-    cfg = load_config()
+    cfg = load_config(LIGHT_BOX_PATH)
     summaries = []
     for name, (vx, vyaw) in RUNS.items():
         rows = run_one(cfg, vx, vyaw, a.duration)

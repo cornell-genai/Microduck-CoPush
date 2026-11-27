@@ -1,0 +1,64 @@
+# D2 heavy box, h1: fine-tune the night 5 L2-s2 push policy on a box one duck cannot push alone.
+#
+# Identical to night 5's Run L2 (experiments/d2-steering/night5/run-l2/config.yaml: reward v1.1 terms, L2 duck start
+# noise, stage 1 box range, stand-still action, the warm start's PPO hyperparameters, 2M duck steps) except for the box
+# task, which is the ONE change (several settings that belong together; h0-mass-investigation/README.md says why):
+#   box.mass 0.60 kg         4x the 0.15 kg box: 5.9 N to slide. One duck alone failed 0 of 50 (either duck).
+#   env.max_steps 130        26 s instead of 20 s. Two ducks at their open-loop speed on this box (0.0357 m/s) cover
+#                            0.93 m, 33% more than the 90th-percentile distance the box must travel to enter the target
+#                            (0.675 to 0.70 m on the stage 1 sets).
+#   reward v1.1-t130         v1.1 with the time penalty scaled to the longer episode: 3 / 130 = 0.023077 per step, so a
+#                            full episode still costs -3 (v1.1: 0.03 x 100).
+#   env.random.box_mass      the mass randomization range scaled 4x (0.10-0.25 -> 0.40-1.00 kg). NOT ACTIVE: night 5's
+#                            Run L2 trained with env.randomize off (fixed mass), and so does h1.
+# (Since 2026-11-27 these heavy-box settings are also the default in configs/copush.yaml; the overrides below are kept.)
+# Every seed warm-starts from the SAME policy (L2-s2) and differs only in ppo.seed.
+#
+#   scripts/rl.sh scripts/rl/run_h1_heavy_finetune.py          # the whole run (see PLAN.md)
+name: d2-heavybox-h1-heavy-finetune
+change: "box 4x heavier (0.60 kg) with a 130-step limit and the time penalty scaled to it; warm start from night 5 L2-s2"
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/d2-steering-night5/l2-s2/model.zip      # sha256 ab82e344b275ce617123cf89b70d998f2dbf9003e7fd8feec437607503dd3366
+out: runs/d2-heavybox-h1/s1                               # the run script passes --out per seed
+results: experiments/d2-heavybox/h1-heavy-finetune/results
+test_set: experiments/test_sets/stage1_heavy_L2_large.json
+check_set: experiments/test_sets/stage1_heavy_checks.json    # the run script evaluates on it (not stage.py; see widen)
+
+overrides:
+  box: {mass: 0.60}                                                # THE change (with the three settings below)
+  reward: {version: v1.1-t130}
+  reward_versions:
+    v1.1-t130: {fall_min_down_s: 0.2, w_yaw: 1.0, box_fail_penalty: 10.0, time_penalty: 0.023077}   # v1.1, 3 / 130 per step
+  controller: {mode: decentral, include_partner: true}
+  rl: {eval_every: 20000}
+  env:
+    max_steps: 130
+    random: {box_mass: [0.40, 1.00]}                               # 4x; inactive (env.randomize is off)
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}     # stage 1's range, as Run L2
+    stand_still: {enabled: true, vx_threshold: 0.02}               # as Run L2
+  start_noise: {duck_heading_std_deg: 15, duck_heading_limit_deg: 30,
+                duck_spacing_std_m: 0.04, duck_spacing_limit_m: 0.08,
+                duck_setback_std_m: 0.02, duck_setback_back_limit_m: 0.06, duck_setback_forward_limit_m: 0.01}   # L2, as Run L2
+
+steps: 2000000                            # duck entries = 1M simulator steps, as Run L2
+checkpoint_every: 200000
+keep_checkpoints: true                    # every checkpoint is kept and evaluated on the check set by the run script
+max_videos: 12
+
+widen:                                    # no widening and no in-training check evals (the run script does them, in parallel)
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 1000000000
+  episodes: 50
+  seed0: 10050
+
+early_stop: {success: 0.80, evals: 0}     # stage.py never stops early; the run script stops a seed with 0 check-set successes at 400k
+
+# What the run script (scripts/rl/run_h1_heavy_finetune.py) reads:
+h1:
+  seeds: [1, 2, 3]
+  early_stop_at: 400000                   # 0 task successes on the check set here -> the seed stops
+  solo_reach_m: 0.507                     # one duck at its open-loop speed (0.0195 m/s) for 26 s; starts whose box needs
+                                          #   to travel less than this to enter the target are left out of the heavy sets
+  check: {n: 200, draw: 300, rng_seed: 20261126, episode_seed0: 20000}

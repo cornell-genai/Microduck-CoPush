@@ -6,7 +6,7 @@
 # Resolved config = base < reference block of `reference` < overrides: stage 1's settings plus ONE change.
 name: stage1b-a-oversample-hard
 change: half of training starts turned more than +15 deg (box_start.hard_frac 0.5), warm start from stage 1
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/stage1-random-box-pose/model.zip   # the stage 1 policy (980k steps)
 test_set: experiments/test_sets/stage1.json         # the stage 1 exam, unchanged

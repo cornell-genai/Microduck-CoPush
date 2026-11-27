@@ -7,7 +7,7 @@
 # partner (copush.decentral). Steps count duck entries: 2 per simulator step.
 name: d2-scratch
 change: decentralized, own view + partner (D2), random initial weights, fixed start
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 init: scratch
 out: runs/d2-from-scratch/d2-scratch-s1          # --seed N -> d2-scratch-sN

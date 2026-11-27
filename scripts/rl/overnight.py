@@ -4,7 +4,7 @@
     nohup scripts/rl/overnight.sh --config configs/overnight.yaml >> runs/overnight-<date>/queue.log 2>&1 &
     scripts/rl.sh scripts/rl/overnight.py --config configs/overnight.yaml --summary     # rewrite SUMMARY.md only
 
-The YAML (configs/overnight.yaml) has a `reference` block of overrides on configs/copush.yaml and a
+The YAML (configs/overnight.yaml) has a `reference` block of overrides on its `base` (configs/copush-light-box.yaml) and a
 list of `runs`, each with its own `overrides` on top of the reference (ONE change per run).
 
 Queue (this process): detaches into its own session, keeps the Mac awake (caffeinate -w), then for
@@ -86,7 +86,8 @@ def results_path(q: dict, run: dict) -> str:
 
 
 def run_cfg(q: dict, run: dict) -> dict:
-    return load_config(overrides=_merge(q.get("reference") or {}, run.get("overrides") or {}))
+    base = os.path.join(ROOT, q.get("base", "configs/copush.yaml"))      # the queue's `base`, as in a stage config
+    return load_config(base, _merge(q.get("reference") or {}, run.get("overrides") or {}))
 
 
 def read_json(path: str, default=None):

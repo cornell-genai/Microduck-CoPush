@@ -31,7 +31,7 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
 
-from copush.config import dump_config, load_config, with_reward_version  # noqa: E402
+from copush.config import dump_config, load_config, with_reward_version, LIGHT_BOX_PATH  # noqa: E402
 from copush.decentral import make_vec_env, policy_action  # noqa: E402
 from copush.env import CoPushEnv  # noqa: E402
 from copush.rl_callbacks import CurriculumCallback, VideoEvalCallback  # noqa: E402
@@ -53,7 +53,7 @@ def main() -> int:
     from stable_baselines3 import PPO
     from stable_baselines3.common.callbacks import CallbackList
 
-    cfg = with_reward_version(load_config(), args.version)
+    cfg = with_reward_version(load_config(LIGHT_BOX_PATH), args.version)
     if args.controller:
         cfg["controller"] = ({"mode": "central"} if args.controller == "central"
                              else {"mode": "decentral", "include_partner": args.controller == "d2"})

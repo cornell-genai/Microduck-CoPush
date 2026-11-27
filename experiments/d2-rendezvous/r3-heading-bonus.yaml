@@ -14,7 +14,7 @@
 # for 3 consecutive steps. Everything else is r2's.
 name: d2-rendezvous-r3-heading-bonus
 change: ducks start apart; a rendezvous phase walks them to the push policy's docking spots
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 out: runs/d2-rendezvous-r3-heading-bonus
 results: experiments/d2-rendezvous

@@ -6,7 +6,7 @@
 # 1.5 cm (limit +4.5 back / -2 forward). Built by scripts/rl/overnight_steering_5.py.
 name: stage1-L1
 change: stage 1 box starts plus L1 duck start noise, evaluation only
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 out: runs/d2-steering-night5/sets-L1                # unused: nothing is trained
 results: experiments/d2-steering/night5/sets/L1/results

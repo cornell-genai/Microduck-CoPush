@@ -8,7 +8,7 @@
 # 01_reference's (reward v1.1, layout overnight: target 0.60 m ahead, 0.30 m right; PPO seed 1).
 name: stage1-random-box-pose
 change: random box starts (env.box_start), warm start from 01_reference
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/overnight-20261112/runs/01_reference/model.zip   # its final policy (401408 steps)
 out: runs/stage1-random-box-pose          # checkpoints, videos, logs (git-ignored)

@@ -12,7 +12,7 @@
 # Steps count duck entries: 2 per simulator step.
 name: chirp-finetune-2s-30deg-seed2
 change: chirps on (2 s, 30 deg, no distance, heading removed), warm start from D2 stage 1
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/decentral-p2-d2/model.zip     # D2 stage 1 (74% on the stage 1 test set)
 out: runs/chirp-partner-sensing/finetune-2s-30deg-s2

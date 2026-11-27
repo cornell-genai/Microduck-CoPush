@@ -4,7 +4,8 @@
     starts = make_test_set(cfg, n=50, rng_seed=20261112)      # box poses from the final env.box_start range
     stats = test_set_episodes(cfg, starts, lambda env: baseline("pivot_push", env))
 
-A stage config names the shared configs it builds on: `base` (configs/copush.yaml), `reference` (a
+A stage config names the shared configs it builds on: `base` (configs/copush.yaml = the heavy box, the default;
+configs/copush-light-box.yaml = the old light box, which every earlier config names), `reference` (a
 queue YAML whose `reference` block is the policy being built on, e.g. configs/overnight.yaml for
 01_reference) and the stage's own `overrides` on top (ONE change). Paths are relative to the repo.
 
@@ -40,6 +41,32 @@ def load_stage(path: str):
             ref = yaml.safe_load(f).get("reference") or {}
     cfg = load_config(repo_path(stage.get("base", "configs/copush.yaml")), _merge(ref, stage.get("overrides") or {}))
     return stage, cfg
+
+
+def copy_box_task(cfg: dict, src: dict) -> dict:
+    """cfg with the box task of src (another resolved config) copied in: the box mass, the episode step limit, the mass
+    randomization range and the reward version (with its definition). Used to evaluate an existing set's env config,
+    or the rendezvous pipeline, on a stage's box (for example the heavy box of experiments/d2-heavybox/)."""
+    v = src["reward"]["version"]
+    cfg["box"]["mass"] = src["box"]["mass"]
+    cfg["env"]["max_steps"] = src["env"]["max_steps"]
+    cfg["env"]["random"]["box_mass"] = list(src["env"]["random"]["box_mass"])
+    cfg["reward"]["version"] = v
+    cfg["reward_versions"][v] = dict(src["reward_versions"][v])
+    return cfg
+
+
+def target_entry_m(start: dict, target: dict, size) -> float:
+    """How far the box centre must travel, straight toward the target centre, before it is inside the target
+    rectangle (size = length, width along the target's own x, y): the shortest push that can count as a success."""
+    d = math.hypot(start["x"] - target["x"], start["y"] - target["y"])
+    if d == 0:
+        return 0.0
+    ux, uy = (start["x"] - target["x"]) / d, (start["y"] - target["y"]) / d
+    c, s = math.cos(math.radians(target["yaw"])), math.sin(math.radians(target["yaw"]))
+    lx, ly = ux * c + uy * s, -ux * s + uy * c
+    r = min(size[0] / 2 / abs(lx) if lx else math.inf, size[1] / 2 / abs(ly) if ly else math.inf)
+    return max(0.0, d - r)
 
 
 def make_test_set(cfg: dict, n: int, rng_seed: int) -> List[dict]:

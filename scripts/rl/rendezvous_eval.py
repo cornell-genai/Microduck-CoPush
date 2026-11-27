@@ -130,13 +130,15 @@ def make_check(a) -> int:
     return 0
 
 
-def _init(set_path, rendezvous, push, no_push, episode_steps):
+def _init(set_path, rendezvous, push, no_push, episode_steps, box_task_from=None):
     import torch
     torch.set_num_threads(1)
     from copush.env import CoPushEnv
-    from copush.experiments import load_stage
+    from copush.experiments import copy_box_task, load_stage
     from copush.rendezvous import Rendezvous
     _, cfg = load_stage(CONFIG)
+    if box_task_from:                                    # another stage's box (mass, step limit, reward version)
+        copy_box_task(cfg, load_stage(box_task_from)[1])
     env = CoPushEnv(cfg, split="eval")
     rv = Rendezvous(env)
     doc = json.load(open(os.path.join(ROOT, set_path)))
@@ -278,13 +280,15 @@ def evaluate(a) -> int:
     sdoc = json.load(open(os.path.join(ROOT, a.set)))
     starts = sdoc["starts"]
     n = min(a.starts or len(starts), len(starts))
-    with Pool(a.workers, initializer=_init, initargs=(a.set, a.rendezvous, a.push, a.no_push, a.episode_steps)) as p:
+    with Pool(a.workers, initializer=_init, initargs=(a.set, a.rendezvous, a.push, a.no_push, a.episode_steps,
+                                                           a.box_task_from)) as p:
         eps = sorted(p.map(episode, range(n), chunksize=2), key=lambda e: e["i"])
     push = not a.no_push and a.episode_steps is None
     groups = {"all": eps, **{k: [e for e in eps if e["kind"] == k] for k in KINDS},
               "target_side_1+": [e for e in eps if e["flags"]["ducks_on_target_side"] > 0],
               "pairing_margin<5cm": [e for e in eps if e["flags"]["pairing_margin_m"] < 0.05]}
     doc = {"rendezvous": a.rendezvous, "push": None if a.no_push else a.push, "set": a.set,
+           "box_task_from": a.box_task_from,
            "episode_seed0": sdoc.get("episode_seed0", 10000), "n": n, "no_push": a.no_push,
            "episode_steps": a.episode_steps, "handoff_steps": None if a.episode_steps else 50,
            "summary": {g: summarize(v, push) for g, v in groups.items() if v}, "wall_s": round(time.time() - t0, 1),
@@ -313,6 +317,9 @@ def main() -> int:
     e.add_argument("--workers", type=int, default=8)
     e.add_argument("--no-push", action="store_true")
     e.add_argument("--episode-steps", type=int, default=None)
+    e.add_argument("--box-task-from", default=None,
+                   help="a stage config whose box mass, step limit and reward version replace the rendezvous config's "
+                        "(e.g. experiments/d2-heavybox/h1-heavy-finetune.yaml)")
     a = ap.parse_args()
     return make(a) if a.cmd == "make" else evaluate(a)
 

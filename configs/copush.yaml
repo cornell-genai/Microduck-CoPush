@@ -2,6 +2,13 @@
 # World frame: x forward (duck A's spawn heading at yaw 0), y left, metres; yaw in DEGREES.
 # Flags override anything here, e.g.
 #   scripts/copush.sh --duck-a 0,0.1,0 --box 0.4,0,90 --target 1.2,0,90 --box-mass 0.2
+#
+# THE BOX TASK IS THE HEAVY BOX (the official push task since the d2-heavybox decision): box.mass 0.60 kg, env.max_steps 130,
+# reward version v1.1-t130 (time penalty 3 / 130 per step), env.random.box_mass [0.40, 1.00]. One duck cannot push it alone.
+# The LIGHT BOX (0.15 kg, 100 steps, reward v1.1, mass range [0.10, 0.25]) is the OLD task that every result before the
+# heavy box was made on. It is not a default any more: a config selects it with `base: configs/copush-light-box.yaml`
+# (that file is this one plus those four settings, see it), and every earlier experiment config does. A new config that
+# omits `base` gets the heavy box.
 
 duck_a:
   x: 0.0
@@ -18,8 +25,8 @@ box:                        # 28 x 10 x 9 cm, free joint (the Shoe Push box)
   x: 0.35
   y: 0.0
   yaw: 90                   # 90 = long 28 cm face toward ducks that face +x
-  mass: 0.15                # kg
-  mass_range: null          # [lo, hi] kg: each episode draws the box mass uniformly from it (off when null). PLACEHOLDER, e.g. [0.10, 0.25]; set from the real box
+  mass: 0.60                # kg. HEAVY box (default); the old light box is 0.15 (configs/copush-light-box.yaml)
+  mass_range: null          # [lo, hi] kg: each episode draws the box mass uniformly from it (off when null). PLACEHOLDER, e.g. [0.40, 1.00]; set from the real box
 
 target:                     # flat, visual only (no collision)
   x: 1.20
@@ -48,7 +55,7 @@ env:                        # RL environment (copush/env.py)
   contact_setback: 0.095    # in_contact start: trunk centre this far behind the box centre
   contact_spacing: 0.20     # in_contact start: distance between the two ducks
   step_s: 0.2               # one env step = 10 control steps
-  max_steps: 100            # 20 s episodes
+  max_steps: 130            # 26 s episodes (heavy box). Light box: 100 (20 s). The rendezvous phase has its own, separate limit
   lose_contact_s: 0.5       # Shoe Push -> velstand after this long without box contact
   stand_still:              # OFF: lets the learner stand a duck still (the scripts use set_hold)
     enabled: false          # true: commanded vx < vx_threshold -> that duck on velstand at zero speed
@@ -58,7 +65,7 @@ env:                        # RL environment (copush/env.py)
     box_x: [0.30, 0.36]     # keeps the box < 0.40 m from a duck at the start (else "lost")
     box_y: [-0.04, 0.04]
     box_yaw: [75, 105]      # deg
-    box_mass: [0.10, 0.25]  # kg
+    box_mass: [0.40, 1.00]  # kg, 4x the light box range [0.10, 0.25]; only used when env.randomize is on
   box_start:                # OFF: box pose offset from box.x / box.y / box.yaw per episode (train seeds),
     enabled: false          #   ducks still placed in contact with its long face; mass stays box.mass
     dx: 0.10                # m, +- along world x (toward the target ahead)
@@ -87,7 +94,7 @@ layouts:                    # env.layout picks one
     target: {x: 1.20, y: 0.0, yaw: 90}
 
 reward:                     # copush.rewards.TaskReward: the values below are v1;
-  version: v1.1             # reward_versions[version] is applied on top of them
+  version: v1.1-t130        # reward_versions[version] is applied on top of them. Light box: v1.1 (same terms, time penalty 0.03 x 100 steps)
   w_pos: 10.0               # x metres of box progress toward the target
   w_yaw: 3.0                # x radians of yaw-error progress (error modulo 180 deg)
   success_bonus: 10.0
@@ -116,6 +123,7 @@ reward_versions:            # docs/REWARD_LOG.md says why each one exists
   v1.3: {fall_min_down_s: 0.2, w_yaw: 1.0, box_fail_penalty: 10.0, time_penalty: 0.01}   # v1.1, lower time penalty
   v1.4: {fall_min_down_s: 0.2, w_yaw: 1.0, box_fail_penalty: 10.0, time_penalty: 0.03,
          both_held_penalty: 0.05}   # v1.1 + penalty while both ducks hold
+  v1.1-t130: {fall_min_down_s: 0.2, w_yaw: 1.0, box_fail_penalty: 10.0, time_penalty: 0.023077}   # v1.1 for the 130-step heavy box: 3 / 130 per step, so a full episode still costs 3 (v1.1: 0.03 x 100). THE DEFAULT
 
 video:                      # copush.video: episode videos (runs/<run_id>/videos/)
   width: 480

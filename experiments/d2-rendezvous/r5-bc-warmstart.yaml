@@ -18,7 +18,7 @@
 # (scripts/rl/bc_rendezvous.py, settings in `bc:` below), then PPO fine-tunes it with the same curriculum.
 name: d2-rendezvous-r5-bc-warmstart
 change: ducks start apart; a rendezvous phase walks them to the push policy's docking spots
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 out: runs/d2-rendezvous-r5-bc-warmstart
 results: experiments/d2-rendezvous

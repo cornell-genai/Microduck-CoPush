@@ -6,7 +6,7 @@
 #   scripts/rl.sh scripts/rl/stage.py --config experiments/d2-steering/night5/run-l1/config.yaml --seed 1 --warm-start runs/d2-steering/night2/a-s1/model.zip
 name: d2-steering-night5-run-l1
 change: "L1 duck start noise in training, warm start from night 2 Run A (same seed)"
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/d2-steering/night2/a-s1/model.zip     # replaced per seed by --warm-start
 out: runs/d2-steering-night5/l1-s1

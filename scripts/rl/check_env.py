@@ -29,7 +29,7 @@ import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
 
-from copush.config import effective_reward, load_config  # noqa: E402
+from copush.config import effective_reward, load_config, LIGHT_BOX_PATH  # noqa: E402
 from copush.env import BASELINES, CoPushEnv, baseline, make_env  # noqa: E402
 from copush.video import VideoLog  # noqa: E402
 
@@ -72,7 +72,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--episodes", type=int, default=20)
     args = p.parse_args()
-    cfg = load_config()
+    cfg = load_config(LIGHT_BOX_PATH)
     run_id = "rl-checks-" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = os.path.join(ROOT, "runs", run_id)
     os.makedirs(run_dir)

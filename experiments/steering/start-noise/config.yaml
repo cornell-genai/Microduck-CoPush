@@ -1,7 +1,7 @@
 # Adapt the matching clean-trained central stand-still seed to small duck start noise.
 name: central-steering-start-noise
 change: small Gaussian duck heading, spacing and setback noise
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 warm_start: runs/steering/stand-still-s1/model.zip
 out: runs/steering/start-noise-s1

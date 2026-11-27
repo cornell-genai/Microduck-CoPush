@@ -8,6 +8,7 @@ max_videos: 3
 max_attempts: 2
 early_stop: {flat_steps: 300000, flat_range: 0.25}
 
+base: configs/copush-light-box.yaml   # the light box (the heavy box is the default of configs/copush.yaml)
 reference:
   env: {layout: overnight}
   layouts:

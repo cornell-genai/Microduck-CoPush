@@ -9,7 +9,7 @@
 # the env config for evaluating on the noisy sets (scripts/rl/compare_policies.py --config).
 name: stage1-noisy
 change: stage 1 box starts plus duck start noise (start_noise), evaluation sets only
-base: configs/copush.yaml
+base: configs/copush-light-box.yaml
 reference: configs/overnight.yaml
 out: runs/d2-steering/noisy-sets                    # unused: nothing is trained
 results: experiments/d2-steering/noisy-sets/results
