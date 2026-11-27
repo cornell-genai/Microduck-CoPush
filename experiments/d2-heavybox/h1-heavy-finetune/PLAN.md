@@ -8,7 +8,7 @@ The box (0.15 kg) is light enough for one duck to push alone. The frozen push po
 
 ## What changes (one change: the box task)
 
-Everything else is night 5's Run L2: reward v1.1 terms, L2 duck start noise (heading up to 30 degrees, spacing up to 8 cm), stage 1 box range, the stand-still action, the same PPO (proximal policy optimization) settings, 2M duck steps. The default config does not change (`tests/test_heavybox.py`).
+Everything else is night 5's Run L2: reward v1.1 terms, L2 duck start noise (heading up to 30 degrees, spacing up to 8 cm), stage 1 box range, the stand-still action, the same PPO (proximal policy optimization) settings, 2M duck steps. The default config does not change in this run (note added 2026-11-27: after the run the heavy box was made the default, and earlier configs pin the light box).
 
 | setting | now | h1 | why |
 |---|---|---|---|

@@ -11,6 +11,7 @@
 #                            full episode still costs -3 (v1.1: 0.03 x 100).
 #   env.random.box_mass      the mass randomization range scaled 4x (0.10-0.25 -> 0.40-1.00 kg). NOT ACTIVE: night 5's
 #                            Run L2 trained with env.randomize off (fixed mass), and so does h1.
+# (Since 2026-11-27 these heavy-box settings are also the default in configs/copush.yaml; the overrides below are kept.)
 # Every seed warm-starts from the SAME policy (L2-s2) and differs only in ppo.seed.
 #
 #   scripts/rl.sh scripts/rl/run_h1_heavy_finetune.py          # the whole run (see PLAN.md)

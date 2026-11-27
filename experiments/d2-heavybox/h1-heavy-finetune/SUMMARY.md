@@ -1,6 +1,6 @@
 # h1 summary: fine-tuning the push policy on a box one duck cannot push alone
 
-*Run 2026-11-25. Plan and decision rule (written before the run): [PLAN.md](PLAN.md). Every table: [results/results.md](results/results.md). Per-episode data: [results/episodes.json](results/episodes.json). Config: [../h1-heavy-finetune.yaml](../h1-heavy-finetune.yaml).*
+*Run 2026-11-25. Plan and decision rule (written before the run): [PLAN.md](PLAN.md). Tables: [results/results_200.md](results/results_200.md) (200-start test sets, current) and [results/results.md](results/results.md) (check set, 141-start test sets, forgetting, pipeline). Per-episode data: [results/episodes.json](results/episodes.json). Config: [../h1-heavy-finetune.yaml](../h1-heavy-finetune.yaml).*
 
 ## Answer to the decision rule
 
@@ -13,7 +13,40 @@
 
 "Cooperative success" means the box ends in the target and each duck did at least 25% of the pushing, measured by contact impulse (contact force on the box added up over the episode). "Frozen L2-s2" is the official push policy from night 5, trained on the light box and run unchanged on the heavy one. "Measurable" means the 95% interval excludes 0 and every seed is on the same side.
 
-## Test sets (never used for training or picking)
+## Test sets, 200 starts each (current; never used for training or picking)
+
+Added 2026-11-27. The four heavy test sets were topped up from 141 (142) to 200 starts: the old starts unchanged, plus new starts drawn from the same distribution (rng seeds 20261127 for clean, L1 and L2, which share box poses, and 20261128 for noisy), keeping only draws that pass the same filter (the box must travel more than 0.507 m to enter the target, so one duck cannot get there in 130 steps at its open-loop speed). No new box pose repeats one in the check set or in any other set. Files: `experiments/test_sets/stage1_heavy_{clean,noisy,L1,L2}_200.json`. All 6,780 old-start episodes (every policy and mode) came out identical to the first run. Full tables: [results/results_200.md](results/results_200.md); per-episode data: [results/episodes_200.json](results/episodes_200.json); script: `scripts/rl/h1_fill_eval.py`.
+
+Heavy box (0.60 kg), 130-step limit (26 s), one episode per start, 95% Wilson intervals. Each cell is task success / cooperative success, with the interval for cooperative success.
+
+| set | frozen L2-s2 | h1 seed 1 | h1 seed 2 | h1 seed 3 | h1 minus frozen, cooperative (3 seeds averaged) |
+|---|---|---|---|---|---|
+| clean | 32.5% / 24.0% (18.6 to 30.4) | 71.5% / 70.5% (63.8 to 76.4) | 71.0% / 71.0% (64.4 to 76.8) | 69.5% / 69.0% (62.3 to 75.0) | +46.2 (+39.6 to +52.7), measurable |
+| noisy | 35.5% / 26.0% (20.4 to 32.5) | 69.5% / 69.5% (62.8 to 75.5) | 71.0% / 71.0% (64.4 to 76.8) | 64.5% / 64.0% (57.1 to 70.3) | +42.2 (+35.8 to +48.5), measurable |
+| L1 start noise | 31.5% / 27.5% (21.8 to 34.1) | 67.0% / 63.5% (56.6 to 69.9) | 71.5% / 70.0% (63.3 to 75.9) | 62.5% / 61.0% (54.1 to 67.5) | +37.3 (+30.9 to +43.8), measurable |
+| L2 start noise | 31.5% / 26.5% (20.9 to 33.0) | 65.5% / 64.0% (57.1 to 70.3) | 66.5% / 65.0% (58.2 to 71.3) | 61.5% / 60.5% (53.6 to 67.0) | +36.7 (+30.6 to +42.7), measurable |
+
+Task success also rose measurably on every set (+32.8 to +38.2 points). The 200-start numbers agree with the 141-start ones below: every rate is inside the earlier interval.
+
+- **Who pushes.** In h1 successes the duck doing less does 40 to 50% of the pushing in 95 to 100% of successes (per seed and set). For the frozen policy it is 62 to 76%, with 13 to 27% of its successes in the 10 to 25% bucket.
+- **Solo tests.** Duck B alone (A forced to stand still): 0.0 to 5.5% (the 5.5% is seed 2 on noisy, 11 of 200). Duck A alone: 2.5 to 8.5% (the 8.5% is seed 1 on clean, 17 of 200, interval 5.4 to 13.2). All under 10% by their point values. Frozen L2-s2 alone: 0 or 1 success per set. Every solo success took 112 to 130 of the 130 steps.
+- **Falls and tip-overs.** Falls 0 to 9 per 200 for h1 (frozen 2 to 6); tip-overs 0 to 4 (frozen 0 to 1); box lost 0 or 1 (frozen 0).
+- **What the remaining failures are.** Mostly timeouts, which means hitting the 130-step limit: 47 to 71 of 200 per seed and set (frozen: 125 to 134). In 384 of those 710 timeouts (54%) one duck did under 10% of the pushing. 34 to 41 starts per set fail for all three seeds.
+- **Speed.** Successes take 70 to 73 steps on average (frozen: 77 to 85); the slowest take 123 to 130.
+- **Overshoots** are not recorded and were not measured.
+
+### Margin to the target centre
+
+PLAN.md sized the 130-step limit by the distance the box must travel to ENTER the target. Measured to the target CENTRE the margin is smaller ([results/targets_200.json](results/targets_200.json)):
+
+| distance from the box start | 10th / 50th / 90th percentile / max (m) | two ducks' open-loop reach in 130 steps (0.928 m) over the 90th percentile | starts one duck could reach (0.507 m) |
+|---|---|---|---|
+| to enter the target | 0.53 / 0.60 / 0.69 / 0.75 | +35% | 0 of 200 |
+| to the target centre | 0.64 / 0.72 / 0.80 / 0.87 | **+16%** | 0 of 200 |
+
+So by centre distance the two-duck margin is 16%, not the 30% the plan asked for, and the open-loop speed is an upper bound for a policy that also has to steer. The timeouts are not simply the farthest targets, though: the centre distance of h1's timeouts (mean 0.72 to 0.73 m) is about the same as that of its successes (0.71 m). What causes them was not tested.
+
+## Test sets, 141 starts (superseded by the 200-start sets above)
 
 Heavy box (0.60 kg), 130-step (26 s) limit, 141 starts per set (142 for noisy), one episode per start, 95% Wilson intervals. These sets are smaller than the 200 starts AGENTS.md asks for, because the starts one duck could reach alone were removed (PLAN.md).
 
@@ -73,12 +106,13 @@ Three PPO (proximal policy optimization) seeds, all fine-tuned from L2-s2, 2M du
 
 - One starting policy (L2-s2); the three seeds differ only in the PPO seed.
 - The decision rule was scored on the check set, which also picked the checkpoints, so those rates are slightly optimistic. The test sets, which picked nothing, show the same result.
-- The heavy test sets have 141 starts, not 200.
+- The first heavy test sets had 141 starts; they were topped up to 200 on 2026-11-27 (section above). The full-pipeline comparison and the forgetting check were not rerun.
+- The 130-step limit gives two ducks a 16% open-loop margin to the target centre (35% to entering the target).
 - The full-pipeline comparison uses one push seed.
 - The run saves two checkpoints close together twice: at 400,000 and 401,408 steps (the early-stop check, then the resume) and at 2,001,408 and 2,002,944 steps (the end). The second pair decided the picks for seeds 2 and 3 (130 against 128 and 119 against 116 cooperative successes, 1,536 steps apart), which is inside the noise of the check set.
 
 ## What it means and what next
 
-On a box that needs two ducks, fine-tuning for 2M steps moved the push policy from about a quarter to about two thirds cooperative success, and in almost every success the two ducks split the pushing close to evenly. No reward term for sharing the push was needed. This is one starting policy, and the run changed the box mass together with the time limit and the time penalty, so it does not separate their effects. The problem is not gone from the failures: in half of the h1 timeouts (245 of 489 over the four test sets and three seeds) one duck did under 10% of the pushing.
+On a box that needs two ducks, fine-tuning for 2M steps moved the push policy from about a quarter to about two thirds cooperative success, and in almost every success the two ducks split the pushing close to evenly. No reward term for sharing the push was needed. This is one starting policy, and the run changed the box mass together with the time limit and the time penalty, so it does not separate their effects. The problem is not gone from the failures: in about half of the h1 timeouts (384 of 710 over the four 200-start test sets and three seeds) one duck did under 10% of the pushing.
 
-Proposed next step: go after the timeouts, since they are almost all of the remaining failures. Two candidates, one per run: (a) train longer, to find out whether 2M steps is the ceiling (this run cannot tell); (b) look at the timeouts where one duck is off the box and see whether it lost contact mid-push or never docked. Separately, the project needs to decide whether the heavy box replaces the light one, because h1 does not work on the light box.
+Proposed next step: go after the timeouts, since they are almost all of the remaining failures. Two candidates, one per run: (a) train longer, to find out whether 2M steps is the ceiling (this run cannot tell); (b) look at the timeouts where one duck is off the box and see whether it lost contact mid-push or never docked. Decided 2026-11-27 by the team lead: the heavy box (0.60 kg, 130-step push limit, time penalty 3 / 130 per step) is the official push task, and it is now the default in `configs/copush.yaml`; earlier experiment configs pin the light box through `configs/copush-light-box.yaml`. h1 is the heavy-box push policy; L2-s2 stays the light-box one, because h1 does not work on the light box. The best pick (seed 2) is on the policy release as `d2-push-heavy-h1-s2`.
