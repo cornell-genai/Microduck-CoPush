@@ -303,3 +303,137 @@ def test_replay_match_compares_every_recorded_field():
     bad = serve.replay_match({**rec, "contact_impulse": {"duck_a": 0.0, "duck_b": 14.4}}, rec)
     assert not bad["reproduced"] and bad["mismatch"] == {"contact_impulse": [rec["contact_impulse"], {"duck_a": 0.0, "duck_b": 14.4}]}
     assert not serve.replay_match({}, rec)["reproduced"]            # a field the replay lacks does not pass
+
+
+# ── weighted sampling ────────────────────────────────────────────────────────
+
+def old_sample(episodes, n=30, group=None, seed=0):
+    """sample() as it was before --weights existed, to show the default did not change."""
+    import random
+    g = rl.groups(episodes)
+    names = [group] if group else list(rl.GROUPS)
+    rng = random.Random(seed)
+    pools = {}
+    for k in names:
+        pools[k] = sorted(g[k], key=lambda e: e["i"])
+        rng.shuffle(pools[k])
+    total = sum(len(p) for p in pools.values())
+    want = {k: 0 for k in names}
+    left = min(n, total)
+    while left:
+        open_ = [k for k in names if want[k] < len(pools[k])]
+        share = max(1, left // len(open_))
+        for k in open_:
+            if not left:
+                break
+            take = min(share, len(pools[k]) - want[k], left)
+            want[k] += take
+            left -= take
+    picked = [e for k in names for e in pools[k][:want[k]]]
+    rng.shuffle(picked)
+    return picked
+
+
+def counts(picked):
+    return {g: sum(rl.group_of(e) == g for e in picked) for g in rl.GROUPS}
+
+
+def test_default_sample_is_unchanged(episodes):
+    for seed in (0, 1, 7, 123):
+        for n, group in ((6, None), (30, None), (36, None), (9, "suspicious"), (500, None)):
+            assert [e["i"] for e in rl.sample(episodes, n, group, seed)] == [e["i"] for e in old_sample(episodes, n, group, seed)]
+
+
+def test_parse_weights_counts_and_shares():
+    assert rl.parse_weights("suspicious=3,success=1,failure=1") == {"success": 1, "failure": 1, "suspicious": 3}
+    assert rl.parse_weights("suspicious=0.6, success=0.2, failure=0.2") == {"success": 0.2, "failure": 0.2, "suspicious": 0.6}
+    assert rl.parse_weights("suspicious=1") == {"success": 0, "failure": 0, "suspicious": 1}      # unnamed groups get 0
+
+
+@pytest.mark.parametrize("bad, text", [("boss=1", "not group=weight"), ("suspicious", "not group=weight"),
+                                       ("suspicious=x", "not a number"), ("suspicious=-1,success=2", "zero or more"),
+                                       ("suspicious=0,success=0,failure=0", "above zero"), ("", "above zero"),
+                                       ("success=1,success=2", "twice"), ("success=nan", "zero or more")])
+def test_weights_errors_are_clear(bad, text):
+    with pytest.raises(SystemExit, match=text):
+        rl.parse_weights(bad)
+
+
+def test_proportional_split_and_rounding_sums_to_n():
+    cap = {"success": 100, "failure": 100, "suspicious": 100}
+    w = {"success": 1, "failure": 1, "suspicious": 3}
+    assert rl.split_counts(30, w, cap) == {"success": 6, "failure": 6, "suspicious": 18}
+    assert rl.split_counts(30, {"success": 0.2, "failure": 0.2, "suspicious": 0.6}, cap) == {"success": 6, "failure": 6, "suspicious": 18}
+    for n in range(0, 41):
+        for w in ({"success": 1, "failure": 1, "suspicious": 1}, {"success": 1, "failure": 2, "suspicious": 4},
+                  {"success": 0.17, "failure": 0.33, "suspicious": 0.5}, {"success": 0, "failure": 1, "suspicious": 1}):
+            got = rl.split_counts(n, w, cap)
+            assert sum(got.values()) == n
+            assert all(abs(got[g] - n * w[g] / sum(w.values())) < 1 for g in got)         # largest remainder: within one
+    assert rl.split_counts(10, {"success": 1, "failure": 1, "suspicious": 1}, cap) == {"success": 4, "failure": 3, "suspicious": 3}
+    assert rl.split_counts(30, {"success": 0, "failure": 1, "suspicious": 1}, cap)["success"] == 0
+
+
+def test_a_group_that_runs_out_gives_its_share_in_proportion(episodes):
+    # 10 failures only: failure=5 of 20 would be 5, but with failure=10,... ask for more than it has
+    cap = {"success": 100, "failure": 3, "suspicious": 100}
+    got = rl.split_counts(30, {"success": 1, "failure": 5, "suspicious": 2}, cap)
+    assert got["failure"] == 3 and sum(got.values()) == 30
+    assert got["success"] + got["suspicious"] == 27 and (got["success"], got["suspicious"]) == (9, 18)   # 1:2
+    # the groups with a weight hold fewer than n: take what exists, no more
+    assert sum(rl.split_counts(30, {"success": 0, "failure": 1, "suspicious": 0}, cap).values()) == 3
+    picked = rl.sample(episodes, 30, seed=2, weights={"success": 0, "failure": 1, "suspicious": 1})   # 10 failures, 14 suspicious
+    assert counts(picked) == {"success": 0, "failure": 10, "suspicious": 14}
+
+
+def test_weighted_sample_is_seeded_shuffled_and_picks_within_groups(episodes):
+    w = rl.parse_weights("suspicious=3,success=1,failure=1")
+    a = rl.sample(episodes, 20, seed=5, weights=w)
+    assert counts(a) == {"success": 4, "failure": 4, "suspicious": 12}
+    assert [e["i"] for e in a] == [e["i"] for e in rl.sample(episodes, 20, seed=5, weights=w)]
+    assert [e["i"] for e in a] != [e["i"] for e in rl.sample(episodes, 20, seed=6, weights=w)]
+    assert len({e["i"] for e in a}) == 20
+    with pytest.raises(ValueError):
+        rl.sample(episodes, 20, group="success", weights=w)
+
+
+def test_weights_identify_the_session(tmp_path, episodes):
+    rd = str(tmp_path / "reviews")
+    base = meta()
+    w1 = {**base, "sampling": {**base["sampling"], "weights": {"success": 1, "failure": 1, "suspicious": 3}}}
+    w2 = {**base, "sampling": {**base["sampling"], "weights": {"success": 1, "failure": 1, "suspicious": 1}}}
+    picked = rl.sample(episodes, 6, seed=0)
+    s1, resumed = rl.Session.open(rd, w1, picked, date="2026-11-24")
+    s1.save()
+    assert not resumed
+    again, resumed = rl.Session.open(rd, w1, picked, date="2026-11-24")
+    assert resumed and again.path == s1.path                         # the same weights resume
+    s2, resumed = rl.Session.open(rd, w2, picked, date="2026-11-24")
+    assert not resumed and s2.path != s1.path                        # other weights: a new file, no silent mixing
+    s2.save()
+    s3, resumed = rl.Session.open(rd, base, picked, date="2026-11-24")
+    assert not resumed and s3.path not in (s1.path, s2.path)         # no weights is a different session too
+
+
+def test_summary_states_the_weights_and_that_the_sample_is_weighted(tmp_path, episodes):
+    m = {**meta(), "sampling": {**meta()["sampling"], "weights": {"success": 1, "failure": 1, "suspicious": 3}}}
+    by_i = {e["i"]: e for e in episodes}
+    picked = [by_i[0], by_i[30], by_i[31]]
+    s, _ = rl.Session.open(str(tmp_path / "experiments" / "r9-test" / "reviews"), m, picked, date="2026-11-24")
+    for x, e in zip(s.doc["sample"], picked):
+        s.label(x["key"], e, "real_success")
+    out = rl.report("r9-test", rl.summarize(rl.load_reviews("r9-test", root=str(tmp_path))))
+    assert "SAMPLE IS WEIGHTED: weights success 1, failure 1, suspicious 3" in out
+    assert "NOT rates over all episodes" in out and "By sampling group:" in out
+    plain = rl.report("r9-test", rl.summarize(rl.load_reviews("r9-test", root=str(tmp_path))))
+    assert "evenly" not in plain
+
+
+def test_the_page_never_gets_the_group_before_a_label():
+    import serve
+    src = open(os.path.join(ROOT, "scripts", "review", "serve.py")).read()
+    info = src[src.index("    def info(self)"):src.index("    def save_label")]
+    pub = src[src.index("    def public(self"):src.index("    def info(self)")]
+    assert "group" not in info and "weights" not in info and "sample_counts" not in info
+    assert "group" not in pub.split("if lab is not None")[0]            # the group is only sent through reveal(), after a label
+    assert "weights" not in open(os.path.join(ROOT, "scripts", "review", "review.html")).read()

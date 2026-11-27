@@ -322,15 +322,79 @@ def groups(episodes: list) -> dict:
     return g
 
 
-def sample(episodes: list, n: int = 30, group=None, seed: int = 0) -> list:
+def parse_weights(text) -> dict:
+    """'suspicious=3,success=1,failure=1' (or shares such as 'suspicious=0.6,success=0.2,failure=0.2') ->
+    {group: weight} for all three groups; a group not named gets weight 0. Only the ratios matter."""
+    out = {}
+    for part in str(text).split(","):
+        if not part.strip():
+            continue
+        name, eq, val = part.partition("=")
+        name = name.strip()
+        if not eq or name not in GROUPS:
+            raise SystemExit(f"--weights: '{part.strip()}' is not group=weight with a group from {', '.join(GROUPS)}")
+        try:
+            w = float(val)
+        except ValueError:
+            raise SystemExit(f"--weights: the weight of {name} is not a number: '{val.strip()}'")
+        if name in out:
+            raise SystemExit(f"--weights: {name} is given twice")
+        if not math.isfinite(w) or w < 0:
+            raise SystemExit(f"--weights: the weight of {name} must be zero or more, not {val.strip()}")
+        out[name] = w
+    if not out or sum(out.values()) <= 0:
+        raise SystemExit("--weights: at least one group needs a weight above zero")
+    return {g: out.get(g, 0.0) for g in GROUPS}
+
+
+def split_counts(n: int, weights: dict, capacity: dict) -> dict:
+    """How many episodes to take from each group: n split in proportion to the weights, largest-remainder rounding (ties
+    go to the earlier group in success, failure, suspicious order) so the counts sum to n. A group that has fewer
+    episodes than its share takes all it has, and the unused part is split among the others in proportion to their
+    weights. The total is less than n only when the groups with a weight above zero hold fewer than n episodes."""
+    want = {g: 0 for g in weights}
+    left = n
+    while left > 0:
+        open_ = [g for g in GROUPS if g in weights and weights[g] > 0 and want[g] < capacity.get(g, 0)]
+        if not open_:
+            break
+        tot = sum(weights[g] for g in open_)
+        quota = {g: left * weights[g] / tot for g in open_}
+        give = {g: int(math.floor(quota[g] + 1e-9)) for g in open_}
+        rest = left - sum(give.values())
+        for g in sorted(open_, key=lambda g: (-(quota[g] - give[g]), GROUPS.index(g)))[:max(rest, 0)]:
+            give[g] += 1
+        for g in open_:
+            take = min(give[g], capacity[g] - want[g])
+            want[g] += take
+            left -= take
+    return want
+
+
+def sample(episodes: list, n: int = 30, group=None, seed: int = 0, weights=None) -> list:
     """Episodes to review, in the order they are shown.
 
     Evenly over the three groups (n // 3 each, the remainder to the first groups that still have episodes; a group
     that runs out gives its share to the others), random within a group, then shuffled so the order does not tell
     the group. The same (episodes, n, group, seed) always gives the same list. With `group`, only that group. When
     the run has no more than n episodes (in the chosen groups), all of them.
+
+    `weights` ({group: weight}, see parse_weights; not together with `group`) splits n in proportion to the weights
+    instead of evenly (split_counts), then picks and shuffles the same way. Without it nothing changes.
     """
     g = groups(episodes)
+    if weights is not None:
+        if group:
+            raise ValueError("weights and group cannot be combined")
+        rng = random.Random(seed)
+        pools = {}
+        for k in GROUPS:
+            pools[k] = sorted(g[k], key=lambda e: e["i"])
+            rng.shuffle(pools[k])
+        want = split_counts(n, weights, {k: len(v) for k, v in pools.items()})
+        picked = [e for k in GROUPS for e in pools[k][:want[k]]]
+        rng.shuffle(picked)
+        return picked
     names = [group] if group else list(GROUPS)
     rng = random.Random(seed)
     pools = {}
@@ -464,7 +528,8 @@ def load_reviews(run: str, root: str = ROOT, reviews_dir=None) -> list:
         for key, lab in doc.get("labels", {}).items():
             row = {**lab, "key": key, "reviewer": doc.get("reviewer"), "policy": doc.get("policy"),
                    "file": os.path.relpath(p, root), "results_file": doc.get("results_file"),
-                   "coop_source_counts": doc.get("coop_source")}
+                   "coop_source_counts": doc.get("coop_source"),
+                   "weights": (doc.get("sampling") or {}).get("weights"), "sample_counts": doc.get("sample_counts")}
             old = latest.get((row["reviewer"], key))
             if old is None or row.get("saved_at", "") >= old.get("saved_at", ""):
                 latest[(row["reviewer"], key)] = row
@@ -517,7 +582,11 @@ def summarize(rows: list) -> dict:
         s_ = (r["metric"] or {}).get("coop_source") or "unrecorded"
         used["per_label"][s_] = used["per_label"].get(s_, 0) + 1
         used["file_counts"] = r.get("coop_source_counts") or used["file_counts"]
-    return {"labels": len(rows), "episodes": len(by_ep), "coop_sources": sources, "reviewers": sorted(by_rev, key=str),
+    wts = {}
+    for r in rows:
+        key = json.dumps(r.get("weights"), sort_keys=True)
+        wts.setdefault(key, {"weights": r.get("weights"), "labels": 0})["labels"] += 1
+    return {"labels": len(rows), "episodes": len(by_ep), "coop_sources": sources, "sampling_weights": list(wts.values()), "reviewers": sorted(by_rev, key=str),
             "combined": block(unique), "per_reviewer": {k: block(v) for k, v in sorted(by_rev.items(), key=lambda kv: str(kv[0]))},
             "reasons": {x: sum(x in r["reasons"] for r in rows) for x in REASONS},
             "changed_after_reveal": sum(bool(r.get("changed_after_reveal")) for r in rows),
@@ -560,8 +629,16 @@ def report(run: str, s: dict) -> str:
                  + "; labeled episodes: " + ", ".join(f"{k.replace('_', ' ')} {v}" for k, v in u["per_label"].items()))
         if fc and "push_share" in fc:
             L.append("    NOTE: part of this file has no contact-impulse fields; its cooperative result is derived from push share.")
-    L += ["", "The sample takes the three groups evenly, so these rates describe the reviewed episodes, not the whole run.",
-          "Labels are for catching metric bugs; they are not ground truth."]
+    ws = [w for w in s.get("sampling_weights", []) if w["weights"]]
+    if ws:
+        L += ["", "SAMPLE IS WEIGHTED: " + "; ".join(
+            "weights " + ", ".join(f"{g} {w['weights'][g]:g}" for g in GROUPS) + f" ({w['labels']} labels)" for w in ws)
+              + (" plus labels from sessions sampled evenly" if len(ws) < len(s["sampling_weights"]) else ""),
+              "The groups were over- or under-sampled on purpose, so the overall rates above are NOT rates over all episodes;",
+              "use the per-group rates under 'By sampling group' (each group is a random sample of itself)."]
+    else:
+        L += ["", "The sample takes the three groups evenly, so these rates describe the reviewed episodes, not the whole run."]
+    L += ["Labels are for catching metric bugs; they are not ground truth."]
     if len(s["reviewers"]) > 1:
         L += ["", "Per reviewer:"]
         for name, b in s["per_reviewer"].items():

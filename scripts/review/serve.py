@@ -23,6 +23,11 @@ the same session again resumes it. scripts/review/summarize.py reports the agree
                  cooperative result is read from the results file's contact impulses (contact_impulse) through
                  copush/cooperation.py; only an old file without those fields falls back to its push share. The
                  source is printed at start, saved in the session file and in each label, and shown in the summary.
+--weights        split --n over the groups in proportion to weights (success, failure, suspicious), for example
+                 suspicious=3,success=1,failure=1 or shares suspicious=0.6,success=0.2,failure=0.2. Largest-remainder
+                 rounding, so the counts sum to n; a group that runs out gives its share to the others in proportion
+                 to their weights; a group not named gets 0. Not with --group. Without it the groups are taken evenly.
+                 Saved in the session file; a different weights value starts a different session.
 --out-dir        where the label file goes (default experiments/<run>/reviews)
 --render-only    render the sampled clips, print whether each replay matched, and exit
 --port, --no-open      the local port (8765); do not open the browser
@@ -233,13 +238,19 @@ class Review:
         if pfile and not sha:
             print(f"warning: policy file {pfile} not found; labels are keyed with policy 'unknown' and nothing can be rendered")
         by_i = {e["i"]: e for e in data["episodes"]}
-        picked = rl.sample(data["episodes"], a.n, a.group, a.seed)
+        weights = rl.parse_weights(a.weights) if a.weights else None
+        if weights and a.group:
+            raise SystemExit("--weights and --group cannot be combined (--group takes one group only)")
+        picked = rl.sample(data["episodes"], a.n, a.group, a.seed, weights)
         g = rl.groups(data["episodes"])
         meta = {"run": a.run, "policy": data["policy"], "policy_file": pfile, "policy_sha256": sha,
                 "results_file": os.path.relpath(results, ROOT), "reviewer": a.reviewer,
                 "coop_source": data["coop_source"],
                 "sampling": {"n": a.n, "group": a.group, "seed": a.seed, "coop_min": self.coop_min,
-                             "group_sizes": {k: len(v) for k, v in g.items()}}}
+                             "group_sizes": {k: len(v) for k, v in g.items()},
+                             # only when given, so a session made without weights is identified as before
+                             **({"weights": weights} if weights else {})},
+                "sample_counts": {k: sum(rl.group_of(e) == k for e in picked) for k in rl.GROUPS}}
         self.session, self.resumed = rl.Session.open(
             rl.repo_path(a.out_dir) if a.out_dir else os.path.join(rl.experiment_dir(a.run), "reviews"), meta, picked)
         self.items = []
@@ -407,6 +418,9 @@ def main() -> int:
     ap.add_argument("--n", type=int, default=30)
     ap.add_argument("--group", choices=rl.GROUPS, default=None)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--weights", default=None,
+                    help="split --n over the groups in proportion, e.g. suspicious=3,success=1,failure=1 or "
+                         "suspicious=0.6,success=0.2,failure=0.2 (a group not named gets 0); not with --group")
     ap.add_argument("--results", default=None)
     ap.add_argument("--policy", default=None, help="push-only runs: model.zip@partner@standstill, as compare_policies.py")
     ap.add_argument("--coop-min", type=float, default=None,
@@ -430,6 +444,10 @@ def main() -> int:
     done = len(r.session.doc["labels"])
     print(f"{a.run} / {r.data['policy']}: {len(r.data['episodes'])} episodes ("
           + ", ".join(f"{k} {v}" for k, v in sizes.items()) + f"); reviewing {len(r.items)}")
+    w = r.session.doc["sampling"].get("weights")
+    print("sample: " + ("weighted " + ", ".join(f"{k} {v:g}" for k, v in w.items()) if w else "groups taken evenly")
+          + "; clips per group " + ", ".join(f"{k} {v}" for k, v in r.session.doc.get("sample_counts", {}).items())
+          + "  (the page never shows the weights or a clip's group before it is labeled; do not read this if you are the reviewer)")
     print(("resuming " if r.resumed else "new session ") + os.path.relpath(r.session.path, ROOT)
           + (f" ({done} of {len(r.items)} labeled)" if r.resumed else ""))
     print("cooperative success read from: " + ", ".join(f"{rl.COOP_SOURCE_TEXT[k]} for {v} episodes"

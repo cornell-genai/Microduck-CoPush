@@ -266,8 +266,18 @@ scripts/rl.sh scripts/review/serve.py --run d2-steering/night5 --seed-policy l2_
   cooperative success, success in the last 10% of the time limit, docking error at 90% or more of its tolerance, a
   push success without docking). The sample takes the three groups evenly, random within each, in a shuffled order.
   `--n` (30), `--group success|failure|suspicious`, `--seed` (0; the same seed gives the same sample). A run with no
-  more than `--n` episodes is shown whole. `--group` is the only way to weight the sample: `--group suspicious` takes
-  only that group, and a run of the tool without it always takes the three groups evenly.
+  more than `--n` episodes is shown whole. Without options the three groups are taken evenly. `--group suspicious` takes only
+  that group.
+- **Weighted sampling:** `--weights suspicious=3,success=1,failure=1` (or shares such as
+  `suspicious=0.6,success=0.2,failure=0.2`) splits the `--n` clips over the groups in proportion to the weights, with
+  largest-remainder rounding so the counts sum to `--n` (30 clips with 3:1:1 give 18 suspicious, 6 success, 6 failure).
+  Within a group the pick is random with `--seed`, then everything is shuffled. A group that has fewer episodes than its
+  share gives the rest to the others in proportion to their weights. A group you do not name gets weight 0. Unknown
+  group names, negative weights and all-zero weights are errors, and `--weights` cannot be combined with `--group`.
+  The weights and the clips per group are saved in the session file and printed at start (the terminal shows them, the
+  page never does, so a reviewer who wants to stay blind should not read that line), and a different `--weights` is a
+  different session. `summarize.py` states the weights, says the sample is weighted (so the overall rates are not rates
+  over all episodes) and gives the rates per group.
 - **Cooperative success** is task success with each duck's share of the pushing at least the threshold
   (`metrics.cooperative_share` in `configs/copush.yaml`, 0.25; `--coop-min` overrides it), computed with
   `copush/cooperation.py`. The share is read from the results file's contact impulses (`contact_impulse`, then
