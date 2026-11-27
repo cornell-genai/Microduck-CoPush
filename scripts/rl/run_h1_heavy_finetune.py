@@ -251,23 +251,27 @@ def _episode(job):
     return {"k": k, "id": start["id"], "reason": es["reason"], "success": es["reason"] == "success", "steps": int(es["steps"]),
             "contact_share_a": nn(es["contact_share"]["duck_a"]), "push_share_a": nn(es["push_share"]["duck_a"]),
             "contact_impulse": [round(es["contact_impulse"][d], 3) for d in ("duck_a", "duck_b")],
+            "push_impulse": [round(es["push_impulse"][d], 3) for d in ("duck_a", "duck_b")],
             "fell": any(es["fell"].values()), "final_dist": round(es["final_dist"], 4), "min_dist": round(es["min_dist"], 4),
             "mass": float(env.sim.m.body_mass[env.sim.box_body]), "max_steps": int(env.ecfg["max_steps"])}
 
 
 class Evaluator:
+    subdir = "evals"                                   # the cache folder under the run dir (h1_fill_eval.py uses evals200)
+    init_fn = staticmethod(_init)                      # the worker initializer (h1_fill_eval.py adds its own sets)
+
     def __init__(self, run, config, workers, limit=None):
         self.run, self.config, self.workers, self.limit = run, config, workers, limit
 
     def __call__(self, label: str, policy: str, key: str, mode: str = "both") -> list:
-        path = os.path.join(self.run, "evals", f"{label}__{key}__{mode}.json")
+        path = os.path.join(self.run, self.subdir, f"{label}__{key}__{mode}.json")
         got = read_json(path)
         if got:
             return got["episodes"]
         n = len(load_test_set(SETS[key][0])["starts"])
         n = min(n, self.limit) if self.limit else n
         t0 = time.time()
-        with Pool(self.workers, initializer=_init, initargs=(self.config,)) as p:
+        with Pool(self.workers, initializer=self.init_fn, initargs=(self.config,)) as p:
             eps = sorted(p.map(_episode, [(policy, key, mode, k) for k in range(n)], chunksize=2), key=lambda e: e["k"])
         write_json(path, {"label": label, "policy": policy, "set": SETS[key][0], "mode": mode, "episodes": eps},
                    separators=(",", ":"))

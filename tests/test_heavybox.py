@@ -115,3 +115,29 @@ def test_time_limit_gives_two_ducks_30_percent_margin_and_one_duck_none():
         p90 = targets["sets"][f"experiments/test_sets/{name}.json"]["entry_m"]["p90"]
         assert targets["speed_two_m_s"] * t >= 1.30 * p90
     assert os.path.exists(repo_path("experiments/d2-heavybox/h1-heavy-finetune/PLAN.md"))
+
+
+def test_200_start_heavy_sets_keep_the_old_starts_and_share_no_pose_with_the_check_set():
+    s, h = load_stage(H1)
+    reach, size = s["h1"]["solo_reach_m"], h["target"]["size"]
+    key = lambda x: (round(x["x"], 3), round(x["y"], 3), round(x["yaw"], 1))      # noqa: E731
+    chk = {key(x) for x in load_test_set("experiments/test_sets/stage1_heavy_checks.json")["starts"]}
+    light = set()
+    for name in LIGHT.values():
+        light |= {key(x) for x in load_test_set(f"experiments/test_sets/{name}.json")["starts"]}
+    new_poses = {}
+    for k in LIGHT:
+        big = load_test_set(f"experiments/test_sets/stage1_heavy_{k}_200.json")
+        old = load_test_set(f"experiments/test_sets/stage1_heavy_{k}_large.json")
+        assert big["n"] == len(big["starts"]) == 200 and big["episode_seed0"] == 10000
+        assert big["starts"][:len(old["starts"])] == old["starts"]            # the old starts, unchanged and first
+        new = big["starts"][len(old["starts"]):]
+        assert len(new) == 200 - len(old["starts"]) and all(x["id"] >= 200 for x in new)
+        assert len({x["id"] for x in big["starts"]}) == 200
+        assert all(target_entry_m(x, big["target"], size) > reach for x in big["starts"])
+        mine = {key(x) for x in new}
+        assert len(mine) == len(new)
+        assert not mine & chk and not mine & light
+        new_poses[k] = mine
+    assert new_poses["clean"] == new_poses["L1"] == new_poses["L2"]            # they share box poses, as the originals do
+    assert not new_poses["noisy"] & new_poses["clean"]
