@@ -1,0 +1,33 @@
+# Central steering stand-still group. Identical to the matched control except for ONE change:
+# env.stand_still.enabled. A low forward command holds that duck on velstand so the other duck can
+# pivot the box around it.
+name: central-steering-stand-still
+change: stand-still action on the central controller (env.stand_still)
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/stage1-random-box-pose/model.zip
+out: runs/steering/stand-still-s1
+results: experiments/steering/stand-still/results
+test_set: experiments/test_sets/stage1_large.json
+check_set: experiments/test_sets/stage1_checks.json
+
+overrides:
+  controller: {mode: central}
+  reward: {version: v1.1}
+  rl: {eval_every: 20000}
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}
+    stand_still: {enabled: true, vx_threshold: 0.02}
+
+steps: 1000000
+checkpoint_every: 100000
+max_videos: 12
+
+widen:
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 100000
+  episodes: 50
+  seed0: 10050
+
+early_stop: {success: 0.80, evals: 0}

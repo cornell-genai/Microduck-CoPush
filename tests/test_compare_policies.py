@@ -17,11 +17,21 @@ if not all(os.path.exists(policy_path(load_config(), n)) for n in ("velstand", "
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", "rl"))
 import compare_policies as cp  # noqa: E402
+import side_by_side_policies as sbp  # noqa: E402
 
 CFG = "experiments/stage1-random-box-pose/config.yaml"
 TS = "experiments/test_sets/stage1.json"
 HOLD_KEYS = ("hold_a_frac", "hold_b_frac", "both_hold_steps", "one_hold_steps", "hold_a_alone", "hold_b_alone",
              "rot_one_hold_deg", "max_pivot_run")
+
+
+def test_side_by_side_policy_specs_support_central_and_decentral_controllers():
+    label, central = sbp.parse("central=runs/central/model.zip")
+    assert label == "central" and central == {"path": "runs/central/model.zip", "standstill": False}
+    _, held = sbp.parse("central held=runs/central/model.zip@standstill")
+    assert held == {"path": "runs/central/model.zip", "standstill": True}
+    _, d2 = sbp.parse("d2=runs/d2/model.zip@partner@standstill")
+    assert d2["path"] == "runs/d2/model.zip" and d2["decentral"] == {"include_partner": True}
 
 
 def _long_turn_indices(n=3):

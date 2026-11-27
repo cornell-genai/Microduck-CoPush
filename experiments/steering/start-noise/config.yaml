@@ -1,0 +1,35 @@
+# Adapt the matching clean-trained central stand-still seed to small duck start noise.
+name: central-steering-start-noise
+change: small Gaussian duck heading, spacing and setback noise
+base: configs/copush.yaml
+reference: configs/overnight.yaml
+warm_start: runs/steering/stand-still-s1/model.zip
+out: runs/steering/start-noise-s1
+results: experiments/steering/start-noise/results
+test_set: experiments/test_sets/stage1_noisy_large.json
+check_set: experiments/test_sets/stage1_noisy_checks.json
+overrides:
+  controller: {mode: central}
+  reward: {version: v1.1}
+  rl: {eval_every: 20000}
+  env:
+    box_start: {enabled: true, dx: 0.15, dy: 0.15, dyaw: 45.0}
+    stand_still: {enabled: true, vx_threshold: 0.02}
+  start_noise:
+    duck_heading_std_deg: 5.0
+    duck_spacing_std_m: 0.02
+    duck_setback_std_m: 0.01
+    duck_heading_limit_deg: null
+    duck_spacing_limit_m: null
+    duck_setback_back_limit_m: null
+    duck_setback_forward_limit_m: null
+steps: 1000000
+checkpoint_every: 100000
+max_videos: 12
+widen:
+  levels: [1.0]
+  threshold: 0.70
+  eval_every: 100000
+  episodes: 50
+  seed0: 10050
+early_stop: {success: 0.80, evals: 0}
