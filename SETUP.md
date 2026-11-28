@@ -305,6 +305,18 @@ Settings live in [configs/copush.yaml](configs/copush.yaml):
 - PPO hyperparameters
 - the video settings
 
+## Memory guard
+
+Every job started with `scripts/rl.sh` gets a watchdog (`scripts/guard/memwatch.sh`) that adds up the memory of all
+the job's processes every 5 s. If one process passes 3 GB, or the whole job passes 12 GB, it prints
+`MEMORY GUARD: ...`, adds a line to `runs/memguard.log` and stops the whole job. It exists because a leaking
+measurement script once grew to 32 GB on a 16 GB machine. A normal evaluation or training process uses about 1 GB.
+
+- Change the limits for one command: `COPUSH_MEM_LIMIT_GB=5 COPUSH_MEM_TOTAL_GB=14 scripts/rl.sh ...`.
+  `COPUSH_MEM_LIMIT_GB=0` turns the watchdog off.
+- Before a long run of a new script, run a small case first and check that memory stays flat from one episode to the
+  next. A script that builds a new `CoPushEnv` for every episode must close it (`env.close()`) or, better, reuse one.
+
 ## Troubleshooting
 
 | Symptom | Fix |
