@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Episode review</title>
+<style>
+:root {
+  --bg: #f6f5f1; --panel: #ffffff; --ink: #1d1c1a; --muted: #6b6a64; --line: #dcdad2; --accent: #2a78d6;
+  --good: #1a8f63; --bad: #cf4a2a; --warn: #b77a00; --chip: #efede6; --stage: #14161a;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #17181b; --panel: #202226; --ink: #ecebe6; --muted: #9c9b94; --line: #34363c; --accent: #6aa8f0;
+          --good: #4cc596; --bad: #f0795a; --warn: #e3ac3a; --chip: #2b2d33; --stage: #0c0d0f; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+header .meta { color: var(--muted); font-size: 13px; }
+header .count { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; }
+main { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 18px; padding: 16px 20px 28px; max-width: 1280px; margin: 0 auto; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 12px 16px 24px; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.dots { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 20px 0; max-width: 1280px; margin: 0 auto; }
+.dot { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+       font-size: 11px; line-height: 20px; text-align: center; cursor: pointer; padding: 0; font-variant-numeric: tabular-nums; }
+.dot.done { background: var(--chip); color: var(--ink); }
+.dot.dis { border-color: var(--bad); color: var(--bad); }
+.dot.cur { outline: 2px solid var(--accent); outline-offset: 1px; }
+.stage { position: relative; background: var(--stage); border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 9; }
+.stage canvas { width: 100%; height: 100%; display: block; }
+.stage .wait { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center;
+               color: #d8d6cf; text-align: center; padding: 20px; }
+.spin { width: 28px; height: 28px; border: 3px solid #555; border-top-color: #ddd; border-radius: 50%; animation: sp 0.9s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+.controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+.controls input[type=range] { flex: 1 1 160px; min-width: 120px; accent-color: var(--accent); }
+.controls .t { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; }
+button { font: inherit; color: var(--ink); background: var(--chip); border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+kbd { font: 11px ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--muted); }
+button.on kbd { color: var(--ink); }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
+h2:first-child { margin-top: 0; }
+.verdicts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.verdicts button { text-align: left; padding: 9px 10px; }
+.reasons { display: flex; flex-wrap: wrap; gap: 6px; }
+.reasons label { background: var(--chip); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; cursor: pointer; user-select: none; font-size: 13.5px; }
+.reasons input { position: absolute; opacity: 0; pointer-events: none; }
+.reasons label:has(input:checked) { background: var(--accent); border-color: var(--accent); color: #fff; }
+.reasons label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+textarea { width: 100%; min-height: 62px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; resize: vertical; }
+.row { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+.row .save { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; padding: 7px 16px; }
+.row .grow { flex: 1; }
+.status { font-size: 13px; color: var(--muted); }
+.reveal { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.reveal table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.reveal td { padding: 4px 0; vertical-align: top; }
+.reveal td:first-child { color: var(--muted); width: 48%; }
+.badge { display: inline-block; border-radius: 999px; padding: 0 9px; font-size: 12.5px; font-weight: 600; border: 1px solid currentColor; margin-left: 6px; }
+.badge.agree { color: var(--good); } .badge.disagree { color: var(--bad); } .badge.na { color: var(--muted); }
+.hidden-note { color: var(--muted); font-size: 13.5px; margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.warn { color: var(--warn); font-size: 13.5px; margin-top: 8px; }
+.banner { max-width: 1280px; margin: 12px auto 0; padding: 0 20px; }
+.banner div { background: var(--panel); border: 1px solid var(--good); border-radius: 10px; padding: 10px 14px; }
+code { font: 12.5px ui-monospace, Menlo, monospace; background: var(--chip); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.keys { color: var(--muted); font-size: 12.5px; margin-top: 12px; line-height: 1.9; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Episode review</h1>
+  <span class="meta" id="meta"></span>
+  <span class="count" id="count"></span>
+</header>
+<div class="banner" id="banner" hidden><div></div></div>
+<div class="dots" id="dots"></div>
+<main>
+  <section class="panel">
+    <div class="stage">
+      <canvas id="cv" width="480" height="270"></canvas>
+      <div class="wait" id="wait"><div class="spin"></div><div id="waitmsg">Loading</div></div>
+    </div>
+    <div class="controls">
+      <button id="play" title="Space">Pause</button>
+      <button id="back" title=",">&#9664; frame</button>
+      <button id="fwd" title=".">frame &#9654;</button>
+      <button id="replay" title="R">Replay</button>
+      <input id="seek" type="range" min="0" max="0" value="0" aria-label="Frame">
+      <span class="t" id="time"></span>
+    </div>
+    <div class="controls">
+      <span class="status">Speed</span>
+      <button class="spd" data-s="0.5">0.5x</button>
+      <button class="spd on" data-s="1">1x</button>
+      <button class="spd" data-s="2">2x</button>
+      <span class="status" id="epname" style="margin-left:auto"></span>
+    </div>
+    <div class="warn" id="warn" hidden></div>
+    <div class="keys">
+      <kbd>1</kbd>-<kbd>4</kbd> verdict &nbsp; <kbd>Enter</kbd> save and reveal &nbsp; <kbd>&rarr;</kbd>/<kbd>N</kbd> next &nbsp; <kbd>&larr;</kbd>/<kbd>P</kbd> previous<br>
+      <kbd>Space</kbd> play or pause &nbsp; <kbd>,</kbd> <kbd>.</kbd> step a frame &nbsp; <kbd>R</kbd> replay &nbsp; <kbd>[</kbd> <kbd>]</kbd> speed &nbsp; letters on the reasons tick them
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Your verdict</h2>
+    <div class="verdicts" id="verdicts"></div>
+    <h2>Reasons (any number)</h2>
+    <div class="reasons" id="reasons"></div>
+    <h2>Note</h2>
+    <textarea id="note" placeholder="What did you see? (optional)"></textarea>
+    <div class="row">
+      <button class="save" id="save" disabled>Save and reveal <kbd>Enter</kbd></button>
+      <span class="status grow" id="status"></span>
+      <button id="prev">&larr; Previous</button>
+      <button id="next">Next &rarr;</button>
+    </div>
+    <div class="hidden-note" id="hiddennote">The metric's verdict stays hidden until you save your label.</div>
+    <div class="reveal" id="reveal" hidden></div>
+  </section>
+</main>
+<script>
+const VERDICT_TEXT = {real_success: "Real success", fake_success: "Fake success", real_failure: "Real failure", unclear: "Unclear"};
+const REASON_KEYS = {one_duck_idle: "i", box_lost: "l", duck_fell: "f", overshoot: "o", wrong_side: "w", collision: "c", hovering: "h", stuck: "s", other: "x"};
+const $ = id => document.getElementById(id);
+let S = null, cur = 0, ep = null, verdict = null, poll = null;
+let frames = [], fi = 0, playing = true, speed = 1, fps = 10, timer = null, loadToken = 0;
+
+async function api(path, body) {
+  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+const text = s => s.replace(/_/g, " ");
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) { if (k === "class") e.className = v; else e.setAttribute(k, v); }
+  for (const k of kids) e.append(k);
+  return e;
+}
+
+// ── player: the GIF's frames on a canvas, so it can pause, step and change speed ──
+function draw() {
+  const im = frames[fi];
+  if (im && im.complete && im.naturalWidth) $("cv").getContext("2d").drawImage(im, 0, 0, 480, 270);
+  $("seek").value = fi;
+  $("time").textContent = frames.length ? `${(fi / fps).toFixed(1)} / ${((frames.length - 1) / fps).toFixed(1)} s` : "";
+}
+function tick() {
+  clearTimeout(timer);
+  if (!playing || !frames.length) return;
+  timer = setTimeout(() => {
+    if (fi < frames.length - 1) { fi++; draw(); tick(); }
+    else { timer = setTimeout(() => { if (playing) { fi = 0; draw(); tick(); } }, 1200); }   // hold the last frame, then loop
+  }, 1000 / (fps * speed));
+}
+function setPlaying(p) { playing = p; $("play").textContent = p ? "Pause" : "Play"; tick(); }
+function step(d) { setPlaying(false); fi = Math.max(0, Math.min(frames.length - 1, fi + d)); draw(); }
+function setSpeed(s) { speed = s; document.querySelectorAll(".spd").forEach(b => b.classList.toggle("on", +b.dataset.s === s)); tick(); }
+function loadFrames(idx, n, rate) {
+  const token = ++loadToken;
+  fps = rate; frames = []; fi = 0;
+  $("seek").max = n - 1;
+  let got = 0;
+  for (let k = 0; k < n; k++) {
+    const im = new Image();
+    im.onload = () => {
+      if (token !== loadToken) return;
+      got++;
+      $("waitmsg").textContent = `Loading frames ${got} / ${n}`;
+      if (got === n) { $("wait").hidden = true; draw(); setPlaying(true); }
+    };
+    im.src = `/frame/${idx}/${k}.jpg`;
+    frames.push(im);
+  }
+}
+
+// ── episode ──
+function setVerdict(v) {
+  verdict = v;
+  document.querySelectorAll("#verdicts button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  $("save").disabled = !v;
+}
+function fillForm(label) {
+  setVerdict(label ? label.verdict : null);
+  document.querySelectorAll("#reasons input").forEach(c => c.checked = !!label && label.reasons.includes(c.value));
+  $("note").value = label ? label.note : "";
+  $("status").textContent = label ? "Saved " + label.saved_at.replace("T", " ") : "";
+  $("save").firstChild.textContent = label ? "Save change " : "Save and reveal ";
+}
+function yes(x) { return x === null || x === undefined ? "n/a" : (x ? "yes" : "no"); }
+function badge(a) {
+  return el("span", {class: "badge " + (a === null ? "na" : a ? "agree" : "disagree")}, a === null ? "not compared" : a ? "you agree" : "you disagree");
+}
+function showReveal(e) {
+  const box = $("reveal");
+  box.replaceChildren();
+  $("hiddennote").hidden = !!e.reveal;
+  box.hidden = !e.reveal;
+  if (!e.reveal) return;
+  const r = e.reveal, L = e.label, rows = [];
+  const share = r.push_share_a === null || r.push_share_a === undefined ? "n/a"
+    : `duck A ${Math.round(100 * r.push_share_a)}% / duck B ${Math.round(100 * (1 - r.push_share_a))}%`;
+  rows.push(["Metric: task success", [yes(r.task_success), badge(L.agree_task)]]);
+  rows.push(["Metric: cooperative success", [yes(r.coop_success), badge(L.agree_coop)]]);
+  rows.push(["Push share", [share]]);
+  rows.push(["Start type", [r.start_type ?? "n/a"]]);
+  rows.push(["Falls", [r.falls ?? "n/a"]]);
+  if (r.collisions !== null && r.collisions !== undefined) rows.push(["Collisions on the approach", [r.collisions]]);
+  if (r.reason) rows.push(["Ending", [text(String(r.reason)) + (r.steps != null ? ` after ${r.steps} of ${r.max_steps} steps` : "")]]);
+  if (r.arrived !== null && r.arrived !== undefined)
+    rows.push(["Docked before the push", [yes(r.arrived) + (r.dock ? ` (worst error ${r.dock.pos_cm.toFixed(1)} cm, ${r.dock.yaw_deg.toFixed(1)} deg)` : "")]]);
+  if (r.overshoot !== null && r.overshoot !== undefined) rows.push(["Overshoot", [yes(r.overshoot)]]);
+  rows.push(["Sampling group", [r.group + (r.suspicious_because.length ? ": " + r.suspicious_because.join("; ") : "")]]);
+  rows.push(["Start id / seed", [`${r.start_id} / ${r.episode_seed}`]]);
+  if (L.changed_after_reveal) rows.push(["Your blind verdict", [text(L.blind_verdict) + " (changed after the reveal)"]]);
+  const t = el("table");
+  for (const [k, v] of rows) t.append(el("tr", {}, el("td", {}, k), el("td", {}, ...v.map(x => x instanceof Node ? x : String(x)))));
+  box.append(el("h2", {}, "What the metric said"), t);
+}
+function renderDots() {
+  const d = $("dots");
+  d.replaceChildren();
+  S.items.forEach((it, k) => {
+    const dis = it.agree && it.agree.includes(false);
+    const b = el("button", {class: "dot" + (it.labeled ? " done" : "") + (dis ? " dis" : "") + (k === cur ? " cur" : ""),
+                            title: `Episode ${k + 1}` + (it.labeled ? (dis ? ": labeled, disagrees with the metric" : ": labeled") : ""),
+                            "aria-label": `Episode ${k + 1}`}, String(k + 1));
+    b.onclick = () => go(k);
+    d.append(b);
+  });
+  const done = S.items.filter(i => i.labeled).length;
+  $("count").textContent = `${done} / ${S.items.length} labeled`;
+  const ban = $("banner");
+  ban.hidden = done < S.items.length;
+  ban.firstChild.replaceChildren("All episodes are labeled and saved in ", el("code", {}, S.file), ". Summary: ",
+    el("code", {}, `scripts/rl.sh scripts/review/summarize.py --run ${S.run}`));
+}
+async function refresh() {
+  const k = cur;
+  let e;
+  try { e = await api(`/api/episode?idx=${k}`); } catch (x) { $("waitmsg").textContent = String(x.message); return; }
+  if (k !== cur) return;
+  const first = !ep || ep.idx !== e.idx;
+  const becameReady = e.state === "ready" && (!ep || ep.idx !== e.idx || ep.state !== "ready");
+  ep = e;
+  if (first) { fillForm(e.label); showReveal(e); }
+  $("warn").hidden = !e.replay_differs;
+  $("warn").textContent = e.replay_differs ? "This replay did not match the recorded episode step for step, so the clip may not be what the metric scored. Label it unclear or skip it." : "";
+  clearTimeout(poll);
+  if (e.state === "ready") { if (becameReady) loadFrames(k, e.frames, e.fps); }
+  else if (e.state === "error") { $("wait").hidden = false; $("wait").firstElementChild.hidden = true; $("waitmsg").textContent = "Could not render this episode: " + e.error; }
+  else {
+    $("wait").hidden = false; $("wait").firstElementChild.hidden = false;
+    $("waitmsg").textContent = e.state === "rendering" ? "Rendering this episode (about 10 to 30 s the first time)" : "Waiting for the renderer (other episodes are being rendered)";
+    poll = setTimeout(refresh, 800);
+  }
+}
+function go(k) {
+  if (k < 0 || k >= S.items.length) return;
+  cur = k; ep = null; ++loadToken; frames = []; clearTimeout(timer);
+  $("wait").hidden = false; $("wait").firstElementChild.hidden = false; $("waitmsg").textContent = "Loading";
+  $("epname").textContent = `Episode ${k + 1} of ${S.items.length}`;
+  $("prev").disabled = k === 0; $("next").disabled = k === S.items.length - 1;
+  history.replaceState(null, "", `?idx=${k}`);
+  renderDots(); refresh();
+}
+async function save() {
+  if (!verdict) return;
+  const reasons = [...document.querySelectorAll("#reasons input:checked")].map(c => c.value);
+  if (document.activeElement && document.activeElement.tagName === "TEXTAREA") document.activeElement.blur();   // so the arrow keys work again
+  $("status").textContent = "Saving";
+  try {
+    const e = await api("/api/label", {idx: cur, verdict, reasons, note: $("note").value});
+    ep = e;
+    S.items[cur].labeled = true; S.items[cur].agree = [e.label.agree_task, e.label.agree_coop];
+    fillForm(e.label); showReveal(e); renderDots();
+  } catch (x) { $("status").textContent = "Not saved: " + x.message; }
+}
+
+// ── setup ──
+async function init() {
+  S = await api("/api/session");
+  $("meta").textContent = `${S.run} / ${S.policy} · reviewer ${S.reviewer}` + (S.resumed ? " · resumed session" : "");
+  document.title = `Review: ${S.run} ${S.policy}`;
+  S.verdicts.forEach((v, k) => {
+    const b = el("button", {"data-v": v}, el("kbd", {}, String(k + 1)), " " + (VERDICT_TEXT[v] || text(v)));
+    b.onclick = () => setVerdict(v);
+    $("verdicts").append(b);
+  });
+  S.reasons.forEach(r => {
+    const c = el("input", {type: "checkbox", value: r});
+    $("reasons").append(el("label", {}, c, text(r) + " ", el("kbd", {}, REASON_KEYS[r] || "")));
+  });
+  const asked = parseInt(new URLSearchParams(location.search).get("idx"), 10);
+  const firstOpen = S.items.findIndex(i => !i.labeled);
+  go(Number.isInteger(asked) && asked >= 0 && asked < S.items.length ? asked : (firstOpen < 0 ? 0 : firstOpen));
+}
+$("play").onclick = () => setPlaying(!playing);
+$("back").onclick = () => step(-1);
+$("fwd").onclick = () => step(1);
+$("replay").onclick = () => { fi = 0; draw(); setPlaying(true); };
+$("seek").oninput = e => { setPlaying(false); fi = +e.target.value; draw(); };
+document.querySelectorAll(".spd").forEach(b => b.onclick = () => setSpeed(+b.dataset.s));
+$("save").onclick = save;
+$("prev").onclick = () => go(cur - 1);
+$("next").onclick = () => go(cur + 1);
+document.addEventListener("keydown", e => {
+  const typing = e.target.tagName === "TEXTAREA";
+  if (typing) {
+    if (e.key === "Escape") e.target.blur();
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); save(); }
+    return;
+  }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  const speeds = [0.5, 1, 2];
+  if ("1234".includes(k) && k.length === 1) setVerdict(S.verdicts[+k - 1]);
+  else if (k === "Enter") { e.preventDefault(); save(); }
+  else if (k === "ArrowRight" || k === "n") go(cur + 1);
+  else if (k === "ArrowLeft" || k === "p") go(cur - 1);
+  else if (k === " ") { e.preventDefault(); setPlaying(!playing); }
+  else if (k === ",") step(-1);
+  else if (k === ".") step(1);
+  else if (k === "r") { fi = 0; draw(); setPlaying(true); }
+  else if (k === "[") setSpeed(speeds[Math.max(0, speeds.indexOf(speed) - 1)]);
+  else if (k === "]") setSpeed(speeds[Math.min(2, speeds.indexOf(speed) + 1)]);
+  else {
+    const r = Object.keys(REASON_KEYS).find(x => REASON_KEYS[x] === k);
+    const c = r && document.querySelector(`#reasons input[value="${r}"]`);
+    if (c) c.checked = !c.checked;
+  }
+});
+init().catch(x => { $("waitmsg").textContent = "Could not load the session: " + x.message; });
+</script>
+</body>
+</html>

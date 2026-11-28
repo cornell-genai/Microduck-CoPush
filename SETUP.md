@@ -240,6 +240,70 @@ The labeled thumbnail clips in `experiments/README.md` come from the side-by-sid
 scripts/make_stage_thumbs.sh
 ```
 
+## Review episodes by eye
+
+A success rate can hide episodes that only look like successes in the numbers (for example one duck pushing the box in
+alone). The review tool samples evaluation episodes, replays them, and has you label each one before it shows what the
+metric said, so we can measure how often a person disagrees with the metric.
+
+![The review page after a label is saved](scripts/review/screenshot.png)
+
+**Start a session** (one local page, port 8765; Ctrl-C stops it):
+
+```sh
+# a full-pipeline rendezvous run (needs the rendezvous code: the d2-rendezvous branch until it is merged)
+scripts/rl.sh scripts/review/serve.py --run r6-dock-payout --seed-policy s1 --n 30 --reviewer ashwin
+
+# a push-only run: comparison.json does not name the policy file, so pass it as compare_policies.py took it
+scripts/rl.sh scripts/review/serve.py --run d2-steering/night5 --seed-policy l2_s2 --n 30 --reviewer ashwin \
+    --results runs/d2-steering/night5/results/eval_L2/comparison.json \
+    --policy runs/d2-steering-night5/l2-s2/model.zip@partner@standstill
+```
+
+- `--run` and `--seed-policy` find the per-episode results file the evaluation wrote (`results.json` from
+  `rendezvous_eval.py`, `comparison.json` from `compare_policies.py`); `--results` names it directly.
+- **Sampling:** episodes are sorted into successes, failures and suspicious successes (task success without
+  cooperative success, success in the last 10% of the time limit, docking error at 90% or more of its tolerance, a
+  push success without docking). The sample takes the three groups evenly, random within each, in a shuffled order.
+  `--n` (30), `--group success|failure|suspicious`, `--seed` (0; the same seed gives the same sample). A run with no
+  more than `--n` episodes is shown whole. Cooperative success means task success with each duck doing at least 25% of
+  the push (`--coop-min`).
+- **Clips** are rendered on demand with the evaluation's own starts and seeds and cached in
+  `runs/review-cache/` (git-ignored, about 5 to 10 MB per episode). If a replay does not match the recorded episode
+  step for step, the page says so.
+- **Keys:** `1` to `4` verdict, `Enter` save and reveal, arrows or `N` / `P` next and previous, `Space` play or pause,
+  `,` `.` step a frame, `R` replay, `[` `]` speed (0.5x, 1x, 2x; 1x is real time). The letters on the reasons tick them.
+- **Saving:** every label is written at once to `experiments/<run>/reviews/<reviewer>_<date>.json` (the run's existing
+  folder under `experiments/` when there is one), keyed by run, policy file sha256, start id and episode seed. Running
+  the same command again resumes an unfinished session. Commit the label files; never the clips.
+
+**What the labels mean**
+
+| label | meaning |
+|---|---|
+| real success | the box ends in the target and both ducks did the job together |
+| fake success | it may count as a success, but it is not one you would show (one duck did it alone, a lucky bump, ...) |
+| real failure | the task was not done |
+| unclear | you cannot tell from the clip; left out of the agreement rates |
+
+A label agrees with a metric when "real success" meets a metric success, or "fake success" / "real failure" meets a
+metric failure. The first label you save for an episode is the blind one; changing it after the reveal is allowed and
+marked, and the rates keep using the blind label.
+
+**Summary** (all reviewers and sessions of a run; no simulator needed):
+
+```sh
+scripts/rl.sh scripts/review/summarize.py --run r6-dock-payout
+```
+
+It prints the number reviewed, the agreement with task success and with cooperative success (95% Wilson intervals),
+the same per sampling group, the count of each reason, every disagreement with its start id, and, with several
+reviewers, the episodes they labeled differently.
+
+**The labels are for catching metric bugs, not ground truth.** One person's verdict on a short clip is an opinion, the
+sample over-represents suspicious episodes on purpose, and a session of 30 gives wide intervals. Use a disagreement as a
+reason to look at the metric, not as a corrected success rate.
+
 ## Tests
 
 ```sh
@@ -327,6 +391,7 @@ copush/         sim.py (two-duck MuJoCo world), duck_policy.py (per-duck ONNX ru
                 video.py, config.py; plus the Week 1 duck-sim client (sim_client.py, runner.py, ...)
 configs/        copush.yaml (scene, layouts, reward versions, PPO, video), overnight*.yaml (queues)
 scripts/        copush.sh / copush_sim.py (sim), rl.sh + rl/ (checks, baselines, train, overnight),
+                review/ (watch and label evaluation episodes: serve.py, review.html, summarize.py),
                 b0/ (B0 harness), sim.sh, check_m1.py, two_duck_demo.py (Week 1 duck-sim path)
 scenes/         copush_base.xml (floor/lights for the two-duck world), B0 and Week 1 scenes
 tests/          pytest; simulator tests skip outside microduck_rl's environment
