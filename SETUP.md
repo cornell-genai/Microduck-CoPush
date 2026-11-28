@@ -284,6 +284,11 @@ scripts/rl.sh scripts/review/serve.py --run d2-steering/night5 --seed-policy l2_
   `contact_share_a`). Only an old results file without those fields falls back to its push share (`push_share_a`).
   The source is printed when a session starts, saved in the label file (`coop_source`, counts per file, and on every
   label) and listed per results file by `summarize.py`, which flags the push-share fallback.
+- **A results file with several sets** (`{set: {policy: {mode: [episodes]}}}`, as the heavy-box evaluation writes):
+  `--result-set heavy200_L2 --mode both` picks the set and mode (`--seed-policy` names the policy), `--test-set` and
+  `--config` give the start set and the env config as paths (the box mass, step limit and reward version come from
+  the config; `--max-steps` defaults to its `env.max_steps`), and `--seed-by id` sets the episode seed to the first
+  seed plus the start id for sets whose ids are not 0, 1, 2 and so on. Labels are keyed by set and mode too.
 - **Other options:** `--results` (the results file), `--policy` (push-only runs), `--max-steps`, `--port` (8765),
   `--no-open`, `--out-dir` (where the label file goes; default `experiments/<run>/reviews`; use a folder under `runs/`
   for a trial) and `--render-only` (render the sampled clips, print whether every replay matched, exit).

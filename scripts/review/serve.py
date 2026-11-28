@@ -28,6 +28,10 @@ the same session again resumes it. scripts/review/summarize.py reports the agree
                  rounding, so the counts sum to n; a group that runs out gives its share to the others in proportion
                  to their weights; a group not named gets 0. Not with --group. Without it the groups are taken evenly.
                  Saved in the session file; a different weights value starts a different session.
+--result-set, --mode   a results file laid out {set: {policy: {mode: [episodes]}}}: which set and which mode (both)
+--test-set, --config   the start set and the env config, as paths, for a results file that does not name them. The
+                 config carries the box mass, step limit (used when --max-steps is not given) and reward version
+--seed-by        'id': episode seed = first seed + start id, for start sets whose ids are not 0, 1, 2 ...
 --out-dir        where the label file goes (default experiments/<run>/reviews)
 --render-only    render the sampled clips, print whether each replay matched, and exit
 --port, --no-open      the local port (8765); do not open the browser
@@ -66,12 +70,31 @@ REPLAY_FIELDS = ("id", "arrived", "rv_steps", "fell_rv", "assign", "pos_err_cm",
                  "push_impulse", "cooperative")
 
 
+def same_value(recorded, got) -> bool:
+    """Equal, where a float the file stored rounded (to 3 or 4 places) equals the replay's value rounded the same way.
+    Per duck values may be a dict {duck_a, duck_b} or a list [a, b]."""
+    def flat(x):
+        return [x["duck_a"], x["duck_b"]] if isinstance(x, dict) and set(x) == {"duck_a", "duck_b"} else x
+    recorded, got = flat(recorded), flat(got)
+    if isinstance(recorded, list) and isinstance(got, list):
+        return len(recorded) == len(got) and all(same_value(a, b) for a, b in zip(recorded, got))
+    if isinstance(recorded, dict) and isinstance(got, dict):
+        return recorded.keys() == got.keys() and all(same_value(recorded[k], got[k]) for k in recorded)
+    if isinstance(recorded, float) and isinstance(got, (int, float)) and not isinstance(got, bool):
+        return recorded == got or any(round(got, d) == recorded for d in (3, 4))
+    return recorded == got
+
+
+PUSH_REPLAY_FIELDS = ("reason", "steps", "success", "fell", "final_dist", "min_dist", "push_share_a", "contact_share_a",
+                      "contact_impulse", "push_impulse")
+
+
 def replay_match(replayed: dict, recorded: dict, fields=REPLAY_FIELDS) -> dict:
     """Compare a replayed episode with the recorded one on every field both have. -> {"reproduced", "checked",
     "mismatch": {field: [recorded, replayed]}}. Stored values are rounded (4 places for shares and impulses, 2 for
     errors), and the replay is rounded the same way before it gets here, so equality is exact."""
     checked = [k for k in fields if k in recorded]
-    bad = {k: [recorded[k], replayed.get(k)] for k in checked if replayed.get(k) != recorded[k]}
+    bad = {k: [recorded[k], replayed.get(k)] for k in checked if not same_value(recorded[k], replayed.get(k))}
     return {"reproduced": not bad, "checked": checked, "mismatch": bad}
 
 
@@ -112,14 +135,15 @@ def _setup_push(spec: dict):
     ch = pol["decentral"].get("chirp") if isinstance(pol, dict) and pol.get("decentral") else None
     if ch:
         cfg["chirp"] = {**cfg["chirp"], "enabled": True, **ch}
-    starts = load_test_set(spec["set"])["starts"]
+    sdoc = load_test_set(spec["set"])
+    starts = sdoc["starts"]
     make_act = make_act_factory(spec["policy"], pol)
     env = CoPushEnv(cfg, split="eval")
-    seed0 = cfg["env"]["heldout_seeds"][0]
+    seed0 = sdoc.get("episode_seed0", cfg["env"]["heldout_seeds"][0])
 
     def run(job: dict, hook, phase: list) -> dict:
         j = next((k for k, s in enumerate(starts) if s.get("id") == job["start_id"]), job["i"])
-        seed = seed0 + j
+        seed = seed0 + (starts[j]["id"] if spec.get("seed_by") == "id" else j)
         phase[0] = "push"
         act = make_act(env, seed)
         env.frame_hook = hook
@@ -132,14 +156,14 @@ def _setup_push(spec: dict):
         finally:
             env.frame_hook = None
         es, raw = info["episode_stats"], job["raw"]
-        got = {"reason": es["reason"], "steps": int(es["steps"])}
+        got = {"reason": es["reason"], "steps": int(es["steps"]), "success": es["reason"] == "success",
+               "fell": any(es["fell"].values()), "final_dist": float(es["final_dist"]), "min_dist": float(es["min_dist"]),
+               "contact_impulse": {d: float(es["contact_impulse"][d]) for d in ("duck_a", "duck_b")},
+               "push_impulse": {d: float(es["push_impulse"][d]) for d in ("duck_a", "duck_b")}}
         for f, k in (("push_share_a", "push_share"), ("contact_share_a", "contact_share")):
             v = es[k]["duck_a"]
             got[f] = None if v != v else float(v)
-        for f in ("push_share_a", "contact_share_a"):          # compare at the precision the file stored
-            if isinstance(raw.get(f), float) and got[f] is not None:
-                got[f] = round(got[f], 4) if round(raw[f], 4) == raw[f] else got[f]
-        return {**replay_match(got, raw, ("reason", "steps", "push_share_a", "contact_share_a")), "seed": seed}
+        return {**replay_match(got, raw, PUSH_REPLAY_FIELDS), "seed": seed}
     return env, run
 
 
@@ -220,7 +244,18 @@ def cached(base: str):
 class Review:
     def __init__(self, a):
         results = rl.repo_path(a.results) if a.results else rl.find_results(a.run, a.seed_policy)
-        data = rl.load_episodes(results, a.seed_policy, coop_min=a.coop_min, max_steps=a.max_steps)
+        if a.config and not a.max_steps:                 # the step limit (and box mass) are the config's
+            try:
+                from copush.experiments import load_stage
+                a.max_steps = int(load_stage(a.config)[1]["env"]["max_steps"])
+            except ImportError:
+                pass
+        data = rl.load_episodes(results, a.seed_policy, coop_min=a.coop_min, max_steps=a.max_steps,
+                                set_key=a.result_set, mode=a.mode, seed_by=a.seed_by)
+        data["set"] = a.test_set or data["set"]
+        data["config"] = a.config or data["config"]
+        if data["format"] == "push" and not (data["set"] and data["config"]):
+            raise SystemExit("this results file does not name its start set and env config: pass --test-set and --config")
         self.coop_min = data["coop_min"]
         self.data, self.run = data, a.run
         doc = json.load(open(results))
@@ -248,8 +283,12 @@ class Review:
                 "coop_source": data["coop_source"],
                 "sampling": {"n": a.n, "group": a.group, "seed": a.seed, "coop_min": self.coop_min,
                              "group_sizes": {k: len(v) for k, v in g.items()},
-                             # only when given, so a session made without weights is identified as before
-                             **({"weights": weights} if weights else {})},
+                             # only when given, so a session made without them is identified as before
+                             **({"weights": weights} if weights else {}),
+                             **({"selected": data["selected"]} if data["selected"] else {}),
+                             **({"seed_by": a.seed_by} if a.seed_by != "index" else {})},
+                "variant": (f"{data['selected']['set']}/{data['selected']['mode']}" if data["selected"] else None),
+                "test_set": data["set"], "config": data["config"], "max_steps": data["max_steps"],
                 "sample_counts": {k: sum(rl.group_of(e) == k for e in picked) for k in rl.GROUPS}}
         self.session, self.resumed = rl.Session.open(
             rl.repo_path(a.out_dir) if a.out_dir else os.path.join(rl.experiment_dir(a.run), "reviews"), meta, picked)
@@ -264,7 +303,7 @@ class Review:
         self.spec = {"format": data["format"], "set": data["set"], "config": data["config"], "policy": data["policy"],
                      "policy_file": data["policy_file"], "policy_spec": pspec, "push": data.get("push_policy_file"),
                      "no_push": bool(doc.get("no_push")), "episode_steps": doc.get("episode_steps"),
-                     "max_steps": a.max_steps}
+                     "max_steps": a.max_steps, "seed_by": a.seed_by}
         self.lock = threading.Condition()
         self.want = None                 # the episode the page is waiting for: rendered first
 
@@ -432,6 +471,16 @@ def main() -> int:
                     help="render the sampled clips, print whether each replay matched the recorded episode, and exit "
                          "(no server)")
     ap.add_argument("--max-steps", type=int, default=None, help="the push time limit in steps, when it is not 100")
+    ap.add_argument("--result-set", default=None,
+                    help="results files laid out {set: {policy: {mode: [episodes]}}}: the set (heavy200_L2)")
+    ap.add_argument("--mode", default=None, help="the same layout: the mode (both, A_idle, B_idle; default both)")
+    ap.add_argument("--test-set", default=None, help="the start set (a results file that does not name it); a path")
+    ap.add_argument("--config", default=None,
+                    help="the env config the evaluation used (a results file that does not name it); a path. Its box "
+                         "mass, step limit and reward version are used; --max-steps defaults to its env.max_steps")
+    ap.add_argument("--seed-by", choices=("index", "id"), default="index",
+                    help="episode seed = first seed + the start's position (default) or + the start id (sets whose ids "
+                         "are not 0, 1, 2 ...)")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--no-open", action="store_true")
     a = ap.parse_args()
@@ -444,6 +493,8 @@ def main() -> int:
     done = len(r.session.doc["labels"])
     print(f"{a.run} / {r.data['policy']}: {len(r.data['episodes'])} episodes ("
           + ", ".join(f"{k} {v}" for k, v in sizes.items()) + f"); reviewing {len(r.items)}")
+    if not r.resumed:
+        r.session.save()                  # the sample, weights and counts are on disk from the start, labels or not
     w = r.session.doc["sampling"].get("weights")
     print("sample: " + ("weighted " + ", ".join(f"{k} {v:g}" for k, v in w.items()) if w else "groups taken evenly")
           + "; clips per group " + ", ".join(f"{k} {v}" for k, v in r.session.doc.get("sample_counts", {}).items())

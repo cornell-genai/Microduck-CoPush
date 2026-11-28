@@ -188,6 +188,8 @@ def coop_of(r: dict, task, share_push, threshold: float):
     share (push_share_a). The test itself is copush.cooperation.is_cooperative (threshold from the config).
     """
     ci = r.get("contact_impulse")
+    if isinstance(ci, (list, tuple)) and len(ci) == 2:      # [duck_a, duck_b], as the heavy-box evaluation writes it
+        ci = {"duck_a": ci[0], "duck_b": ci[1]}
     if isinstance(ci, dict) and _num_or_none(ci.get("duck_a")) is not None and _num_or_none(ci.get("duck_b")) is not None:
         share, src = cooperation.share_a(ci["duck_a"], ci["duck_b"]), "contact_impulse"
     elif "contact_share_a" in r:
@@ -204,16 +206,49 @@ def coop_of(r: dict, task, share_push, threshold: float):
     return cooperation.is_cooperative(task, share, threshold), src
 
 
-def load_episodes(path: str, policy: str = "", coop_min=None, max_steps=None, seed0=None) -> dict:
+def nested_layout(doc) -> bool:
+    """True for a results file laid out {set: {policy: {mode: [episodes]}}} (no top-level "episodes")."""
+    return (isinstance(doc, dict) and "episodes" not in doc and bool(doc)
+            and all(isinstance(v, dict) and v and all(isinstance(p, dict) for p in v.values()) for v in doc.values()))
+
+
+def _select_nested(doc: dict, policy: str, set_key, mode):
+    """-> (policy name, rows, mode) of a {set: {policy: {mode: [..]}}} file; the set must be named."""
+    if set_key not in doc:
+        raise SystemExit(f"this results file holds several sets; pick one with --result-set: {', '.join(doc)}")
+    pols = doc[set_key]
+    name = next((k for k in pols if norm(k) == norm(policy)), None)
+    if name is None:
+        raise SystemExit(f"set '{set_key}' has no policy '{policy}'; it has {', '.join(pols)}")
+    modes = pols[name]
+    mode = mode or ("both" if "both" in modes else next(iter(modes)))
+    if mode not in modes:
+        raise SystemExit(f"policy '{name}' has no mode '{mode}' in set '{set_key}'; it has {', '.join(modes)}")
+    return name, modes[mode], mode
+
+
+def load_episodes(path: str, policy: str = "", coop_min=None, max_steps=None, seed0=None, set_key=None, mode=None,
+                  seed_by: str = "index") -> dict:
     """-> {"format", "policy", "policy_file", "set", "config", "seed0", "max_steps", "episodes": [..]}.
 
     Every episode: i (position in the set), start_id, episode_seed, task_success, coop_success, coop_source (where the
     cooperative result came from, see coop_of), push_share_a, steps,
     reason, falls, collisions, start_type, arrived, dock (worst position and heading error at handoff) and raw (the
     record as written). A field the results file lacks is None; nothing here assumes a field exists.
+
+    Three layouts: rendezvous ({"episodes": [..]}), push ({"episodes": {policy: [..]}}) and, with `set_key` and `mode`,
+    {set: {policy: {mode: [..]}}} (the heavy-box evaluation). The episode seed is seed0 + the position in the set
+    (`seed_by="index"`) or seed0 + the start id (`seed_by="id"`, for sets whose ids are not 0, 1, 2 ...).
     """
     doc = json.load(open(path))
     coop_min = config_threshold() if coop_min is None else coop_min
+    if seed_by not in ("index", "id"):
+        raise SystemExit("seed_by must be 'index' or 'id'")
+    selected = None
+    if nested_layout(doc):
+        pname, nrows, mode = _select_nested(doc, policy, set_key, mode)
+        selected = {"set": set_key, "mode": mode}
+        doc = {"episodes": {pname: nrows}}
     name = _policy_in(doc, path, policy)
     if name is None:
         have = list(doc["episodes"]) if isinstance(doc.get("episodes"), dict) else "(one policy, not named like that)"
@@ -245,7 +280,8 @@ def load_episodes(path: str, policy: str = "", coop_min=None, max_steps=None, se
         hits = [_total(r[f]) for f in ("hit_box", "hit_ducks", "collisions") if r.get(f) is not None]
         pe, ye = r.get("pos_err_cm"), r.get("yaw_err_deg")
         out.append({
-            "i": i, "start_id": r.get("id", i), "episode_seed": seed0 + i,
+            "i": i, "start_id": r.get("id", i),
+            "episode_seed": seed0 + (r["id"] if seed_by == "id" and isinstance(r.get("id"), int) else i),
             "task_success": task, "coop_success": coop, "coop_source": coop_src, "push_share_a": share,
             "steps": r.get("push_steps", r.get("steps")), "max_steps": limit, "reason": reason,
             "falls": falls, "collisions": sum(hits) if hits else None,
@@ -256,7 +292,7 @@ def load_episodes(path: str, policy: str = "", coop_min=None, max_steps=None, se
     return {"format": "rendezvous" if rendezvous else "push", "policy": name or policy,
             "policy_file": (doc.get("rendezvous") if rendezvous else None), "push_policy_file": doc.get("push"),
             "set": doc.get("set") or doc.get("test_set"), "config": doc.get("config"), "seed0": seed0,
-            "max_steps": limit, "coop_min": coop_min,
+            "max_steps": limit, "coop_min": coop_min, "selected": selected,
             "coop_source": {k: sum(e["coop_source"] == k for e in out) for k in COOP_SOURCES if any(e["coop_source"] == k for e in out)},
             "episodes": out}
 
@@ -420,9 +456,10 @@ def sample(episodes: list, n: int = 30, group=None, seed: int = 0, weights=None)
 
 # ── the label file ───────────────────────────────────────────────────────────
 
-def label_key(run: str, policy_sha256, start_id, episode_seed) -> str:
-    """Labels are keyed by run, policy file hash, start id and episode seed, so they survive reruns."""
-    return f"{run}|{policy_sha256 or 'unknown'}|{start_id}|{episode_seed}"
+def label_key(run: str, policy_sha256, start_id, episode_seed, variant=None) -> str:
+    """Labels are keyed by run, policy file hash, start id and episode seed, so they survive reruns. `variant` (the set
+    and mode of a multi-set results file) is part of the run part, so the same start in another set is another label."""
+    return f"{run}{'#' + variant if variant else ''}|{policy_sha256 or 'unknown'}|{start_id}|{episode_seed}"
 
 
 def human_success(verdict: str):
@@ -471,7 +508,7 @@ class Session:
             k += 1
             path = os.path.join(reviews_dir, f"{meta['reviewer']}_{date}-{k}.json")
         doc = {"version": 1, **meta, "date": date,
-               "sample": [{"key": label_key(meta["run"], meta["policy_sha256"], e["start_id"], e["episode_seed"]),
+               "sample": [{"key": label_key(meta["run"], meta["policy_sha256"], e["start_id"], e["episode_seed"], meta.get("variant")),
                            "i": e["i"], "start_id": e["start_id"], "episode_seed": e["episode_seed"],
                            "group": group_of(e)} for e in picked],
                "labels": {}}

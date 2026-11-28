@@ -437,3 +437,80 @@ def test_the_page_never_gets_the_group_before_a_label():
     assert "group" not in info and "weights" not in info and "sample_counts" not in info
     assert "group" not in pub.split("if lab is not None")[0]            # the group is only sent through reveal(), after a label
     assert "weights" not in open(os.path.join(ROOT, "scripts", "review", "review.html")).read()
+
+
+# ── a {set: {policy: {mode: [episodes]}}} results file (the heavy-box evaluation) ────────────────────────────
+
+def heavy_row(id_, k, success=True, ca=40.0, cb=38.0, steps=70):
+    return {"id": id_, "reason": "success" if success else "timeout", "steps": steps, "contact_share_a": round(ca / (ca + cb), 4),
+            "push_share_a": 0.5, "fell": False, "contact_impulse": [ca, cb], "push_impulse": [30.0, 28.0]}
+
+
+@pytest.fixture
+def nested(tmp_path):
+    rows = [heavy_row(1, 0), heavy_row(2, 1, success=False), heavy_row(4, 2, ca=0.0, cb=70.0), heavy_row(7, 3, steps=125)]
+    doc = {"heavy_L2": {"s2": {"both": rows, "A_idle": [heavy_row(1, 0, success=False)]}, "frozen": {"both": rows}},
+           "heavy_clean": {"s2": {"both": rows}}}
+    p = tmp_path / "episodes.json"
+    p.write_text(json.dumps(doc))
+    return str(p)
+
+
+def test_nested_layout_selects_set_policy_and_mode(nested):
+    assert rl.nested_layout(json.load(open(nested)))
+    d = rl.load_episodes(nested, "S2", set_key="heavy_L2", seed_by="id", max_steps=130)
+    assert d["format"] == "push" and d["policy"] == "s2" and d["selected"] == {"set": "heavy_L2", "mode": "both"}
+    assert [e["start_id"] for e in d["episodes"]] == [1, 2, 4, 7]                    # not 0, 1, 2, 3
+    assert [e["episode_seed"] for e in d["episodes"]] == [10001, 10002, 10004, 10007]  # seed0 + id
+    assert [e["episode_seed"] for e in rl.load_episodes(nested, "s2", set_key="heavy_L2")["episodes"]] == [10000, 10001, 10002, 10003]
+    assert rl.load_episodes(nested, "s2", set_key="heavy_L2", mode="A_idle")["episodes"][0]["task_success"] is False
+    # contact impulses as [a, b] lists: the impulse source, a one-duck success is not cooperative, the step limit is 130
+    assert [e["coop_success"] for e in d["episodes"]] == [True, False, False, True]
+    assert {e["coop_source"] for e in d["episodes"]} == {"contact_impulse"}
+    assert d["episodes"][3]["max_steps"] == 130 and rl.suspicious_reasons(d["episodes"][3]) == ["success in the last 10% of the time limit"]
+
+
+def test_nested_layout_errors_name_the_choices(nested):
+    with pytest.raises(SystemExit, match="--result-set: heavy_L2, heavy_clean"):
+        rl.load_episodes(nested, "s2")
+    with pytest.raises(SystemExit, match="has no policy 's9'"):
+        rl.load_episodes(nested, "s9", set_key="heavy_L2")
+    with pytest.raises(SystemExit, match="has no mode 'B_idle'"):
+        rl.load_episodes(nested, "s2", set_key="heavy_L2", mode="B_idle")
+    with pytest.raises(SystemExit, match="seed_by"):
+        rl.load_episodes(nested, "s2", set_key="heavy_L2", seed_by="x")
+
+
+def test_set_and_mode_keep_labels_apart(tmp_path, nested):
+    a = rl.load_episodes(nested, "s2", set_key="heavy_L2")
+    b = rl.load_episodes(nested, "s2", set_key="heavy_clean")
+    ma = {**meta(), "variant": "heavy_L2/both"}
+    mb = {**meta(), "variant": "heavy_clean/both"}
+    sa, _ = rl.Session.open(str(tmp_path / "ra"), ma, a["episodes"][:1], date="2026-11-24")
+    sb, _ = rl.Session.open(str(tmp_path / "rb"), mb, b["episodes"][:1], date="2026-11-24")
+    assert sa.doc["sample"][0]["key"] != sb.doc["sample"][0]["key"]
+    assert "#heavy_L2/both|" in sa.doc["sample"][0]["key"]
+    assert "#" not in rl.label_key("r", "x", 1, 2)                       # no variant: the key is as before
+
+
+def test_replay_match_tolerates_stored_rounding_and_list_or_dict_impulses():
+    import serve
+    rec = {"contact_impulse": [41.568, 36.874], "final_dist": 0.1234, "push_share_a": 0.5287, "fell": False, "steps": 71}
+    got = {"contact_impulse": {"duck_a": 41.56812, "duck_b": 36.87449}, "final_dist": 0.12344, "push_share_a": 0.52871,
+           "fell": False, "steps": 71}
+    assert serve.replay_match(got, rec, serve.PUSH_REPLAY_FIELDS)["reproduced"]
+    assert not serve.replay_match({**got, "steps": 72}, rec, serve.PUSH_REPLAY_FIELDS)["reproduced"]
+    assert not serve.replay_match({**got, "contact_impulse": {"duck_a": 41.6, "duck_b": 36.874}}, rec, serve.PUSH_REPLAY_FIELDS)["reproduced"]
+    assert not serve.replay_match({**got, "fell": True}, rec, serve.PUSH_REPLAY_FIELDS)["reproduced"]
+
+
+def test_a_new_session_file_can_be_saved_empty_and_resumed(tmp_path, episodes):
+    rd = str(tmp_path / "reviews")
+    m = {**meta(), "sampling": {**meta()["sampling"], "weights": {"success": 1, "failure": 1, "suspicious": 3}},
+         "sample_counts": {"success": 1, "failure": 1, "suspicious": 4}}
+    s, resumed = rl.Session.open(rd, m, rl.sample(episodes, 6, seed=0), date="2026-11-24")
+    s.save()
+    doc = json.load(open(s.path))
+    assert not resumed and doc["labels"] == {} and doc["sampling"]["weights"]["suspicious"] == 3 and doc["sample_counts"]["suspicious"] == 4
+    again, resumed = rl.Session.open(rd, m, rl.sample(episodes, 6, seed=0), date="2026-11-25")
+    assert resumed and again.path == s.path                         # an unlabeled saved session is resumed, not duplicated
