@@ -251,7 +251,7 @@ metric said, so we can measure how often a person disagrees with the metric.
 **Start a session** (one local page, port 8765; Ctrl-C stops it):
 
 ```sh
-# a full-pipeline rendezvous run (needs the rendezvous code: the d2-rendezvous branch until it is merged)
+# a full-pipeline rendezvous run
 scripts/rl.sh scripts/review/serve.py --run r6-dock-payout --seed-policy s1 --n 30 --reviewer ashwin
 
 # a push-only run: comparison.json does not name the policy file, so pass it as compare_policies.py took it
@@ -266,11 +266,36 @@ scripts/rl.sh scripts/review/serve.py --run d2-steering/night5 --seed-policy l2_
   cooperative success, success in the last 10% of the time limit, docking error at 90% or more of its tolerance, a
   push success without docking). The sample takes the three groups evenly, random within each, in a shuffled order.
   `--n` (30), `--group success|failure|suspicious`, `--seed` (0; the same seed gives the same sample). A run with no
-  more than `--n` episodes is shown whole. Cooperative success means task success with each duck doing at least 25% of
-  the push (`--coop-min`).
+  more than `--n` episodes is shown whole. Without options the three groups are taken evenly. `--group suspicious` takes only
+  that group.
+- **Weighted sampling:** `--weights suspicious=3,success=1,failure=1` (or shares such as
+  `suspicious=0.6,success=0.2,failure=0.2`) splits the `--n` clips over the groups in proportion to the weights, with
+  largest-remainder rounding so the counts sum to `--n` (30 clips with 3:1:1 give 18 suspicious, 6 success, 6 failure).
+  Within a group the pick is random with `--seed`, then everything is shuffled. A group that has fewer episodes than its
+  share gives the rest to the others in proportion to their weights. A group you do not name gets weight 0. Unknown
+  group names, negative weights and all-zero weights are errors, and `--weights` cannot be combined with `--group`.
+  The weights and the clips per group are saved in the session file and printed at start (the terminal shows them, the
+  page never does, so a reviewer who wants to stay blind should not read that line), and a different `--weights` is a
+  different session. `summarize.py` states the weights, says the sample is weighted (so the overall rates are not rates
+  over all episodes) and gives the rates per group.
+- **Cooperative success** is task success with each duck's share of the pushing at least the threshold
+  (`metrics.cooperative_share` in `configs/copush.yaml`, 0.25; `--coop-min` overrides it), computed with
+  `copush/cooperation.py`. The share is read from the results file's contact impulses (`contact_impulse`, then
+  `contact_share_a`). Only an old results file without those fields falls back to its push share (`push_share_a`).
+  The source is printed when a session starts, saved in the label file (`coop_source`, counts per file, and on every
+  label) and listed per results file by `summarize.py`, which flags the push-share fallback.
+- **A results file with several sets** (`{set: {policy: {mode: [episodes]}}}`, as the heavy-box evaluation writes):
+  `--result-set heavy200_L2 --mode both` picks the set and mode (`--seed-policy` names the policy), `--test-set` and
+  `--config` give the start set and the env config as paths (the box mass, step limit and reward version come from
+  the config; `--max-steps` defaults to its `env.max_steps`), and `--seed-by id` sets the episode seed to the first
+  seed plus the start id for sets whose ids are not 0, 1, 2 and so on. Labels are keyed by set and mode too.
+- **Other options:** `--results` (the results file), `--policy` (push-only runs), `--max-steps`, `--port` (8765),
+  `--no-open`, `--out-dir` (where the label file goes; default `experiments/<run>/reviews`; use a folder under `runs/`
+  for a trial) and `--render-only` (render the sampled clips, print whether every replay matched, exit).
 - **Clips** are rendered on demand with the evaluation's own starts and seeds and cached in
   `runs/review-cache/` (git-ignored, about 5 to 10 MB per episode). If a replay does not match the recorded episode
-  step for step, the page says so.
+  step for step, the page says so. A replay is checked on every field the results file recorded (docking, hits,
+  ending, steps, shares and impulses to the stored precision); `--render-only` prints the result per clip.
 - **Keys:** `1` to `4` verdict, `Enter` save and reveal, arrows or `N` / `P` next and previous, `Space` play or pause,
   `,` `.` step a frame, `R` replay, `[` `]` speed (0.5x, 1x, 2x; 1x is real time). The letters on the reasons tick them.
 - **Saving:** every label is written at once to `experiments/<run>/reviews/<reviewer>_<date>.json` (the run's existing

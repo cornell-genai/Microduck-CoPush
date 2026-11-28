@@ -30,9 +30,10 @@ def main() -> int:
     ap.add_argument("--run", required=True)
     ap.add_argument("--reviewer", action="append", default=[], help="only these reviewers (repeatable)")
     ap.add_argument("--policy", default=None, help="only this policy of the run (s1, l2_s2, ...)")
+    ap.add_argument("--reviews-dir", default=None, help="read the label files of this folder instead of experiments/**/<run>/reviews")
     ap.add_argument("--json", action="store_true", help="print the numbers as JSON")
     a = ap.parse_args()
-    rows = rl.load_reviews(a.run)
+    rows = rl.load_reviews(a.run, reviews_dir=rl.repo_path(a.reviews_dir) if a.reviews_dir else None)
     if a.reviewer:
         rows = [r for r in rows if r["reviewer"] in a.reviewer]
     if a.policy:

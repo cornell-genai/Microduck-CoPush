@@ -114,7 +114,7 @@ def test_sample_small_groups_one_group_and_small_runs(episodes):
 # ── saving and resuming ──────────────────────────────────────────────────────
 
 def meta(reviewer="ashwin", seed=0):
-    return {"run": "r9-test", "policy": "s1", "policy_file": "runs/x/best.zip", "policy_sha256": "ab" * 32,
+    return {"run": "r9-test", "coop_source": {"contact_impulse": 44}, "policy": "s1", "policy_file": "runs/x/best.zip", "policy_sha256": "ab" * 32,
             "results_file": "runs/x/results.json", "reviewer": reviewer,
             "sampling": {"n": 6, "group": None, "seed": seed, "coop_min": 0.25, "group_sizes": {}}}
 
@@ -236,3 +236,281 @@ def test_newest_label_wins_and_empty_run(tmp_path, episodes):
     empty = rl.summarize([])
     assert empty["labels"] == 0 and empty["combined"]["task"]["rate"] is None
     assert "No labels found" in rl.report("nope", empty)
+
+
+# ── where cooperative success comes from ─────────────────────────────────────
+
+def write_eps(tmp_path, eps):
+    p = tmp_path / "results.json"
+    p.write_text(json.dumps({"rendezvous": "scripted", "push": "p.zip", "set": "s.json", "episodes": eps}))
+    return str(p)
+
+
+def test_coop_from_contact_impulse_when_the_file_has_it(tmp_path):
+    # push_share_a says duck A did 0.5 (cooperative), the impulses say duck A did 10% (not): the impulses decide
+    eps = [rv_episode(0, share=0.5, contact_impulse={"duck_a": 1.0, "duck_b": 9.0}, push_impulse={"duck_a": 5.0, "duck_b": 5.0}),
+           rv_episode(1, share=0.0, contact_impulse={"duck_a": 6.0, "duck_b": 4.0}),            # impulses say cooperative
+           rv_episode(2, success=False, share=0.5, contact_impulse={"duck_a": 6.0, "duck_b": 4.0}),   # a failure is never
+           rv_episode(3, share=0.5, contact_impulse={"duck_a": 0.0, "duck_b": 0.0})]           # nobody touched the box
+    d = rl.load_episodes(write_eps(tmp_path, eps), "scripted")
+    assert [e["coop_success"] for e in d["episodes"]] == [False, True, False, False]
+    assert {e["coop_source"] for e in d["episodes"]} == {"contact_impulse"}
+    assert d["coop_source"] == {"contact_impulse": 4} and d["coop_min"] == 0.25
+
+
+def test_coop_threshold_is_the_one_of_cooperation_py_and_a_share_at_it_counts(tmp_path):
+    eps = [rv_episode(0, contact_impulse={"duck_a": 2.5, "duck_b": 7.5})]
+    path = write_eps(tmp_path, eps)
+    assert rl.load_episodes(path, "scripted")["episodes"][0]["coop_success"] is True          # exactly 25%
+    assert rl.load_episodes(path, "scripted", coop_min=0.30)["episodes"][0]["coop_success"] is False
+    from copush import cooperation
+    assert rl.COOP_MIN == cooperation.DEFAULT_THRESHOLD == rl.config_threshold()                # configs/copush.yaml says 0.25
+
+
+def test_coop_from_contact_share_then_push_share_fallback(tmp_path):
+    # a comparison.json-style record: a contact share and no impulses
+    d = rl.load_episodes(write_eps(tmp_path, [rv_episode(0, share=0.5, contact_share_a=0.1)]), "scripted")
+    e = d["episodes"][0]
+    assert (e["coop_success"], e["coop_source"], d["coop_source"]) == (False, "contact_share", {"contact_share": 1})
+    # an old file: nothing but the push share -> the fallback, and it says so
+    old = [rv_episode(0, share=0.5), rv_episode(1, share=0.0), rv_episode(2, success=False, share=None)]
+    d = rl.load_episodes(write_eps(tmp_path, old), "scripted")
+    assert [(e["coop_success"], e["coop_source"]) for e in d["episodes"]] == [(True, "push_share"), (False, "push_share"), (False, "push_share")]
+    assert d["coop_source"] == {"push_share": 3}
+
+
+def test_coop_label_is_saved_and_shown_in_the_summary(tmp_path):
+    new = [rv_episode(0, share=0.0, contact_impulse={"duck_a": 5.0, "duck_b": 5.0}), rv_episode(1, share=0.5)]
+    d = rl.load_episodes(write_eps(tmp_path, new), "scripted")
+    assert [e["coop_source"] for e in d["episodes"]] == ["contact_impulse", "push_share"]
+    m = {**meta(), "coop_source": d["coop_source"], "results_file": "runs/x/results.json"}
+    s, _ = rl.Session.open(str(tmp_path / "experiments" / "r9-test" / "reviews"), m, d["episodes"], date="2026-11-24")
+    for x, e in zip(s.doc["sample"], d["episodes"]):
+        rec = s.label(x["key"], e, "real_success")
+        assert rec["metric"]["coop_source"] == e["coop_source"]
+    assert json.load(open(s.path))["coop_source"] == {"contact_impulse": 1, "push_share": 1}
+    out = rl.report("r9-test", rl.summarize(rl.load_reviews("r9-test", root=str(tmp_path))))
+    assert "Cooperative success was read from (per results file):" in out
+    assert "runs/x/results.json: contact impulse of each duck" in out and "FALLBACK: push share only" in out
+    assert "NOTE: part of this file has no contact-impulse fields" in out
+
+
+def test_replay_match_compares_every_recorded_field():
+    import serve
+    rec = {"id": 3, "push_steps": 41, "push_share_a": 0.0, "contact_impulse": {"duck_a": 0.0, "duck_b": 14.4979}, "extra": 1}
+    ok = serve.replay_match({**rec, "extra": 2}, rec)
+    assert ok["reproduced"] and "push_share_a" in ok["checked"] and "extra" not in ok["checked"]
+    bad = serve.replay_match({**rec, "contact_impulse": {"duck_a": 0.0, "duck_b": 14.4}}, rec)
+    assert not bad["reproduced"] and bad["mismatch"] == {"contact_impulse": [rec["contact_impulse"], {"duck_a": 0.0, "duck_b": 14.4}]}
+    assert not serve.replay_match({}, rec)["reproduced"]            # a field the replay lacks does not pass
+
+
+# ── weighted sampling ────────────────────────────────────────────────────────
+
+def old_sample(episodes, n=30, group=None, seed=0):
+    """sample() as it was before --weights existed, to show the default did not change."""
+    import random
+    g = rl.groups(episodes)
+    names = [group] if group else list(rl.GROUPS)
+    rng = random.Random(seed)
+    pools = {}
+    for k in names:
+        pools[k] = sorted(g[k], key=lambda e: e["i"])
+        rng.shuffle(pools[k])
+    total = sum(len(p) for p in pools.values())
+    want = {k: 0 for k in names}
+    left = min(n, total)
+    while left:
+        open_ = [k for k in names if want[k] < len(pools[k])]
+        share = max(1, left // len(open_))
+        for k in open_:
+            if not left:
+                break
+            take = min(share, len(pools[k]) - want[k], left)
+            want[k] += take
+            left -= take
+    picked = [e for k in names for e in pools[k][:want[k]]]
+    rng.shuffle(picked)
+    return picked
+
+
+def counts(picked):
+    return {g: sum(rl.group_of(e) == g for e in picked) for g in rl.GROUPS}
+
+
+def test_default_sample_is_unchanged(episodes):
+    for seed in (0, 1, 7, 123):
+        for n, group in ((6, None), (30, None), (36, None), (9, "suspicious"), (500, None)):
+            assert [e["i"] for e in rl.sample(episodes, n, group, seed)] == [e["i"] for e in old_sample(episodes, n, group, seed)]
+
+
+def test_parse_weights_counts_and_shares():
+    assert rl.parse_weights("suspicious=3,success=1,failure=1") == {"success": 1, "failure": 1, "suspicious": 3}
+    assert rl.parse_weights("suspicious=0.6, success=0.2, failure=0.2") == {"success": 0.2, "failure": 0.2, "suspicious": 0.6}
+    assert rl.parse_weights("suspicious=1") == {"success": 0, "failure": 0, "suspicious": 1}      # unnamed groups get 0
+
+
+@pytest.mark.parametrize("bad, text", [("boss=1", "not group=weight"), ("suspicious", "not group=weight"),
+                                       ("suspicious=x", "not a number"), ("suspicious=-1,success=2", "zero or more"),
+                                       ("suspicious=0,success=0,failure=0", "above zero"), ("", "above zero"),
+                                       ("success=1,success=2", "twice"), ("success=nan", "zero or more")])
+def test_weights_errors_are_clear(bad, text):
+    with pytest.raises(SystemExit, match=text):
+        rl.parse_weights(bad)
+
+
+def test_proportional_split_and_rounding_sums_to_n():
+    cap = {"success": 100, "failure": 100, "suspicious": 100}
+    w = {"success": 1, "failure": 1, "suspicious": 3}
+    assert rl.split_counts(30, w, cap) == {"success": 6, "failure": 6, "suspicious": 18}
+    assert rl.split_counts(30, {"success": 0.2, "failure": 0.2, "suspicious": 0.6}, cap) == {"success": 6, "failure": 6, "suspicious": 18}
+    for n in range(0, 41):
+        for w in ({"success": 1, "failure": 1, "suspicious": 1}, {"success": 1, "failure": 2, "suspicious": 4},
+                  {"success": 0.17, "failure": 0.33, "suspicious": 0.5}, {"success": 0, "failure": 1, "suspicious": 1}):
+            got = rl.split_counts(n, w, cap)
+            assert sum(got.values()) == n
+            assert all(abs(got[g] - n * w[g] / sum(w.values())) < 1 for g in got)         # largest remainder: within one
+    assert rl.split_counts(10, {"success": 1, "failure": 1, "suspicious": 1}, cap) == {"success": 4, "failure": 3, "suspicious": 3}
+    assert rl.split_counts(30, {"success": 0, "failure": 1, "suspicious": 1}, cap)["success"] == 0
+
+
+def test_a_group_that_runs_out_gives_its_share_in_proportion(episodes):
+    # 10 failures only: failure=5 of 20 would be 5, but with failure=10,... ask for more than it has
+    cap = {"success": 100, "failure": 3, "suspicious": 100}
+    got = rl.split_counts(30, {"success": 1, "failure": 5, "suspicious": 2}, cap)
+    assert got["failure"] == 3 and sum(got.values()) == 30
+    assert got["success"] + got["suspicious"] == 27 and (got["success"], got["suspicious"]) == (9, 18)   # 1:2
+    # the groups with a weight hold fewer than n: take what exists, no more
+    assert sum(rl.split_counts(30, {"success": 0, "failure": 1, "suspicious": 0}, cap).values()) == 3
+    picked = rl.sample(episodes, 30, seed=2, weights={"success": 0, "failure": 1, "suspicious": 1})   # 10 failures, 14 suspicious
+    assert counts(picked) == {"success": 0, "failure": 10, "suspicious": 14}
+
+
+def test_weighted_sample_is_seeded_shuffled_and_picks_within_groups(episodes):
+    w = rl.parse_weights("suspicious=3,success=1,failure=1")
+    a = rl.sample(episodes, 20, seed=5, weights=w)
+    assert counts(a) == {"success": 4, "failure": 4, "suspicious": 12}
+    assert [e["i"] for e in a] == [e["i"] for e in rl.sample(episodes, 20, seed=5, weights=w)]
+    assert [e["i"] for e in a] != [e["i"] for e in rl.sample(episodes, 20, seed=6, weights=w)]
+    assert len({e["i"] for e in a}) == 20
+    with pytest.raises(ValueError):
+        rl.sample(episodes, 20, group="success", weights=w)
+
+
+def test_weights_identify_the_session(tmp_path, episodes):
+    rd = str(tmp_path / "reviews")
+    base = meta()
+    w1 = {**base, "sampling": {**base["sampling"], "weights": {"success": 1, "failure": 1, "suspicious": 3}}}
+    w2 = {**base, "sampling": {**base["sampling"], "weights": {"success": 1, "failure": 1, "suspicious": 1}}}
+    picked = rl.sample(episodes, 6, seed=0)
+    s1, resumed = rl.Session.open(rd, w1, picked, date="2026-11-24")
+    s1.save()
+    assert not resumed
+    again, resumed = rl.Session.open(rd, w1, picked, date="2026-11-24")
+    assert resumed and again.path == s1.path                         # the same weights resume
+    s2, resumed = rl.Session.open(rd, w2, picked, date="2026-11-24")
+    assert not resumed and s2.path != s1.path                        # other weights: a new file, no silent mixing
+    s2.save()
+    s3, resumed = rl.Session.open(rd, base, picked, date="2026-11-24")
+    assert not resumed and s3.path not in (s1.path, s2.path)         # no weights is a different session too
+
+
+def test_summary_states_the_weights_and_that_the_sample_is_weighted(tmp_path, episodes):
+    m = {**meta(), "sampling": {**meta()["sampling"], "weights": {"success": 1, "failure": 1, "suspicious": 3}}}
+    by_i = {e["i"]: e for e in episodes}
+    picked = [by_i[0], by_i[30], by_i[31]]
+    s, _ = rl.Session.open(str(tmp_path / "experiments" / "r9-test" / "reviews"), m, picked, date="2026-11-24")
+    for x, e in zip(s.doc["sample"], picked):
+        s.label(x["key"], e, "real_success")
+    out = rl.report("r9-test", rl.summarize(rl.load_reviews("r9-test", root=str(tmp_path))))
+    assert "SAMPLE IS WEIGHTED: weights success 1, failure 1, suspicious 3" in out
+    assert "NOT rates over all episodes" in out and "By sampling group:" in out
+    plain = rl.report("r9-test", rl.summarize(rl.load_reviews("r9-test", root=str(tmp_path))))
+    assert "evenly" not in plain
+
+
+def test_the_page_never_gets_the_group_before_a_label():
+    import serve
+    src = open(os.path.join(ROOT, "scripts", "review", "serve.py")).read()
+    info = src[src.index("    def info(self)"):src.index("    def save_label")]
+    pub = src[src.index("    def public(self"):src.index("    def info(self)")]
+    assert "group" not in info and "weights" not in info and "sample_counts" not in info
+    assert "group" not in pub.split("if lab is not None")[0]            # the group is only sent through reveal(), after a label
+    assert "weights" not in open(os.path.join(ROOT, "scripts", "review", "review.html")).read()
+
+
+# ── a {set: {policy: {mode: [episodes]}}} results file (the heavy-box evaluation) ────────────────────────────
+
+def heavy_row(id_, k, success=True, ca=40.0, cb=38.0, steps=70):
+    return {"id": id_, "reason": "success" if success else "timeout", "steps": steps, "contact_share_a": round(ca / (ca + cb), 4),
+            "push_share_a": 0.5, "fell": False, "contact_impulse": [ca, cb], "push_impulse": [30.0, 28.0]}
+
+
+@pytest.fixture
+def nested(tmp_path):
+    rows = [heavy_row(1, 0), heavy_row(2, 1, success=False), heavy_row(4, 2, ca=0.0, cb=70.0), heavy_row(7, 3, steps=125)]
+    doc = {"heavy_L2": {"s2": {"both": rows, "A_idle": [heavy_row(1, 0, success=False)]}, "frozen": {"both": rows}},
+           "heavy_clean": {"s2": {"both": rows}}}
+    p = tmp_path / "episodes.json"
+    p.write_text(json.dumps(doc))
+    return str(p)
+
+
+def test_nested_layout_selects_set_policy_and_mode(nested):
+    assert rl.nested_layout(json.load(open(nested)))
+    d = rl.load_episodes(nested, "S2", set_key="heavy_L2", seed_by="id", max_steps=130)
+    assert d["format"] == "push" and d["policy"] == "s2" and d["selected"] == {"set": "heavy_L2", "mode": "both"}
+    assert [e["start_id"] for e in d["episodes"]] == [1, 2, 4, 7]                    # not 0, 1, 2, 3
+    assert [e["episode_seed"] for e in d["episodes"]] == [10001, 10002, 10004, 10007]  # seed0 + id
+    assert [e["episode_seed"] for e in rl.load_episodes(nested, "s2", set_key="heavy_L2")["episodes"]] == [10000, 10001, 10002, 10003]
+    assert rl.load_episodes(nested, "s2", set_key="heavy_L2", mode="A_idle")["episodes"][0]["task_success"] is False
+    # contact impulses as [a, b] lists: the impulse source, a one-duck success is not cooperative, the step limit is 130
+    assert [e["coop_success"] for e in d["episodes"]] == [True, False, False, True]
+    assert {e["coop_source"] for e in d["episodes"]} == {"contact_impulse"}
+    assert d["episodes"][3]["max_steps"] == 130 and rl.suspicious_reasons(d["episodes"][3]) == ["success in the last 10% of the time limit"]
+
+
+def test_nested_layout_errors_name_the_choices(nested):
+    with pytest.raises(SystemExit, match="--result-set: heavy_L2, heavy_clean"):
+        rl.load_episodes(nested, "s2")
+    with pytest.raises(SystemExit, match="has no policy 's9'"):
+        rl.load_episodes(nested, "s9", set_key="heavy_L2")
+    with pytest.raises(SystemExit, match="has no mode 'B_idle'"):
+        rl.load_episodes(nested, "s2", set_key="heavy_L2", mode="B_idle")
+    with pytest.raises(SystemExit, match="seed_by"):
+        rl.load_episodes(nested, "s2", set_key="heavy_L2", seed_by="x")
+
+
+def test_set_and_mode_keep_labels_apart(tmp_path, nested):
+    a = rl.load_episodes(nested, "s2", set_key="heavy_L2")
+    b = rl.load_episodes(nested, "s2", set_key="heavy_clean")
+    ma = {**meta(), "variant": "heavy_L2/both"}
+    mb = {**meta(), "variant": "heavy_clean/both"}
+    sa, _ = rl.Session.open(str(tmp_path / "ra"), ma, a["episodes"][:1], date="2026-11-24")
+    sb, _ = rl.Session.open(str(tmp_path / "rb"), mb, b["episodes"][:1], date="2026-11-24")
+    assert sa.doc["sample"][0]["key"] != sb.doc["sample"][0]["key"]
+    assert "#heavy_L2/both|" in sa.doc["sample"][0]["key"]
+    assert "#" not in rl.label_key("r", "x", 1, 2)                       # no variant: the key is as before
+
+
+def test_replay_match_tolerates_stored_rounding_and_list_or_dict_impulses():
+    import serve
+    rec = {"contact_impulse": [41.568, 36.874], "final_dist": 0.1234, "push_share_a": 0.5287, "fell": False, "steps": 71}
+    got = {"contact_impulse": {"duck_a": 41.56812, "duck_b": 36.87449}, "final_dist": 0.12344, "push_share_a": 0.52871,
+           "fell": False, "steps": 71}
+    assert serve.replay_match(got, rec, serve.PUSH_REPLAY_FIELDS)["reproduced"]
+    assert not serve.replay_match({**got, "steps": 72}, rec, serve.PUSH_REPLAY_FIELDS)["reproduced"]
+    assert not serve.replay_match({**got, "contact_impulse": {"duck_a": 41.6, "duck_b": 36.874}}, rec, serve.PUSH_REPLAY_FIELDS)["reproduced"]
+    assert not serve.replay_match({**got, "fell": True}, rec, serve.PUSH_REPLAY_FIELDS)["reproduced"]
+
+
+def test_a_new_session_file_can_be_saved_empty_and_resumed(tmp_path, episodes):
+    rd = str(tmp_path / "reviews")
+    m = {**meta(), "sampling": {**meta()["sampling"], "weights": {"success": 1, "failure": 1, "suspicious": 3}},
+         "sample_counts": {"success": 1, "failure": 1, "suspicious": 4}}
+    s, resumed = rl.Session.open(rd, m, rl.sample(episodes, 6, seed=0), date="2026-11-24")
+    s.save()
+    doc = json.load(open(s.path))
+    assert not resumed and doc["labels"] == {} and doc["sampling"]["weights"]["suspicious"] == 3 and doc["sample_counts"]["suspicious"] == 4
+    again, resumed = rl.Session.open(rd, m, rl.sample(episodes, 6, seed=0), date="2026-11-25")
+    assert resumed and again.path == s.path                         # an unlabeled saved session is resumed, not duplicated
