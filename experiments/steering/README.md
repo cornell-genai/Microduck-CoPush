@@ -1,6 +1,6 @@
 # Central steering: learn the long clockwise turn
 
-**Question:** the Stage 1 central controller wins only 5% of the 66 held-out starts where the box
+**Question:** the Stage 1 central controller wins only 8% (5 of 66) of the held-out starts where the box
 begins more than +15 degrees from the target. It turns about 40 degrees before pushing, but these
 starts need roughly 55 degrees. Does giving the central controller a real stand-still action let it
 hold one duck as a pivot and finish the turn?
@@ -83,8 +83,9 @@ One remaining failure (+25.8 degrees): the control falls and stand-still times o
 ## Small duck start noise
 
 **Completed 2026-11-26; reviewed 2026-11-27. Keep the original clean-trained stand-still policies.**
-Small-noise adaptation produced no measurable improvement on noisy starts and reduced success on
-the clean Stage 1 set. This negative result is retained below.
+Small-noise adaptation produced no measurable improvement on noisy starts. Clean success was lower
+after this continuation, mostly in seed 2; without an equal-budget clean continuation control, the
+drop cannot be attributed to noise itself. This two-seed result is retained below.
 
 The original central stand-still seeds trained on clean duck placements. The new
 [start-noise config](start-noise/config.yaml) adapts each matching seed for 1M additional simulator
@@ -93,7 +94,7 @@ deviation between ducks) and setback noise (1 cm standard deviation per duck), c
 Invalid starts are redrawn by the existing environment. Box starts stay at Stage 1's ±45° range,
 reward v1.1 and stand-still remain enabled. Checkpoints are every 100k steps; no early stopping.
 This is an adaptation comparison against the prior policies, without an extra-training clean
-control: improvements cannot be attributed to noise alone or to the central architecture.
+control: changes cannot be attributed to noise alone or to the central architecture.
 
 Run or resume `scripts/rl/overnight_steering_noise.py` with the RL Python environment from this
 checkout. It trains seeds 1 and 2 from `runs/steering/stand-still-s1/model.zip` and `stand-still-s2`,
@@ -132,14 +133,18 @@ possible training seeds. A measurable verdict also requires non-overlapping seed
 
 | set / difficulty | starts | change (points) | paired 95% interval | verdict |
 |---|---|---|---|---|
-| clean overall (forgetting) | 200 | -3.75 | -6.77 to -0.73 | worse |
+| clean overall (forgetting) | 200 | -3.75 | -6.77 to -0.73 | lower in these runs |
 | clean < -15° | 67 | 0.00 | -4.17 to +4.17 | no measurable difference |
 | clean -15° to +15° | 67 | -0.75 | -3.29 to +1.80 | no measurable difference |
-| clean > +15° | 66 | -10.61 | -18.09 to -3.12 | worse |
+| clean > +15° | 66 | -10.61 | -18.09 to -3.12 | lower in these runs |
 | noisy overall | 200 | -1.25 | -4.75 to +2.25 | no measurable difference |
 | noisy < -15° | 66 | -3.03 | -7.70 to +1.64 | no measurable difference |
 | noisy -15° to +15° | 67 | +0.75 | -3.67 to +5.16 | no measurable difference |
 | noisy > +15° | 67 | -1.49 | -9.82 to +6.84 | no measurable difference |
+
+The clean-set decline is mostly seed 2: -6.0 points (paired 95% CI -10.1 to -1.9), versus
+-1.5 points for seed 1 (-5.3 to +2.3; no measurable difference). The pooled interval describes
+these two runs and does not establish that start-noise training generally harms clean performance.
 
 On the noisy set, failures and role split are:
 
@@ -173,6 +178,33 @@ For comparison with D2, use the same clean/noisy sets, noise parameters and time
 the different training histories and budgets. A similar clean score alone cannot establish equal
 robustness. Review box-loss and long-turn failures before proposing another training change; an
 equal-budget clean continuation would be needed to isolate the effect of noise from more training.
+
+## Released steering models
+
+The four original matched-experiment models are available from the
+[policies-v1 release](https://github.com/cornell-genai/Microduck-CoPush/releases/tag/policies-v1),
+with matching `stand_s1.config.yaml`, `stand_s2.config.yaml`, `control_s1.config.yaml` and
+`control_s2.config.yaml` resolved configs. Each trained for 1,001,472 additional simulator steps
+from the released Stage 1 central policy. Original results were recorded in commit `a637d4c`.
+
+| release asset | original local run | model SHA-256 |
+|---|---|---|
+| `stand_s1.zip` | `runs/steering/stand-still-s1/model.zip` | `6b69e13607175ccf128a5c298a1b156c512d8e58cc791df9990226608415a679` |
+| `stand_s2.zip` | `runs/steering/stand-still-s2/model.zip` | `3233c1e397a85b37a435ae3f50a88827f88324c244e4567992efa9b7926eb616` |
+| `control_s1.zip` | `runs/steering/control-s1/model.zip` | `6627e05d963b59264c7e0c6dc9b265c621ed516c925dbbe2e9b375f58d1e059b` |
+| `control_s2.zip` | `runs/steering/control-s2/model.zip` | `e0b76864acce6a270383b7307fb4707a4dce732a9362c0f1677fa391b4f21535` |
+
+Download the four models and configs with:
+
+```sh
+gh release download policies-v1 --repo cornell-genai/Microduck-CoPush \
+  --pattern 'stand_s*' --pattern 'control_s*' --dir runs/steering-release
+```
+
+Load stand-still models with `env.stand_still.enabled: true` (threshold 0.02); the controls use
+`false`. All four are central controllers and need the frozen walking/pushing ONNX policies.
+These models and all results above used a **0.15 kg box and 100-step limit**. The team's new
+**0.60 kg / 130-step** setup needs its own evaluation; these old scores do not describe it.
 
 ## Wider angles (separate work)
 

@@ -31,8 +31,9 @@ walk to the box and push it into the target together.
   held-out starts). Both learned policies pivot on all 66 long-turn starts. Results:
   [experiments/steering/](experiments/steering/README.md).
   Small duck-noise adaptation is also complete (two seeds, 200 starts per policy/set). It gives no
-  measurable noisy-set gain (-1.25 points, 95% CI -4.75 to +2.25) and reduces clean success by 3.75
-  points (95% CI -6.77 to -0.73), concentrated on long-turn starts. Keep the original policies,
+  measurable noisy-set gain (-1.25 points, 95% CI -4.75 to +2.25). Clean success was 3.75 points
+  lower afterward (95% CI -6.77 to -0.73), mainly seed 2 and long-turn starts. Without an equal-budget
+  clean continuation control, this cannot be attributed to noise itself. Keep the original policies,
   which already win 94% and 91% on the noisy set. See the
   [noise result](experiments/steering/README.md#small-duck-start-noise).
 - **Next steps:**
